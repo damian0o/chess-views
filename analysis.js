@@ -239,3 +239,44 @@ export function kingHouses(board) {
   };
   return { w: house('w'), b: house('b') };
 }
+
+// ---------- input detection ----------
+
+const PLACEMENT_RE = /^[prnbqkPRNBQK1-8]+(\/[prnbqkPRNBQK1-8]+){7}$/;
+
+/** Castling rights implied by kings and rooks still on their home squares. */
+function inferCastling(placement) {
+  const b = boardFromFen(placement);
+  const is = (sq, type, color) => { const { row, col } = squareIndex(sq); const p = b[row][col]; return !!p && p.type === type && p.color === color; };
+  let rights = '';
+  if (is('e1', 'k', 'w')) { if (is('h1', 'r', 'w')) rights += 'K'; if (is('a1', 'r', 'w')) rights += 'Q'; }
+  if (is('e8', 'k', 'b')) { if (is('h8', 'r', 'b')) rights += 'k'; if (is('a8', 'r', 'b')) rights += 'q'; }
+  return rights || '-';
+}
+
+export function normaliseFen(fen) {
+  const fields = fen.trim().split(/\s+/);
+  const defaults = ['w', inferCastling(fields[0]), '-', '0', '1'];
+  while (fields.length < 6) fields.push(defaults[fields.length - 1]);
+  return fields.slice(0, 6).join(' ');
+}
+
+export function parseInput(text) {
+  const s = (text || '').trim();
+  if (!s) return { kind: 'unknown' };
+
+  const analysis = s.match(/lichess\.org\/analysis\/(?:standard\/)?([^?#\s]+)/i);
+  if (analysis) {
+    const fen = decodeURIComponent(analysis[1]).replace(/_/g, ' ');
+    if (PLACEMENT_RE.test(fen.trim().split(/\s+/)[0])) return { kind: 'fen', fen: normaliseFen(fen) };
+  }
+
+  const game = s.match(/lichess\.org\/([A-Za-z0-9]{8})/i);
+  if (game) return { kind: 'lichess-game', gameId: game[1] };
+
+  if (/\[Event\s/.test(s) || /(^|\s)1\.\s*[a-hNBRQKO]/.test(s)) return { kind: 'pgn', pgn: s };
+
+  if (PLACEMENT_RE.test(s.split(/\s+/)[0])) return { kind: 'fen', fen: normaliseFen(s) };
+
+  return { kind: 'unknown' };
+}
