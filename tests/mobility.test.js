@@ -35,3 +35,10 @@ test('mobilityTone', () => {
   assert.equal(mobilityTone(3), 'mid'); assert.equal(mobilityTone(6), 'mid');
   assert.equal(mobilityTone(7), 'high');
 });
+
+test('a king does not count squares the enemy attacks', () => {
+  const study = mobility(boardFromFen('kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w - - 0 1'));
+  assert.equal(count(study, 'a8'), 0);          // a7 is hit by the b6 pawn, b8 and b7 are its own pieces
+  const m = mobility(boardFromFen('4k3/8/8/8/8/8/5q2/4K3 w - - 0 1'));
+  assert.equal(count(m, 'e1'), 2);              // d1 and the capture on f2; d2 e2 f1 are attacked
+});

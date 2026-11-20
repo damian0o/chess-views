@@ -282,3 +282,8 @@ files (guards) and `passed = no guards`. Roads draws passed pawns' paths in
 the side colour (bar at a blocker) and stars the pawn; a toggle shows every
 pawn's path, guarded ones dashed; clicking a pawn focuses it with a sentence.
 Unused open roads are not drawn when the board has no rook, bishop or queen.
+
+**Reach polish (same day):** kings do not count squares the enemy attacks
+(raw attack map). Zero-move pieces get a solid red badge so a 0 is never
+mistaken for "no counter"; the piece image sits top-left, the badge
+bottom-right.
