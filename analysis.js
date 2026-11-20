@@ -215,3 +215,27 @@ export function activeOnRoads(roadList) {
   }
   return active;
 }
+
+// ---------- king houses ----------
+
+export function kingHouses(board) {
+  const a = attackMap(board);
+  const house = (color) => {
+    let kr = -1, kc = -1;
+    for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+      const p = board[row][col];
+      if (p && p.type === 'k' && p.color === color) { kr = row; kc = col; }
+    }
+    if (kr < 0) return null;
+    const enemy = color === 'w' ? 'b' : 'w';
+    const cells = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const r = kr + dr, c = kc + dc;
+      if (!onBoard(r, c)) continue;
+      const attackers = a[enemy][r][c], defenders = a[color][r][c];
+      cells.push({ square: squareName(r, c), attackers, defenders, danger: attackers > defenders });
+    }
+    return { king: squareName(kr, kc), cells };
+  };
+  return { w: house('w'), b: house('b') };
+}
