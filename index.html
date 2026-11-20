@@ -151,17 +151,22 @@
   .board .sq.shield { box-shadow: inset 0 0 0 3px #1e8f4a; }
   .board .sq.shield-missing { box-shadow: inset 0 0 0 3px transparent; background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(201,59,59,0.25) 6px 9px); }
   .board .sq.openfile::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--pen-red); z-index: 1; }
-  .board .sq.aim .piece, .board .sq.aim .p { box-shadow: 0 0 0 3px var(--pen-red); border-radius: 50%; }
-  .board .sq.defend .piece, .board .sq.defend .p { box-shadow: 0 0 0 3px #1e8f4a; border-radius: 50%; }
-  .board .sq.aim.defend .piece, .board .sq.aim.defend .p { box-shadow: 0 0 0 3px #1e8f4a, 0 0 0 6px var(--pen-red); }
+  :root { --side-w: #2456c8; --side-b: #c93b3b; }
+  .board .sq.aim .piece, .board .sq.aim .p, .board .sq.defend .piece, .board .sq.defend .p { border-radius: 50%; }
+  .board .sq.aim.side-w .piece, .board .sq.aim.side-w .p { box-shadow: 0 0 0 3px var(--side-w); }
+  .board .sq.aim.side-b .piece, .board .sq.aim.side-b .p { box-shadow: 0 0 0 3px var(--side-b); }
+  .board .sq.defend.side-w .piece, .board .sq.defend.side-w .p { outline: 3px dashed var(--side-w); outline-offset: 1px; }
+  .board .sq.defend.side-b .piece, .board .sq.defend.side-b .p { outline: 3px dashed var(--side-b); outline-offset: 1px; }
+  .board .sq.aim.defend .piece, .board .sq.aim.defend .p { outline-offset: 4px; }
   .presswrap { position: relative; display: inline-block; }
   .presswrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
-  .presswrap line { stroke: var(--pen-red); stroke-width: 0.09; stroke-linecap: round; opacity: 0.85; }
+  .presswrap line { stroke: var(--side-b); stroke-width: 0.09; stroke-linecap: round; opacity: 0.85; }
+  .presswrap line.by-w { stroke: var(--side-w); }
   .presswrap line.pin { stroke: #e07a10; stroke-width: 0.07; opacity: 0.9; }
   .presswrap line.pin.relative { stroke-dasharray: 0.2 0.12; opacity: 0.75; }
   .board .sq.pinned .piece, .board .sq.pinned .p { box-shadow: 0 0 0 3px #e07a10; border-radius: 50%; }
   .board .sq.pinned::before { content: 'pin'; position: absolute; right: 2px; top: 1px; font-size: 0.32em; font-weight: 700; color: #fff; background: #e07a10; padding: 0 3px; border-radius: 3px; z-index: 2; }
-  .presswrap line.defend { stroke: #1e8f4a; stroke-width: 0.05; opacity: 0.6; stroke-dasharray: 0.18 0.14; }
+  .presswrap line.defend { stroke-width: 0.05; opacity: 0.6; stroke-dasharray: 0.18 0.14; }
   .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); max-width: 72ch; width: 100%; }
   .houses h3 { margin: 0 0 4px; font-size: 1.05rem; }
   .houses .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.85rem; margin-left: 8px; color: #fff; }
@@ -247,9 +252,10 @@
   .sw.shield-missing { background-image: repeating-linear-gradient(45deg, transparent 0 4px, rgba(201,59,59,0.3) 4px 6px); }
   .sw.openfile::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--pen-red); }
   .sw.escape::after { content: ''; position: absolute; width: 40%; height: 40%; border: 2px dashed #1e8f4a; border-radius: 50%; left: 30%; top: 30%; }
-  .sw .ring { width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 0 3px var(--pen-red); background: var(--paper); }
+  .sw .ring { width: 14px; height: 14px; border-radius: 50%; background: var(--paper); }
+  .sw .ring.aim-w { box-shadow: 0 0 0 3px var(--side-w); } .sw .ring.aim-b { box-shadow: 0 0 0 3px var(--side-b); }
+  .sw .ring.def-w { outline: 3px dashed var(--side-w); outline-offset: 1px; } .sw .ring.def-b { outline: 3px dashed var(--side-b); outline-offset: 1px; }
   .sw .ring.green { box-shadow: 0 0 0 3px #1e8f4a; }
-  .sw .ring.both { box-shadow: 0 0 0 2px #1e8f4a, 0 0 0 4px var(--pen-red); }
   .sw .pinbadge { font-size: 9px; font-weight: 700; color: #fff; background: #e07a10; padding: 0 3px; border-radius: 3px; }
   .sw .num { font-size: 10px; font-weight: 700; color: var(--ink); }
   .sw .mark { font-weight: 700; font-size: 16px; }
@@ -566,7 +572,7 @@ const VIEWS = {
     title: 'King houses',
     render(container, board, ctx) {
       const reports = { w: A.kingHouseReport(board, 'w'), b: A.kingHouseReport(board, 'b') };
-      const cellInfo = new Map(), shieldInfo = new Map(), openFileCells = new Set(), aim = new Set(), defend = new Set(), escapes = new Set(), pinned = new Set();
+      const cellInfo = new Map(), shieldInfo = new Map(), openFileCells = new Set(), aim = new Map(), defend = new Map(), escapes = new Set(), pinned = new Set();
       for (const side of ['w', 'b']) {
         const r = reports[side];
         if (!r) continue;
@@ -577,8 +583,8 @@ const VIEWS = {
         }
         for (const sq of r.escapes) escapes.add(sq);
         for (const pn of r.pins) pinned.add(pn.pinned.square);
-        for (const p of r.aiming) aim.add(p.square);
-        for (const p of r.defending) defend.add(p.square);
+        for (const p of r.aiming) aim.set(p.square, p.color);
+        for (const p of r.defending) defend.set(p.square, p.color);
       }
       const grid = boardGrid(board, (r, c, cell, name) => {
         const nodes = [];
@@ -591,9 +597,9 @@ const VIEWS = {
       for (const sq of grid.querySelectorAll('.sq')) {
         const name = sq.dataset.square;
         const info = cellInfo.get(name);
-        if (aim.has(name)) sq.classList.add('aim');
+        if (aim.has(name)) sq.classList.add('aim', `side-${aim.get(name)}`);
+        if (defend.has(name)) sq.classList.add('defend', `side-${defend.get(name)}`);
         if (pinned.has(name)) sq.classList.add('pinned');
-        if (defend.has(name)) sq.classList.add('defend');
         if (!info) { sq.classList.add('out'); continue; }
         sq.classList.add('house');
         const b = info.balance;
@@ -608,24 +614,24 @@ const VIEWS = {
       // Pressure arrows: each aiming piece to every house square it hits; defenders as thin dashed green.
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
-      svg.innerHTML = '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c93b3b"/></marker></defs>';
+      svg.innerHTML = '<defs><marker id="arrow-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c93b3b"/></marker><marker id="arrow-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2456c8"/></marker></defs>';
       const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
-      const arrow = (from, to, cls) => {
+      const arrow = (from, to, cls, side) => {
         const [x1, y1] = centre(from), [x2, y2] = centre(to);
         const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
         // Stop a little short of the target centre so the head does not cover the piece.
         const k = (len - 0.32) / len;
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         for (const [key, v] of Object.entries({ x1, y1, x2: x1 + dx * k, y2: y1 + dy * k })) line.setAttribute(key, v);
-        if (cls) line.setAttribute('class', cls); else line.setAttribute('marker-end', 'url(#arrow)');
+        if (cls) line.setAttribute('class', cls); else { line.setAttribute('class', `by-${side}`); line.setAttribute('marker-end', `url(#arrow-${side})`); }
         svg.append(line);
       };
       for (const side of ['w', 'b']) {
         const r = reports[side];
         if (!r) continue;
-        if (state.kingDefLines) for (const d of r.defending) for (const sq of d.hits) arrow(d.square, sq, 'defend');
+        if (state.kingDefLines) for (const d of r.defending) for (const sq of d.hits) arrow(d.square, sq, `defend by-${d.color}`);
         for (const pn of r.pins) arrow(pn.pinner.square, pn.target.square, `pin ${pn.absolute ? 'absolute' : 'relative'}`);
-        for (const a of r.aiming) for (const sq of a.hits) arrow(a.square, sq);
+        for (const a of r.aiming) for (const sq of a.hits) arrow(a.square, sq, null, a.color);
       }
       container.append(el('div', { class: 'presswrap' }, [grid, svg]));
       container.append(el('label', { class: 'toggle' }, [
@@ -677,10 +683,12 @@ const VIEWS = {
       }
       container.append(panel);
       container.append(legend([
-        { sw: 'arrow', text: 'pressure: enemy piece hitting a house square' },
-        { sw: 'ring', cls: '', text: 'enemy piece aiming at the house' },
-        { sw: 'ring', cls: 'green', text: 'piece defending the house' },
-        { sw: 'ring', cls: 'both', text: 'does both' },
+        { sw: 'arrow-w', text: "White's pressure on Black's house" },
+        { sw: 'arrow', text: "Black's pressure on White's house" },
+        { sw: 'ring', cls: 'aim-w', text: 'white piece aiming at the black king' },
+        { sw: 'ring', cls: 'aim-b', text: 'black piece aiming at the white king' },
+        { sw: 'ring', cls: 'def-w', text: 'white piece guarding its own king' },
+        { sw: 'ring', cls: 'def-b', text: 'black piece guarding its own king' },
         { sw: 'sq', cls: 'h-p2', text: 'well held (2+ more defenders)' },
         { sw: 'sq', cls: 'h-p1', text: 'held (1 more defender)' },
         { sw: 'sq', cls: 'h-0', text: 'even' },
@@ -694,7 +702,7 @@ const VIEWS = {
         { sw: 'pin', text: 'pin to the king (piece may not move)' },
         { sw: 'pin-dashed', text: 'pin to a more valuable piece' },
         { sw: 'pinbadge', text: 'the pinned piece' },
-        { sw: 'defend-line', text: 'defender line (optional)' },
+        { sw: 'defend-line', color: 'w', text: 'guard line (optional, same colours)' },
       ]));
     },
   },
@@ -803,7 +811,8 @@ function legend(items) {
       case 'arrow': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#c93b3b', false, true); break;
       case 'pin': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#e07a10', false, false); break;
       case 'pin-dashed': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#e07a10', true, false); break;
-      case 'defend-line': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#1e8f4a', true, false); break;
+      case 'defend-line': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine(it.color === 'w' ? '#2456c8' : '#c93b3b', true, false); break;
+    case 'arrow-w': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#2456c8', false, true).replace('fill="#c93b3b"', 'fill="#2456c8"').replace(/lg-arrow/g, 'lg-arrow-w'); break;
       case 'road': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><line x1="4" y1="13" x2="40" y2="13" stroke="#1d2a44" stroke-width="${it.width || 5}" stroke-linecap="round" opacity="0.6"/></svg>`; break;
       case 'ring': sw.classList.add('none'); sw.append(el('span', { class: `ring ${it.cls || ''}` })); sw.className = 'sw none'; break;
       case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
