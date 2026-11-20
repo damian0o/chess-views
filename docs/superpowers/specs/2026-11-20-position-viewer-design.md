@@ -300,3 +300,10 @@ for the lookup) and is not in check, the Reach view shows a box listing the
 mover's moves that would stalemate and those that keep the game going (each
 tried and undone). With 1–2 legal moves left it warns instead. A real
 stalemate or checkmate is named. A status-bar chip on every view links to it.
+
+**Stalemate on the board (same day, replaces the warning box):** no alert,
+no status chip. In Reach, when the other side has ≤ 2 legal moves, squares
+where every move there would stalemate get a grey ½ disc (dashed when only
+some moves do), a mover piece whose every move stalemates gets a dashed
+outline, and the right-click preview marks stalemating destinations ½. One
+neutral sentence under the board states the counts.
