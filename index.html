@@ -235,6 +235,29 @@
   .knightwrap .board .sq .imaginary { opacity: 0.55; }
   .toggle { display: flex; gap: 8px; align-items: center; color: var(--ink-soft); font-size: 0.95rem; }
 
+  /* Visual legend */
+  .vlegend { list-style: none; margin: 4px 0 0; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px 18px; max-width: 760px; width: 100%; font-size: 0.9rem; color: var(--ink-soft); border: 1px solid var(--pencil); border-radius: 8px; background: color-mix(in srgb, var(--paper) 85%, transparent); }
+  .vlegend li { display: flex; align-items: center; gap: 10px; min-height: 26px; }
+  .sw { flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center; position: relative; border: 1px solid var(--pencil); background: var(--square-light); font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .sw svg { width: 100%; height: 100%; overflow: visible; }
+  .sw.wide { width: 44px; }
+  .sw.none { border: 0; background: none; }
+  .sw.h-p2 { background: #7fd49a; } .sw.h-p1 { background: #c6ecd0; } .sw.h-0 { background: #fbe9a0; } .sw.h-m1 { background: #f8b76b; } .sw.h-m2 { background: #f26d6d; }
+  .sw.shield { box-shadow: inset 0 0 0 3px #1e8f4a; }
+  .sw.shield-missing { background-image: repeating-linear-gradient(45deg, transparent 0 4px, rgba(201,59,59,0.3) 4px 6px); }
+  .sw.openfile::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--pen-red); }
+  .sw.escape::after { content: ''; position: absolute; width: 40%; height: 40%; border: 2px dashed #1e8f4a; border-radius: 50%; left: 30%; top: 30%; }
+  .sw .ring { width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 0 3px var(--pen-red); background: var(--paper); }
+  .sw .ring.green { box-shadow: 0 0 0 3px #1e8f4a; }
+  .sw .ring.both { box-shadow: 0 0 0 2px #1e8f4a, 0 0 0 4px var(--pen-red); }
+  .sw .pinbadge { font-size: 9px; font-weight: 700; color: #fff; background: #e07a10; padding: 0 3px; border-radius: 3px; }
+  .sw .num { font-size: 10px; font-weight: 700; color: var(--ink); }
+  .sw .mark { font-weight: 700; font-size: 16px; }
+  .sw.t-w { background: #b9d0ff; } .sw.t-w .mark { color: #1b3f9e; } .sw.t-b { background: #ffbcbc; } .sw.t-b .mark { color: #9e1b1b; } .sw.t-eq { background: #d9d9d9; }
+  .sw.low { background: #ffd6d6; } .sw.mid { background: #f1e9c6; } .sw.high { background: #cdebd7; }
+  .sw .hop { width: 16px; height: 16px; border-radius: 50%; background: var(--pen-blue); color: #fff; font-size: 9px; font-weight: 700; display: grid; place-items: center; }
+  .sw .hop.own { background: #999; text-decoration: line-through; } .sw .hop.enemy { background: var(--pen-red); }
+
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
 </style>
@@ -461,7 +484,12 @@ const VIEWS = {
         el('strong', { text: `White controls ${s.w} squares` }), ` (centre: ${s.centerW}), `,
         el('strong', { text: `Black controls ${s.b}` }), ` (centre: ${s.centerB}).`,
       ]));
-      container.append(el('p', { class: 'legend', text: '+ white attacks it more, − black attacks it more, = both the same. Darker tint means a bigger difference.' }));
+      container.append(legend([
+        { sw: 'mark', cls: 't-w', text2: '+', text: 'White attacks it more (darker = bigger lead)' },
+        { sw: 'mark', cls: 't-b', text2: '-', text: 'Black attacks it more' },
+        { sw: 'mark', cls: 't-eq', text2: '=', text: 'both attack it the same' },
+        { sw: 'sq', text: 'nobody attacks it' },
+      ]));
     },
   },
   reach: {
@@ -480,7 +508,11 @@ const VIEWS = {
       container.append(el('p', { class: 'summary' }, [
         'Mobility: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '.',
       ]));
-      container.append(el('p', { class: 'legend', text: 'The number is how many squares that piece could go to right now. Red 0–2 is stuck, green 7+ is free.' }));
+      container.append(legend([
+        { sw: 'num', cls: 'low', text2: '0–2', text: 'stuck: almost nowhere to go' },
+        { sw: 'num', cls: 'mid', text2: '3–6', text: 'some room' },
+        { sw: 'num', cls: 'high', text2: '7+', text: 'free: many squares to go to' },
+      ]));
     },
   },
   roads: {
@@ -522,7 +554,12 @@ const VIEWS = {
         el('strong', { text: `Open diagonals: ${diags.length}` }), diags.length ? ` (${diags.slice(0, 6).join(', ')}${diags.length > 6 ? ', …' : ''}).` : '.',
         active.size ? ` Pieces already on an open road: ${[...active].sort().join(', ')}.` : ' No rook, bishop or queen is on an open road yet.',
       ]));
-      container.append(el('p', { class: 'legend', text: 'Thick = open road (no pawns on it). Thin = pawns of one side only. Roads blocked by both sides are not drawn. Rooks and queens want open files; bishops and queens want open diagonals. Green ring = already there.' }));
+      container.append(legend([
+        { sw: 'road', width: 6, text: 'open road: no pawns on it' },
+        { sw: 'road', width: 2, text: 'half open: pawns of one side only' },
+        { sw: 'ring', cls: 'green', text: 'rook, bishop or queen already on an open road' },
+        { sw: 'none', cls: 'none', text: 'blocked roads are not drawn' },
+      ]));
     },
   },
   kings: {
@@ -639,7 +676,26 @@ const VIEWS = {
         ]));
       }
       container.append(panel);
-      container.append(el('p', { class: 'legend', text: 'Red arrows = pressure: an enemy piece hitting a house square. Orange line = a pin (solid: to the king, so the pinned piece may not move; dashed: to a more valuable piece). House squares: green = well held, yellow = even, orange = short by one, red = the opponent already has more. Small numbers are attackers/defenders. Dashed circle = a square the king can escape to. Green border = shield pawn, striped = missing shield pawn, red bar = open file next to the king. Red ring = enemy piece aiming at the house, green ring = piece defending it.' }));
+      container.append(legend([
+        { sw: 'arrow', text: 'pressure: enemy piece hitting a house square' },
+        { sw: 'ring', cls: '', text: 'enemy piece aiming at the house' },
+        { sw: 'ring', cls: 'green', text: 'piece defending the house' },
+        { sw: 'ring', cls: 'both', text: 'does both' },
+        { sw: 'sq', cls: 'h-p2', text: 'well held (2+ more defenders)' },
+        { sw: 'sq', cls: 'h-p1', text: 'held (1 more defender)' },
+        { sw: 'sq', cls: 'h-0', text: 'even' },
+        { sw: 'sq', cls: 'h-m1', text: 'short by one defender' },
+        { sw: 'sq', cls: 'h-m2', text: 'broken: more attackers' },
+        { sw: 'num', text: 'attackers / defenders of that square' },
+        { sw: 'sq', cls: 'escape', text: 'king can escape here' },
+        { sw: 'sq', cls: 'shield', text: 'shield pawn in place' },
+        { sw: 'sq', cls: 'shield-missing', text: 'shield pawn missing' },
+        { sw: 'sq', cls: 'openfile', text: 'open file next to the king' },
+        { sw: 'pin', text: 'pin to the king (piece may not move)' },
+        { sw: 'pin-dashed', text: 'pin to a more valuable piece' },
+        { sw: 'pinbadge', text: 'the pinned piece' },
+        { sw: 'defend-line', text: 'defender line (optional)' },
+      ]));
     },
   },
   diamond: {
@@ -725,10 +781,42 @@ const VIEWS = {
         Object.assign(el('input', { type: 'checkbox' }), { checked: state.knightDistances, onchange: (e) => { state.knightDistances = e.target.checked; render(); } }),
         'Hop counts for every square',
       ]));
-      container.append(el('p', { class: 'legend', text: 'A knight runs on four straight tracks: two across and one up, or one across and two up. Every number on a track is one hop further. Grey = your own piece is in the way, red = you can capture. Paper: lay a ruler two across and one up through the knight; every dot on it is one hop.' }));
+      container.append(legend([
+        { sw: 'hop', text2: '1', text: 'one hop along a track' },
+        { sw: 'hop', text2: '2', text: 'two hops further along the same track' },
+        { sw: 'hop', cls: 'own', text2: '1', text: 'your own piece is in the way' },
+        { sw: 'hop', cls: 'enemy', text2: '1', text: 'you can capture here' },
+        { sw: 'none', cls: 'none', text: 'Paper: lay a ruler two across and one up through the knight; every dot on it is one hop.' },
+      ]));
     },
   },
 };
+
+/** Visual legend: [{sw: 'kind', cls?: 'extra classes', text}] → a grid of swatch + words. */
+function legend(items) {
+  const svgLine = (cls, dashed, arrow) =>
+    `<svg viewBox="0 0 44 26"><defs><marker id="lg-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c93b3b"/></marker></defs><line x1="4" y1="20" x2="${arrow ? 34 : 40}" y2="6" stroke="${cls}" stroke-width="3" stroke-linecap="round" ${dashed ? 'stroke-dasharray="6 4"' : ''} ${arrow ? 'marker-end="url(#lg-arrow)"' : ''}/></svg>`;
+  const ul = el('ul', { class: 'vlegend' });
+  for (const it of items) {
+    const sw = el('span', { class: `sw ${it.cls || ''}`.trim() });
+    switch (it.sw) {
+      case 'arrow': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#c93b3b', false, true); break;
+      case 'pin': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#e07a10', false, false); break;
+      case 'pin-dashed': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#e07a10', true, false); break;
+      case 'defend-line': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#1e8f4a', true, false); break;
+      case 'road': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><line x1="4" y1="13" x2="40" y2="13" stroke="#1d2a44" stroke-width="${it.width || 5}" stroke-linecap="round" opacity="0.6"/></svg>`; break;
+      case 'ring': sw.classList.add('none'); sw.append(el('span', { class: `ring ${it.cls || ''}` })); sw.className = 'sw none'; break;
+      case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
+      case 'num': sw.append(el('span', { class: 'num', text: it.text2 || '2/1' })); break;
+      case 'mark': sw.append(el('span', { class: 'mark', text: it.text2 })); break;
+      case 'hop': sw.append(el('span', { class: `hop ${it.cls || ''}`, text: it.text2 || '1' })); sw.className = 'sw'; break;
+      case 'piece': sw.classList.add('none'); sw.append(pieceImage({ type: it.type || 'n', color: it.color || 'w' })); sw.querySelector('.piece').style.cssText = 'width:24px;height:24px'; break;
+      default: break; // plain square with cls
+    }
+    ul.append(el('li', {}, [sw, document.createTextNode(it.text)]));
+  }
+  return ul;
+}
 
 function pinWords(list) {
   return list.map((pn) => `${PIECE_WORDS[pn.pinned.type]} on ${pn.pinned.square} is pinned to the ${pn.absolute ? 'king' : PIECE_WORDS[pn.target.type]} by the ${PIECE_WORDS[pn.pinner.type]} on ${pn.pinner.square}`).join('; ');
