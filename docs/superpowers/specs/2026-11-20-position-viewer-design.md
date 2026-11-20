@@ -313,3 +313,8 @@ shown on the board itself in Reach: all its pieces hatched grey, its king
 tagged "no moves" (or "N moves"), and a ribbon across the top of the board
 ("Black cannot move: a quiet White move is a draw (½)"). The sentence under
 the board stays as a secondary note.
+
+**Revision (same day):** no text tags or ribbon. The stuck side is shown by
+colour only (grey hatched pieces, solid grey king cell) plus the ½ discs,
+and the Reach summary carries the numbers: legal moves per side, with how
+many of the mover's would stalemate.

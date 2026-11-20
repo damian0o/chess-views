@@ -300,12 +300,10 @@
   .board .sq .half.some { background: none; color: #666; border: 2px dashed #888; }
   .board .sq .reach.onlydraw { outline: 3px dashed #888; outline-offset: -3px; }
   .board .sq.nomove { background-image: repeating-linear-gradient(-45deg, transparent 0 5px, rgba(110,110,110,0.28) 5px 8px); }
-  .board .sq.tagged .reach .badge { display: none; }
-  .board .sq .kingtag { position: absolute; left: 1px; bottom: 1px; z-index: 4; font-size: 0.34em; font-weight: 700; line-height: 1.1; padding: 1px 3px; border-radius: 3px; background: #6e6e6e; color: #fff; white-space: nowrap; }
-  .boardwrap { position: relative; display: inline-block; }
-  .boardwrap .ribbon { position: absolute; left: var(--cell); right: var(--cell); top: calc(var(--cell) * 0.1); z-index: 6; text-align: center; pointer-events: none; }
-  .boardwrap .ribbon span { display: inline-block; background: rgba(110,110,110,0.92); color: #fff; font-weight: 700; font-size: 0.8rem; padding: 3px 12px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
-  .board .sq .mv.draw { background: rgba(110, 110, 110, 0.8); }
+  .board .sq.nomove .reach { background: #d9d9d9; color: #444; }
+  .board .sq.nomove .reach .badge { background: #6e6e6e; color: #fff; }
+  .board .sq.nomove-king .reach { background: #9a9a9a; color: #fff; outline: 3px solid #6e6e6e; outline-offset: -3px; }
+        .board .sq .mv.draw { background: rgba(110, 110, 110, 0.8); }
   .board .sq .mv.draw::after { content: '½'; color: #fff; font-size: 0.5em; font-weight: 700; display: grid; place-items: center; height: 100%; }
   .sw .half { position: static; transform: none; width: 18px; height: 18px; font-size: 10px; }
 
@@ -664,23 +662,21 @@ const VIEWS = {
           const cell = grid.querySelector(`[data-square="${p.square}"]`);
           if (!cell) continue;
           cell.classList.add('nomove');
-          if (p.type === 'k') cell.classList.add('tagged');
-          if (p.type === 'k') cell.append(el('span', { class: 'kingtag', text: watch.status === 'danger' ? 'no moves' : `${watch.otherMoves.length} move${watch.otherMoves.length === 1 ? '' : 's'}`, title: watch.text }));
+          if (p.type === 'k') cell.classList.add('nomove-king');
         }
-        const wrap = el('div', { class: 'boardwrap' });
-        grid.replaceWith(wrap); wrap.append(grid);
-        wrap.append(el('div', { class: 'ribbon' }, [el('span', { text: watch.status === 'danger' ? `${watch.other} cannot move: a quiet ${watch.mover} move is a draw (½)` : `${watch.other} has ${watch.otherMoves.length} move${watch.otherMoves.length === 1 ? '' : 's'} left: mind the stalemate (½)` })]));
-        container.append(el('p', { class: 'summary' }, [
-          el('strong', { text: watch.status === 'danger' ? `${watch.other} has no legal move.` : `${watch.other} has only ${watch.otherMoves.length} legal move${watch.otherMoves.length === 1 ? '' : 's'} (${watch.otherMoves.map((m) => m.san).join(', ')}).` }),
-          ` ${watch.stalemating.length} of ${watch.mover}'s ${watch.stalemating.length + watch.safe.length} moves would stalemate: those squares are marked ½.`,
-          only.length ? ` Every move of the piece on ${only.join(', ')} stalemates.` : '',
-          ' Right-click a piece to see its moves sorted the same way.',
-        ]));
-      } else if (watch) {
-        container.append(el('p', { class: 'summary' }, [el('strong', { text: watch.text })]));
       }
+      // Legal move counts per side (the side not to move is looked up with the turn swapped).
+      const legal = (c) => {
+        if (c === ctx.turn) return ctx.chess.moves().length;
+        const f = ctx.chess.fen().split(' '); f[1] = c; f[3] = '-';
+        const alt = new Chess(); try { alt.load(f.join(' '), { skipValidation: true }); return alt.moves().length; } catch { return 0; }
+      };
+      const lw = legal('w'), lb = legal('b');
+      const drawNote = (c) => (watch && watch.byMove && c === ctx.turn && watch.stalemating.length) ? ` (${watch.stalemating.length} of them ½)` : '';
       container.append(el('p', { class: 'summary' }, [
-        'Reach: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '. Pieces count squares they can move to; pawns the squares they attack.',
+        'Reach: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }),
+        '. Legal moves: ', el('strong', { text: `White ${lw}${drawNote('w')}` }), ', ', el('strong', { text: `Black ${lb}${drawNote('b')}` }),
+        '. Pieces count squares they can move to; pawns the squares they attack.',
       ]));
       container.append(legend([
         { sw: 'num', cls: 'low', text2: '0–2', text: 'stuck: almost nowhere to go' },
