@@ -296,15 +296,12 @@
   .mvhint { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
 
   /* Stalemate watch */
-  .alert { max-width: 70ch; width: 100%; border: 2px solid #d58a1f; border-radius: 8px; padding: 10px 14px; background: color-mix(in srgb, #ffd98a 35%, var(--paper)); }
-  .alert.draw { border-color: var(--ink-soft); background: color-mix(in srgb, #ccc 35%, var(--paper)); }
-  .alert.mate { border-color: var(--pen-red); background: color-mix(in srgb, #ffb3b3 35%, var(--paper)); }
-  .alert h3 { margin: 0 0 4px; font-size: 1rem; }
-  .alert p { margin: 4px 0; }
-  .alert .bad { color: var(--pen-red); font-weight: 700; }
-  .alert .good { color: var(--ok); font-weight: 700; }
-  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; background: #d58a1f; color: #fff; margin-left: 6px; vertical-align: middle; }
-  .chip.draw { background: var(--ink-soft); } .chip.mate { background: var(--pen-red); }
+  .board .sq .half { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 58%; height: 58%; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.5em; color: #fff; background: rgba(110, 110, 110, 0.75); z-index: 2; pointer-events: none; }
+  .board .sq .half.some { background: none; color: #666; border: 2px dashed #888; }
+  .board .sq .reach.onlydraw { outline: 3px dashed #888; outline-offset: -3px; }
+  .board .sq .mv.draw { background: rgba(110, 110, 110, 0.8); }
+  .board .sq .mv.draw::after { content: '½'; color: #fff; font-size: 0.5em; font-weight: 700; display: grid; place-items: center; height: 100%; }
+  .sw .half { position: static; transform: none; width: 18px; height: 18px; font-size: 10px; }
 
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
@@ -481,16 +478,21 @@ function stalemateWatch(chess) {
   const otherInCheck = alt.inCheck();
   if (otherInCheck || otherMoves.length > 2) return null;
   const stalemating = [], safe = [];
+  const dest = new Map(), from = new Map();
+  const bump = (map, key, stale) => { const e = map.get(key) || { stale: 0, safe: 0 }; e[stale ? 'stale' : 'safe']++; map.set(key, e); };
   for (const m of myMoves) {
     chess.move(m.san);
-    (chess.isStalemate() ? stalemating : safe).push(m.san);
+    const stale = chess.isStalemate();
     chess.undo();
+    (stale ? stalemating : safe).push(m.san);
+    bump(dest, m.to, stale); bump(from, m.from, stale);
   }
+  const byMove = { dest, from };
   if (otherMoves.length === 0) {
-    return { status: 'danger', mover: name(mover), other: name(other), otherMoves, stalemating, safe,
+    return { status: 'danger', mover: name(mover), other: name(other), otherMoves, stalemating, safe, byMove,
       text: `${name(other)} has no legal move right now. If ${name(mover)} plays a quiet move that gives no check and frees nothing, it is stalemate: a draw.` };
   }
-  return { status: 'near', mover: name(mover), other: name(other), otherMoves, stalemating, safe,
+  return { status: 'near', mover: name(mover), other: name(other), otherMoves, stalemating, safe, byMove,
     text: `${name(other)} has only ${otherMoves.length} legal move${otherMoves.length === 1 ? '' : 's'} (${otherMoves.map((m) => m.san).join(', ')}). Take them away without giving check and it is stalemate.` };
 }
 
@@ -529,9 +531,13 @@ function boardGrid(board, cellFn, extraClass = '') {
     const moves = legalMovesFor(chess, state.showMoves);
     const from = g.querySelector(`[data-square="${state.showMoves}"]`);
     if (from) from.classList.add('mv-from');
+    const own = chess.get(state.showMoves)?.color === chess.turn();
     for (const m of moves) {
       const cell = g.querySelector(`[data-square="${m.to}"]`);
-      if (cell) cell.append(el('span', { class: `mv ${m.captured ? 'capture' : ''}`.trim() }));
+      if (!cell) continue;
+      let draw = false;
+      if (own) { chess.move(m.san); draw = chess.isStalemate(); chess.undo(); }
+      cell.append(el('span', { class: `mv ${m.captured ? 'capture' : ''} ${draw ? 'draw' : ''}`.trim(), title: draw ? 'This move is stalemate: a draw' : '' }));
     }
     g.dataset.moves = String(moves.length);
   }
@@ -632,14 +638,27 @@ const VIEWS = {
         return node;
       }));
       const watch = stalemateWatch(ctx.chess);
-      if (watch) {
-        const box = el('div', { class: `alert ${watch.status}` }, [el('h3', { text: watch.status === 'mate' ? 'Checkmate' : watch.status === 'draw' ? 'Stalemate' : 'Stalemate watch' }), el('p', { text: watch.text })]);
-        if (watch.stalemating) {
-          const list = (arr) => arr.length > 10 ? `${arr.slice(0, 10).join(', ')} and ${arr.length - 10} more` : arr.join(', ');
-          if (watch.stalemating.length) box.append(el('p', {}, [el('span', { class: 'bad', text: `Moves that stalemate (${watch.stalemating.length}): ` }), list(watch.stalemating)]));
-          if (watch.safe.length) box.append(el('p', {}, [el('span', { class: 'good', text: `Moves that keep the game going (${watch.safe.length}): ` }), list(watch.safe)]));
+      if (watch && watch.byMove) {
+        // Board cues: ½ on squares where every move there stalemates, dashed ½ where only some do,
+        // dashed outline on a piece whose every move stalemates.
+        const grid = container.querySelector('.board');
+        for (const [sq, info] of watch.byMove.dest) {
+          const cell = grid.querySelector(`[data-square="${sq}"]`);
+          if (!cell || info.stale === 0) continue;
+          cell.append(el('span', { class: `half ${info.safe ? 'some' : ''}`.trim(), text: '½', title: info.safe ? 'Some moves here stalemate, some do not' : 'Moving here is stalemate: a draw' }));
         }
-        container.append(box);
+        for (const [sq, info] of watch.byMove.from) {
+          if (info.safe === 0 && info.stale > 0) grid.querySelector(`[data-square="${sq}"] .reach`)?.classList.add('onlydraw');
+        }
+        const only = [...watch.byMove.from].filter(([, i]) => i.safe === 0 && i.stale > 0).map(([sq]) => sq);
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: watch.status === 'danger' ? `${watch.other} has no legal move.` : `${watch.other} has only ${watch.otherMoves.length} legal move${watch.otherMoves.length === 1 ? '' : 's'} (${watch.otherMoves.map((m) => m.san).join(', ')}).` }),
+          ` ${watch.stalemating.length} of ${watch.mover}'s ${watch.stalemating.length + watch.safe.length} moves would stalemate: those squares are marked ½.`,
+          only.length ? ` Every move of the piece on ${only.join(', ')} stalemates.` : '',
+          ' Right-click a piece to see its moves sorted the same way.',
+        ]));
+      } else if (watch) {
+        container.append(el('p', { class: 'summary' }, [el('strong', { text: watch.text })]));
       }
       container.append(el('p', { class: 'summary' }, [
         'Reach: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '. Pieces count squares they can move to; pawns the squares they attack.',
@@ -649,6 +668,7 @@ const VIEWS = {
         { sw: 'num', cls: 'mid', text2: '3–6', text: 'some room' },
         { sw: 'num', cls: 'high', text2: '7+', text: 'free: many squares to go to' },
         { sw: 'piece', type: 'p', color: 'w', text: 'pawns count the two squares they attack, left and right ahead (one on the edge)' },
+        { sw: 'half', text: 'moving here would stalemate the opponent: a draw (dashed: only some moves here do)' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to the king: only moves along the pin line count' },
         { sw: 'lock', kind: 'relative', text: 'pinned to a bigger piece: can move, but it costs' },
       ]));
@@ -1029,6 +1049,7 @@ function legend(items) {
       case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
       case 'lock': sw.classList.add('none'); sw.append(lockNode(it.kind)); break;
       case 'star': sw.classList.add('none'); sw.append(el('span', { class: 'star', text: '★' })); break;
+      case 'half': sw.classList.add('none'); sw.append(el('span', { class: 'half', text: '½' })); break;
       case 'num': sw.append(el('span', { class: 'num', text: it.text2 || '2/1' })); break;
       case 'mark': sw.append(el('span', { class: 'mark', text: it.text2 })); break;
       case 'hop': sw.append(el('span', { class: `hop ${it.cls || ''}`, text: it.text2 || '1' })); sw.className = 'sw'; break;
@@ -1103,13 +1124,7 @@ function render() {
   const check = chess.inCheck();
   $('turn').textContent = check ? `${turn} (in check)` : turn;
   $('turn').classList.toggle('check', check);
-  const watch = stalemateWatch(chess);
-  if (watch) {
-    const label = watch.status === 'mate' ? 'checkmate' : watch.status === 'draw' ? 'stalemate: draw' : 'stalemate watch';
-    const chip = el('button', { class: `chip ${watch.status}`, type: 'button', text: label, title: 'See the Reach view', onclick: () => { state.tab = 'reach'; writeHash(); render(); } });
-    chip.style.border = '0'; chip.style.cursor = 'pointer';
-    $('turn').append(chip);
-  }
+
   $('fen').textContent = chess.fen();
 
   const hasMoves = state.moves.length > 0;
