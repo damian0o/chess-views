@@ -57,3 +57,74 @@ export function boardText(board) {
   lines.push(coords.trimEnd());
   return lines.join('\n');
 }
+
+// ---------- attacks ----------
+
+const KNIGHT_OFFSETS = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+const KING_OFFSETS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const BISHOP_DIRS = [[-1,-1],[-1,1],[1,-1],[1,1]];
+const ROOK_DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
+
+const onBoard = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
+const emptyGrid = (v = 0) => Array.from({ length: 8 }, () => Array(8).fill(v));
+
+/** Squares attacked by the piece at (row, col). Sliders stop at (and include) the first occupied square. */
+export function attacksFrom(board, row, col) {
+  const piece = board[row][col];
+  if (!piece) return [];
+  const out = [];
+  const push = (r, c) => { if (onBoard(r, c)) out.push([r, c]); };
+  const slide = (dirs) => {
+    for (const [dr, dc] of dirs) {
+      let r = row + dr, c = col + dc;
+      while (onBoard(r, c)) {
+        out.push([r, c]);
+        if (board[r][c]) break;
+        r += dr; c += dc;
+      }
+    }
+  };
+  switch (piece.type) {
+    case 'p': { const dr = piece.color === 'w' ? -1 : 1; push(row + dr, col - 1); push(row + dr, col + 1); break; }
+    case 'n': KNIGHT_OFFSETS.forEach(([dr, dc]) => push(row + dr, col + dc)); break;
+    case 'k': KING_OFFSETS.forEach(([dr, dc]) => push(row + dr, col + dc)); break;
+    case 'b': slide(BISHOP_DIRS); break;
+    case 'r': slide(ROOK_DIRS); break;
+    case 'q': slide(BISHOP_DIRS); slide(ROOK_DIRS); break;
+  }
+  return out;
+}
+
+export function attackMap(board) {
+  const map = { w: emptyGrid(), b: emptyGrid() };
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const piece = board[row][col];
+      if (!piece) continue;
+      for (const [r, c] of attacksFrom(board, row, col)) map[piece.color][r][c] += 1;
+    }
+  }
+  return map;
+}
+
+const CENTER = ['d4', 'e4', 'd5', 'e5'];
+
+export function territory(board) {
+  const a = attackMap(board);
+  const mark = emptyGrid('');
+  const diff = emptyGrid();
+  const summary = { w: 0, b: 0, centerW: 0, centerB: 0 };
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const w = a.w[row][col], b = a.b[row][col];
+      diff[row][col] = w - b;
+      let m = '';
+      if (w > b) m = '+'; else if (b > w) m = '-'; else if (w > 0) m = '=';
+      mark[row][col] = m;
+      const central = CENTER.includes(squareName(row, col));
+      if (m === '+') { summary.w++; if (central) summary.centerW++; }
+      if (m === '-') { summary.b++; if (central) summary.centerB++; }
+    }
+  }
+  return { mark, diff, summary };
+}
