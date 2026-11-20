@@ -86,3 +86,14 @@ test('escape squares exclude attacked and own-occupied squares', () => {
   assert.equal(r.escapePenalty, 1);
   assert.equal(r.label, 'In danger');
 });
+
+test('pinned defenders do not count in the house, but still deny escape squares', () => {
+  const r = kingHouseReport(boardFromFen('kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w - - 0 1'), 'b');
+  assert.equal(r.cells.find((c) => c.square === 'a7').defenders, 1); // king only, the bishop is pinned
+  assert.deepEqual(r.defending, []);
+  // Rc8 pins Bc6 to Kc1; the bishop still stops the black king stepping to d7.
+  const b = kingHouseReport(boardFromFen('2r1k3/8/2B5/8/8/8/8/2K5 w - - 0 1'), 'b');
+  assert.equal(b.cells.find((c) => c.square === 'd7').attackers, 0);
+  assert.ok(!b.escapes.includes('d7'));
+  assert.ok(b.escapes.includes('e7'));
+});

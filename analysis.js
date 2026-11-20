@@ -95,13 +95,31 @@ export function attacksFrom(board, row, col) {
   return out;
 }
 
-export function attackMap(board) {
+/** Map of square → pin for every piece pinned to its king (the strongest pin per square). */
+export function absolutePinMap(board) {
+  const m = new Map();
+  for (const pn of pins(board)) if (pn.absolute) m.set(pn.pinned.square, pn);
+  return m;
+}
+
+/** Attacks from (row, col); with a pin map, a piece pinned to its king only attacks along the pin line. */
+export function attacksFromPinned(board, row, col, pinMap) {
+  const piece = board[row][col];
+  const all = attacksFrom(board, row, col);
+  const pn = pinMap && piece && pinMap.get(piece.square);
+  if (!pn) return all;
+  const line = new Set(pn.between.concat([pn.pinner.square, pn.target.square]));
+  return all.filter(([r, c]) => line.has(squareName(r, c)));
+}
+
+export function attackMap(board, { respectPins = false } = {}) {
   const map = { w: emptyGrid(), b: emptyGrid() };
+  const pinMap = respectPins ? absolutePinMap(board) : null;
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const piece = board[row][col];
       if (!piece) continue;
-      for (const [r, c] of attacksFrom(board, row, col)) map[piece.color][r][c] += 1;
+      for (const [r, c] of attacksFromPinned(board, row, col, pinMap)) map[piece.color][r][c] += 1;
     }
   }
   return map;
@@ -110,7 +128,8 @@ export function attackMap(board) {
 const CENTER = ['d4', 'e4', 'd5', 'e5'];
 
 export function territory(board) {
-  const a = attackMap(board);
+  const a = attackMap(board, { respectPins: true });
+  const pinned = [...absolutePinMap(board).values()].map((pn) => ({ square: pn.pinned.square, by: pn.pinner.square, to: pn.target.square }));
   const mark = emptyGrid('');
   const diff = emptyGrid();
   const summary = { w: 0, b: 0, centerW: 0, centerB: 0 };
@@ -126,7 +145,7 @@ export function territory(board) {
       if (m === '-') { summary.b++; if (central) summary.centerB++; }
     }
   }
-  return { mark, diff, summary };
+  return { mark, diff, summary, pinned };
 }
 
 // ---------- mobility ----------
@@ -243,8 +262,8 @@ export function activeOnRoads(roadList) {
 
 // ---------- king houses ----------
 
-export function kingHouses(board) {
-  const a = attackMap(board);
+export function kingHouses(board, { respectPins = false } = {}) {
+  const a = attackMap(board, { respectPins });
   const house = (color) => {
     let kr = -1, kc = -1;
     for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
@@ -432,9 +451,11 @@ export function pins(board) {
 
 /** Strengths, weaknesses and pressure on one king's 3x3 house. Null if that colour has no king. */
 export function kingHouseReport(board, color) {
-  const houses = kingHouses(board);
+  const houses = kingHouses(board, { respectPins: true });
   const house = houses[color];
   if (!house) return null;
+  const rawHouse = kingHouses(board)[color];
+  const pinMap = absolutePinMap(board);
   const enemy = color === 'w' ? 'b' : 'w';
   const { row: kr, col: kc } = squareIndex(house.king);
   const houseSet = new Set(house.cells.map((c) => c.square));
@@ -472,7 +493,7 @@ export function kingHouseReport(board, color) {
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
     const p = board[r][c];
     if (!p || (p.type === 'k' && p.color === color)) continue;
-    const hits = attacksFrom(board, r, c).map(([ar, ac]) => squareName(ar, ac)).filter((sq) => houseSet.has(sq));
+    const hits = attacksFromPinned(board, r, c, pinMap).map(([ar, ac]) => squareName(ar, ac)).filter((sq) => houseSet.has(sq));
     if (!hits.length) continue;
     (p.color === enemy ? aiming : defending).push({ square: p.square, type: p.type, color: p.color, hits });
   }
@@ -483,8 +504,10 @@ export function kingHouseReport(board, color) {
   const shieldPawns = shield.filter((s) => s.status === 'pawn').length;
 
   // Squares the king could step to right now: in the house, not its own square, not own-occupied, not attacked.
+  // Escape squares use raw attacks: a pinned piece still gives check.
+  const rawAttackers = new Map(rawHouse.cells.map((c) => [c.square, c.attackers]));
   const escapes = cells
-    .filter((c) => c.square !== house.king && c.attackers === 0)
+    .filter((c) => c.square !== house.king && rawAttackers.get(c.square) === 0)
     .filter((c) => { const { row, col } = squareIndex(c.square); const p = board[row][col]; return !p || p.color === enemy; })
     .map((c) => c.square);
 

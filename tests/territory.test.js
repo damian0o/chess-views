@@ -30,3 +30,26 @@ test('territory contested mark', () => {
   assert.equal(at(t.mark, 'd5'), '=');
   assert.equal(at(t.diff, 'd5'), 0);
 });
+
+const STUDY = 'kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w - - 0 1';
+
+test('attackMap can respect pins: a pinned bishop only counts along the pin line', () => {
+  const b = boardFromFen(STUDY);
+  const raw = attackMap(b);
+  assert.equal(at(raw.b, 'c7'), 1);
+  assert.equal(at(raw.b, 'a7'), 2);
+  const pinned = attackMap(b, { respectPins: true });
+  assert.equal(at(pinned.b, 'c7'), 0);   // bishop b8 is pinned to a8 by Qg8
+  assert.equal(at(pinned.b, 'a7'), 1);   // only the king
+  assert.equal(at(pinned.b, 'c8'), 0);   // a bishop cannot move along the rank it is pinned on
+  const rook = attackMap(boardFromFen('4r1k1/8/8/8/8/8/4R3/4K3 w - - 0 1'), { respectPins: true });
+  assert.equal(at(rook.w, 'e5'), 1);     // a rook pinned on its file still counts along the file
+  assert.equal(at(rook.w, 'a2'), 0);
+});
+
+test('territory respects pins', () => {
+  const t = territory(boardFromFen(STUDY));
+  assert.equal(at(t.mark, 'c7'), '+');   // only the white b6 pawn once the bishop is discounted
+  assert.equal(at(t.mark, 'a7'), '=');
+  assert.deepEqual(t.pinned.map((p) => p.square), ['b8']);
+});
