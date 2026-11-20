@@ -318,3 +318,8 @@ the board stays as a secondary note.
 colour only (grey hatched pieces, solid grey king cell) plus the ½ discs,
 and the Reach summary carries the numbers: legal moves per side, with how
 many of the mover's would stalemate.
+
+**Knights on Roads (same day):** clicking a knight in the Roads view draws
+its four straight tracks with numbered hops (own-piece hops grey, enemy
+pink) in its side colour, with a sentence explaining that a knight has no
+road but runs on tracks. Nothing is drawn for knights without a click.

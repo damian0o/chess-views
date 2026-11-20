@@ -149,6 +149,11 @@
   .roadwrap line.used-both { stroke: #7a3fb0; opacity: 0.85; }
   .roadwrap line.dim { opacity: 0.06; }
   .roadwrap line.pawn { stroke-width: 0.1; opacity: 0.85; stroke-linecap: butt; }
+  .roadwrap line.ktrack { stroke-width: 0.06; opacity: 0.7; }
+  .roadwrap line.ktrack.by-w, .roadwrap circle.hop.by-w { stroke: var(--side-w); } .roadwrap line.ktrack.by-b, .roadwrap circle.hop.by-b { stroke: var(--side-b); }
+  .roadwrap circle.hop { fill: var(--paper); stroke-width: 0.06; }
+  .roadwrap circle.hop.own { fill: #bbb; } .roadwrap circle.hop.enemy { fill: #f3b0b0; }
+  .roadwrap text.hop { font-size: 0.32px; font-weight: 700; fill: var(--ink); text-anchor: middle; dominant-baseline: central; font-family: inherit; }
   .roadwrap line.pawn.by-w { stroke: var(--side-w); } .roadwrap line.pawn.by-b { stroke: var(--side-b); }
   .roadwrap line.pawn.guarded { stroke-dasharray: 0.18 0.14; opacity: 0.5; stroke-width: 0.06; }
   .roadwrap line.pawn.stop { stroke-width: 0.12; opacity: 0.9; }
@@ -695,9 +700,10 @@ const VIEWS = {
       const list = A.roads(board);
       const usersOf = (road) => road.pieces.filter((p) => (road.kind === 'diag' ? 'bq' : 'rq').includes(p.type));
       const sideOf = (users) => { const w = users.some((p) => p.color === 'w'), b = users.some((p) => p.color === 'b'); return w && b ? 'both' : w ? 'w' : b ? 'b' : 'none'; };
-      const focus = state.roadFocus && board.flat().find((p) => p && p.square === state.roadFocus && 'rbqp'.includes(p.type)) ? state.roadFocus : null;
+      const focus = state.roadFocus && board.flat().find((p) => p && p.square === state.roadFocus && 'rbqpn'.includes(p.type)) ? state.roadFocus : null;
       const paths = A.pawnPaths(board);
       const focusPawn = focus ? paths.find((x) => x.square === focus) : null;
+      const focusKnight = focus ? board.flat().find((p) => p && p.square === focus && p.type === 'n') : null;
       if (!focus) state.roadFocus = null;
 
       const frozen = new Map();
@@ -707,13 +713,13 @@ const VIEWS = {
         const name = sq.dataset.square;
         const { row, col } = A.squareIndex(name);
         const p = board[row][col];
-        if (p && 'rbqp'.includes(p.type)) sq.classList.add('slider');
+        if (p && 'rbqpn'.includes(p.type)) sq.classList.add('slider');
         if (frozen.has(name)) { sq.classList.add('frozen'); sq.append(lockNode('absolute')); }
         const pp = paths.find((x) => x.square === name);
         if (pp && pp.passed) sq.classList.add('passed');
         if (name === focus) sq.classList.add('focused');
         sq.addEventListener('click', () => {
-          state.roadFocus = p && 'rbqp'.includes(p.type) && state.roadFocus !== name ? name : null;
+          state.roadFocus = p && 'rbqpn'.includes(p.type) && state.roadFocus !== name ? name : null;
           render();
         });
       }
@@ -725,7 +731,7 @@ const VIEWS = {
       // Without focus: blocked roads are hidden, half-open diagonals only when long, ranks only when a rook/queen uses them.
       const anySlider = board.flat().some((p) => p && 'rbq'.includes(p.type));
       const worthDrawing = (road, users) => {
-        if (focusPawn) return false;
+        if (focusPawn || focusKnight) return false;
         if (!users.length && !anySlider) return false; // nobody on the board could use it
         if (focus) return road.squares.includes(focus) && users.some((p) => p.square === focus);
         if (road.state === 'closed') return false;
@@ -766,14 +772,47 @@ const VIEWS = {
           svg.append(bar);
         }
       };
-      const shown = focusPawn ? [focusPawn] : paths.filter((pp) => state.allPawnPaths || pp.passed);
+      if (focusKnight) {
+        const tracks = A.knightTracks(board, focus);
+        const seen = new Set();
+        for (const t of tracks) {
+          const key = t.dir.join(','), opp = [-t.dir[0], -t.dir[1]].join(',');
+          if (seen.has(opp)) continue;
+          seen.add(key);
+          const other = tracks.find((x) => x.dir.join(',') === opp);
+          const endA = t.hops.length ? t.hops[t.hops.length - 1].square : focus;
+          const endB = other.hops.length ? other.hops[other.hops.length - 1].square : focus;
+          if (endA === endB) continue;
+          const [x1, y1] = centre(endA), [x2, y2] = centre(endB);
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: `ktrack by-${focusKnight.color}` })) line.setAttribute(k, v);
+          svg.append(line);
+        }
+        for (const t of tracks) for (const h of t.hops) {
+          const [cx, cy] = centre(h.square);
+          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          for (const [k, v] of Object.entries({ cx, cy, r: 0.22, class: `hop by-${focusKnight.color} ${h.status}` })) c.setAttribute(k, v);
+          const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          txt.setAttribute('x', cx); txt.setAttribute('y', cy); txt.setAttribute('class', 'hop'); txt.textContent = String(h.n);
+          svg.append(c, txt);
+        }
+      }
+      const shown = focusKnight ? [] : focusPawn ? [focusPawn] : paths.filter((pp) => state.allPawnPaths || pp.passed);
       for (const pp of shown) pawnLine(pp, pp.passed ? '' : 'guarded');
       container.append(el('div', { class: 'roadwrap' }, [grid, svg]));
 
       const open = list.filter((x) => x.state === 'open');
       const files = open.filter((x) => x.kind === 'file').map((x) => x.id);
       const usedBy = (color) => list.filter((x) => x.state !== 'closed' && x.kind !== 'rank' && usersOf(x).some((p) => p.color === color)).length;
-      if (focusPawn) {
+      if (focusKnight) {
+        const tracks = A.knightTracks(board, focus);
+        const one = tracks.filter((t) => t.hops[0] && t.hops[0].status !== 'own').length;
+        const far = tracks.filter((t) => t.hops.length >= 2).length;
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: `${focusKnight.color === 'w' ? 'White' : 'Black'} knight on ${focus}` }),
+          `: a knight has no road, it runs on four straight tracks and lands every hop. ${one} squares to jump to now; ${far} tracks run on for a second hop. Numbers are hops. The Knight tab shows the same with a distance map. Click it again to see every road.`,
+        ]));
+      } else if (focusPawn) {
         const pp = focusPawn;
         const who = `${pp.color === 'w' ? 'White' : 'Black'} pawn on ${pp.square}`;
         const status = pp.passed
@@ -791,7 +830,7 @@ const VIEWS = {
           el('strong', { text: `Open files: ${files.length ? files.join(' ') : 'none'}` }), '. ',
           el('strong', { text: `White uses ${usedBy('w')} road${usedBy('w') === 1 ? '' : 's'}, Black ${usedBy('b')}` }), '. ',
           el('strong', { text: `Passed pawns: ${['w', 'b'].map((c) => { const ps = paths.filter((pp) => pp.color === c && pp.passed).map((pp) => pp.square); return `${c === 'w' ? 'White' : 'Black'} ${ps.length ? ps.join(' ') : 'none'}`; }).join(', ')}` }),
-          '. Click a rook, bishop, queen or pawn to see only its road.',
+          '. Click a rook, bishop, queen or pawn to see only its road, or a knight to see its tracks.',
         ]));
         container.append(el('label', { class: 'toggle' }, [
           Object.assign(el('input', { type: 'checkbox' }), { checked: state.allPawnPaths, onchange: (e) => { state.allPawnPaths = e.target.checked; render(); } }),
