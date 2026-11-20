@@ -144,6 +144,27 @@
   .twocol { display: grid; gap: 4px 24px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); max-width: 70ch; }
   .twocol p { margin: 0; }
 
+  /* Diamond */
+  .diamond { --d: clamp(34px, 6.4vw, 60px); position: relative; padding: calc(var(--d) * 0.3) 0; user-select: none; }
+  .diamond::before, .diamond::after { content: ''; position: absolute; background: var(--pen-blue); opacity: 0.35; pointer-events: none; }
+  .diamond::before { left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); }
+  .diamond::after { top: 50%; left: 0; right: 0; height: 2px; transform: translateY(-1px); }
+  .diamond .row { display: flex; justify-content: center; height: var(--d); }
+  .diamond .row + .row { margin-top: calc(var(--d) * -0.5); }
+  .dcell { width: var(--d); height: var(--d); position: relative; display: grid; place-items: center; font-size: calc(var(--d) * 0.33); }
+  .dcell .shape { position: absolute; inset: 14.6%; transform: rotate(45deg); border: 1px solid var(--pencil); }
+  .dcell.light .shape { background: var(--square-light); } .dcell.dark .shape { background: var(--square-dark); }
+  .dcell .p, .dcell .dot { position: relative; z-index: 1; }
+  .dcell .p { display: inline-block; min-width: 1.3em; padding: 0.05em 0.15em; border-radius: 0.25em; text-align: center; font-weight: 600; line-height: 1; }
+  .dcell .p.w { background: #fff; color: #111; box-shadow: inset 0 0 0 1.5px #111; }
+  .dcell .p.b { background: #111; color: #fff; }
+  .dcell .dot { color: var(--ink-soft); }
+  .dcell .co { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.55em; color: var(--ink-soft); z-index: 1; line-height: 1; }
+  .dcell.light .co { color: var(--ink-soft); }
+  .diamond .lbl { position: absolute; font-size: 0.8rem; color: var(--pen-blue); }
+  .diamond .lbl.top { top: 0; left: 50%; transform: translate(-50%, -100%); }
+  .diamond .lbl.left { left: 0; top: 50%; transform: translate(-100%, -50%) rotate(-90deg); transform-origin: center; }
+
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
 </style>
@@ -452,6 +473,26 @@ const VIEWS = {
       };
       container.append(el('div', { class: 'twocol summary', style: 'text-align:left' }, [describe('w'), describe('b')]));
       container.append(el('p', { class: 'legend', text: 'Each square in the king\'s house shows enemy attackers / own defenders. Red means more attackers than defenders. To attack a king, bring more pieces than it has defenders.' }));
+    },
+  },
+  diamond: {
+    title: 'Diamond',
+    render(container, board) {
+      const rows = A.diamondRows(board);
+      const wrap = el('div', { class: 'diamond mono', role: 'img', 'aria-label': 'Board turned 45 degrees' });
+      for (const row of rows) {
+        const r = el('div', { class: 'row' });
+        for (const { square, cell } of row) {
+          const d = el('div', { class: `dcell ${A.squareColor(square)}`, title: square }, [el('div', { class: 'shape' })]);
+          if (cell) d.append(pieceNode(cell, square));
+          else d.append(el('span', { class: 'co', text: square }));
+          r.append(d);
+        }
+        wrap.append(r);
+      }
+      container.append(wrap);
+      container.append(el('p', { class: 'summary', text: 'Same squares, same names: the board is turned so a1 is at the bottom and h8 at the top. Diagonals are now straight lines, so a bishop moves straight up, down, left or right. The a1–h8 diagonal is the middle column.' }));
+      container.append(el('p', { class: 'legend', text: 'Each row across is one colour. A bishop can never leave its rows. Rooks now move on the slants.' }));
     },
   },
 };

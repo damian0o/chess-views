@@ -280,3 +280,17 @@ export function parseInput(text) {
 
   return { kind: 'unknown' };
 }
+
+// ---------- diamond (45° view) ----------
+
+/** 15 rows; row i holds the squares with file + rank === 16 - i (a = 1), ordered a-file first. */
+export function diamondRows(board) {
+  const rows = Array.from({ length: 15 }, () => []);
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const file = col + 1, rank = 8 - row;
+      rows[16 - (file + rank)].push({ square: squareName(row, col), cell: board[row][col] });
+    }
+  }
+  return rows;
+}
