@@ -178,7 +178,7 @@ export function movesFrom(board, row, col) {
 }
 
 /**
- * Mobility per piece. With { respectPins: true } a piece pinned to its king may only move along the
+ * Mobility per piece: squares a piece can move to; for pawns, the squares it attacks. With { respectPins: true } a piece pinned to its king may only move along the
  * pin line (towards or capturing the pinner); pieces pinned to lesser targets are flagged but unrestricted.
  */
 export function mobility(board, { respectPins = false } = {}) {
@@ -196,7 +196,10 @@ export function mobility(board, { respectPins = false } = {}) {
     for (let col = 0; col < 8; col++) {
       const piece = board[row][col];
       if (!piece) continue;
-      let dests = destinationsFrom(board, row, col);
+      // Pawns count the squares they attack (their real influence); other pieces the squares they can move to.
+      let dests = piece.type === 'p'
+        ? attacksFrom(board, row, col).map(([r, c]) => squareName(r, c))
+        : destinationsFrom(board, row, col);
       if (piece.type === 'k') {
         // A king may not step onto a square the enemy attacks.
         const enemy = piece.color === 'w' ? 'b' : 'w';

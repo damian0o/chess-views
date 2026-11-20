@@ -287,3 +287,9 @@ Unused open roads are not drawn when the board has no rook, bishop or queen.
 (raw attack map). Zero-move pieces get a solid red badge so a 0 is never
 mistaken for "no counter"; the piece image sits top-left, the badge
 bottom-right.
+
+**Pawn reach (same day):** in Reach a pawn counts the squares it attacks
+(two, one on the edge), not the squares it can step to, because attacking
+is a pawn's job; a blocked pawn still controls its diagonals. Pins still
+apply: a file-pinned pawn counts 0. Other pieces keep "squares it can move
+to". Summary line renamed from Mobility to Reach.
