@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Position Viewer</title>
+<meta name="description" content="Paste a chess position from lichess and see it in learning views you can copy onto paper.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff;
+    --grid: #dbe5f1;
+    --ink: #1d2a44;
+    --ink-soft: #5b6880;
+    --pencil: #b9c5d8;
+    --square-light: #ffffff;
+    --square-dark: #c7d2e3;
+    --pen-blue: #2456c8;
+    --pen-red: #c93b3b;
+    --ok: #2f8f5b;
+    --focus: #ffb703;
+    --cell: clamp(28px, 6vw, 52px);
+    font-size: 17px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #161a22; --grid: #232a38; --ink: #e8ecf4; --ink-soft: #9aa6bb; --pencil: #3a4457;
+      --square-light: #2a3242; --square-dark: #151a24; --pen-blue: #7ea2ff; --pen-red: #ff7b7b; --ok: #6fcf97;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #161a22; --grid: #232a38; --ink: #e8ecf4; --ink-soft: #9aa6bb; --pencil: #3a4457;
+    --square-light: #2a3242; --square-dark: #151a24; --pen-blue: #7ea2ff; --pen-red: #ff7b7b; --ok: #6fcf97;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    line-height: 1.45;
+    min-height: 100vh;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
+  .page { max-width: 1040px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; letter-spacing: -0.01em; }
+  header p { margin: 0 0 20px; color: var(--ink-soft); max-width: 60ch; }
+
+  .loader { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
+  textarea {
+    width: 100%; min-height: 64px; resize: vertical; padding: 10px 12px;
+    font: inherit; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85rem;
+    color: var(--ink); background: var(--paper); border: 2px solid var(--pencil); border-radius: 6px;
+  }
+  textarea:focus, button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button {
+    font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 6px; cursor: pointer;
+    border: 2px solid var(--ink); background: var(--ink); color: var(--paper);
+  }
+  button.quiet { background: transparent; color: var(--ink); border-color: var(--pencil); font-weight: 400; padding: 6px 12px; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .hint { color: var(--ink-soft); font-size: 0.9rem; margin: 6px 0 0; }
+  .error { color: var(--pen-red); margin: 6px 0 0; min-height: 1.4em; font-weight: 700; }
+  .error:empty { display: none; }
+
+  nav.tabs { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 24px 0 14px; border-bottom: 2px solid var(--pencil); }
+  nav.tabs button {
+    background: none; border: 0; color: var(--ink-soft); padding: 8px 2px 10px; border-radius: 0; font-weight: 700;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--pen-blue); }
+
+  .status { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin: 0 0 12px; }
+  .status .turn { font-weight: 700; }
+  .status .turn.check { color: var(--pen-red); }
+  .nav { display: none; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+  .nav.on { display: flex; }
+  .nav input[type=range] { flex: 1 1 200px; accent-color: var(--pen-blue); }
+  .moves { display: flex; flex-wrap: wrap; gap: 2px 6px; margin: 0 0 14px; font-size: 0.9rem; max-height: 6.5em; overflow: auto; }
+  .moves .num { color: var(--ink-soft); margin-left: 6px; }
+  .moves button { background: none; border: 0; color: var(--ink); padding: 0 3px; font-weight: 400; border-radius: 3px; }
+  .moves button.cur { background: var(--pen-blue); color: #fff; }
+
+  main { display: grid; justify-items: center; gap: 14px; }
+  .summary { max-width: 70ch; text-align: center; color: var(--ink-soft); margin: 0; white-space: pre-line; }
+  .summary strong { color: var(--ink); }
+  .legend { font-size: 0.9rem; color: var(--ink-soft); text-align: center; max-width: 60ch; margin: 0; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+  /* Board grid: 10x10 with coordinates around */
+  .board { display: grid; grid-template-columns: repeat(10, var(--cell)); grid-auto-rows: var(--cell); gap: 0; user-select: none; }
+  .board .coord { display: grid; place-items: center; color: var(--ink-soft); font-size: calc(var(--cell) * 0.36); }
+  .board .sq {
+    display: grid; place-items: center; position: relative; font-size: calc(var(--cell) * 0.5); line-height: 1;
+    border: 1px solid var(--pencil); margin: -0.5px;
+  }
+  .board .sq.light { background: var(--square-light); }
+  .board .sq.dark { background: var(--square-dark); }
+  .board .sq .p { display: inline-block; min-width: 1.35em; padding: 0.08em 0.18em; border-radius: 0.25em; text-align: center; font-weight: 600; }
+  .board .sq .p.w { background: #fff; color: #111; box-shadow: inset 0 0 0 1.5px #111; }
+  .board .sq .p.b { background: #111; color: #fff; }
+  .board .sq .dot { color: var(--ink-soft); opacity: 0.8; }
+  .board .sq .sub { position: absolute; right: 2px; bottom: 1px; font-size: 0.42em; color: var(--ink-soft); }
+  .board.plain .sq .p.w, .board.plain .sq .p.b { background: none; color: var(--ink); box-shadow: none; }
+
+  footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
+  @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Position viewer</h1>
+    <p>Paste a position from lichess and look at it in different ways. The board uses letters you can copy onto squared paper.</p>
+  </header>
+
+  <section class="loader" aria-label="Load a position">
+    <div>
+      <label for="input" class="hint" style="margin:0 0 4px;display:block">FEN, PGN, or a lichess link</label>
+      <textarea id="input" spellcheck="false" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
+      <p id="error" class="error" role="alert"></p>
+    </div>
+    <button id="load" type="button" style="margin-top:26px">Load</button>
+  </section>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Views"></nav>
+
+  <div class="status">
+    <span id="turn" class="turn"></span>
+    <span id="fen" class="mono hint" style="margin:0;font-size:0.75rem;word-break:break-all"></span>
+  </div>
+  <div class="nav" id="nav">
+    <button class="quiet" id="first" title="Start">⏮</button>
+    <button class="quiet" id="prev" title="Back one move">◀</button>
+    <input type="range" id="slider" min="0" max="0" value="0" aria-label="Move">
+    <button class="quiet" id="next" title="Forward one move">▶</button>
+    <button class="quiet" id="last" title="End">⏭</button>
+    <span id="plyLabel" class="hint" style="margin:0"></span>
+  </div>
+  <div class="moves" id="moves"></div>
+
+  <main id="view" aria-live="polite"></main>
+
+  <footer>Paper rule: capitals are pieces, <span class="mono">'</span> means black, <span class="mono">o</span> is a white pawn, <span class="mono">x</span> a black pawn. a1 is dark.</footer>
+</div>
+
+<script type="module">
+import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
+import * as A from './analysis.js';
+
+const $ = (id) => document.getElementById(id);
+const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
+const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
+
+// ---------- state ----------
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board' };
+
+function currentChess() {
+  if (!state.moves.length) return state.chess;
+  const c = new Chess(); c.load(state.startFen, { skipValidation: true });
+  for (const m of state.moves.slice(0, state.ply)) c.move(m.san);
+  return c;
+}
+
+function setPosition(source) {
+  const chess = new Chess();
+  if (source.kind === 'fen') {
+    chess.load(source.fen, { skipValidation: true });
+    Object.assign(state, { chess, moves: [], ply: 0, startFen: source.fen, source });
+  } else {
+    chess.loadPgn(source.pgn);
+    const moves = chess.history({ verbose: true });
+    const startFen = chess.getHeaders()['FEN'] || A.START_FEN;
+    Object.assign(state, { chess, moves, ply: source.ply ?? moves.length, startFen, source });
+  }
+}
+
+// ---------- hash sync ----------
+function writeHash() {
+  const p = new URLSearchParams();
+  if (state.source.kind === 'fen') p.set('fen', state.source.fen);
+  else { p.set('pgn', state.source.pgn); p.set('ply', String(state.ply)); }
+  if (state.tab !== 'board') p.set('view', state.tab);
+  history.replaceState(null, '', '#' + p.toString());
+}
+function readHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (p.get('view') && VIEWS[p.get('view')]) state.tab = p.get('view');
+  if (p.get('fen')) return { kind: 'fen', fen: A.normaliseFen(p.get('fen')) };
+  if (p.get('pgn')) return { kind: 'pgn', pgn: p.get('pgn'), ply: p.has('ply') ? Number(p.get('ply')) : undefined };
+  return null;
+}
+
+// ---------- loading ----------
+async function load(text) {
+  const parsed = A.parseInput(text);
+  $('error').textContent = '';
+  try {
+    if (parsed.kind === 'unknown') throw new Error('Could not read that as FEN, PGN or lichess link.');
+    if (parsed.kind === 'lichess-game') {
+      $('error').textContent = '';
+      $('load').disabled = true;
+      let pgn;
+      try {
+        const res = await fetch(`https://lichess.org/game/export/${parsed.gameId}?clocks=false&evals=false`, { headers: { Accept: 'application/x-chess-pgn' } });
+        if (!res.ok) throw new Error(String(res.status));
+        pgn = await res.text();
+      } catch {
+        throw new Error('Could not fetch that game from lichess; paste the PGN instead.');
+      } finally { $('load').disabled = false; }
+      setPosition({ kind: 'pgn', pgn });
+    } else {
+      setPosition(parsed);
+    }
+  } catch (e) {
+    $('error').textContent = e.message.startsWith('Could not') ? e.message : `Could not load that position: ${e.message}`;
+    return;
+  }
+  writeHash();
+  render();
+}
+
+// ---------- rendering helpers ----------
+function el(tag, attrs = {}, children = []) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of children) n.append(c);
+  return n;
+}
+
+/** Build a 10x10 board grid. cellFn(row, col, cell, name) returns a node (or nodes) for the square. */
+function boardGrid(board, cellFn, extraClass = '') {
+  const g = el('div', { class: `board mono ${extraClass}`.trim(), role: 'img' });
+  const files = 'abcdefgh';
+  const coordRow = () => { g.append(el('div', { class: 'coord' })); for (const f of files) g.append(el('div', { class: 'coord', text: f })); g.append(el('div', { class: 'coord' })); };
+  coordRow();
+  for (let row = 0; row < 8; row++) {
+    g.append(el('div', { class: 'coord', text: String(8 - row) }));
+    for (let col = 0; col < 8; col++) {
+      const name = A.squareName(row, col);
+      const sq = el('div', { class: `sq ${A.squareColor(name)}`, title: name, 'data-square': name });
+      const content = cellFn(row, col, board[row][col], name);
+      if (content) sq.append(...[].concat(content));
+      g.append(sq);
+    }
+    g.append(el('div', { class: 'coord', text: String(8 - row) }));
+  }
+  coordRow();
+  return g;
+}
+
+function pieceNode(cell, name) {
+  if (!cell) return A.squareColor(name) === 'dark' ? el('span', { class: 'dot', text: '.' }) : null;
+  return el('span', { class: `p ${cell.color}`, text: A.symbol(cell, name) });
+}
+
+function pieceList(board) {
+  const words = { w: [], b: [] };
+  const order = { k: 0, q: 1, r: 2, b: 3, n: 4, p: 5 };
+  const all = board.flat().filter(Boolean).sort((x, y) => order[x.type] - order[y.type]);
+  for (const p of all) {
+    if (p.type === 'p') continue;
+    words[p.color].push(p.type === 'b' ? `B(${A.squareColor(p.square)})` : NAMES[p.type]);
+  }
+  for (const c of ['w', 'b']) {
+    const pawns = all.filter((p) => p.color === c && p.type === 'p').length;
+    if (pawns) words[c].push(`${pawns} pawn${pawns === 1 ? '' : 's'}`);
+  }
+  return `White: ${words.w.join(' ') || 'nothing'}\nBlack: ${words.b.join(' ') || 'nothing'}`;
+}
+
+// ---------- views ----------
+const VIEWS = {
+  board: {
+    title: 'Board',
+    render(container, board) {
+      container.append(boardGrid(board, (r, c, cell, name) => pieceNode(cell, name)));
+      container.append(el('p', { class: 'summary mono', text: pieceList(board) }));
+      container.append(el('p', { class: 'legend', text: LEGEND }));
+      container.append(el('div', { class: 'actions' }, [
+        el('button', { class: 'quiet', type: 'button', text: 'Copy as text', onclick: async (e) => {
+          await navigator.clipboard.writeText(A.boardText(board));
+          e.target.textContent = 'Copied'; setTimeout(() => { e.target.textContent = 'Copy as text'; }, 1200);
+        } }),
+      ]));
+    },
+  },
+};
+
+function renderTabs() {
+  const nav = $('tabs');
+  nav.replaceChildren();
+  for (const [key, v] of Object.entries(VIEWS)) {
+    nav.append(el('button', { role: 'tab', 'aria-selected': String(key === state.tab), text: v.title, onclick: () => { state.tab = key; writeHash(); render(); } }));
+  }
+}
+
+function render() {
+  const chess = currentChess();
+  const board = chess.board();
+  renderTabs();
+  const turn = chess.turn() === 'w' ? 'White to move' : 'Black to move';
+  const check = chess.inCheck();
+  $('turn').textContent = check ? `${turn} (in check)` : turn;
+  $('turn').classList.toggle('check', check);
+  $('fen').textContent = chess.fen();
+
+  const hasMoves = state.moves.length > 0;
+  $('nav').classList.toggle('on', hasMoves);
+  $('slider').max = String(state.moves.length);
+  $('slider').value = String(state.ply);
+  $('plyLabel').textContent = hasMoves ? `${state.ply} / ${state.moves.length}` : '';
+  const movesEl = $('moves');
+  movesEl.replaceChildren();
+  state.moves.forEach((m, i) => {
+    if (i % 2 === 0) movesEl.append(el('span', { class: 'num', text: `${i / 2 + 1}.` }));
+    movesEl.append(el('button', { type: 'button', class: i + 1 === state.ply ? 'cur' : '', text: m.san, onclick: () => goTo(i + 1) }));
+  });
+
+  const container = $('view');
+  container.replaceChildren();
+  VIEWS[state.tab].render(container, board, { chess, turn: chess.turn(), fen: chess.fen() });
+}
+
+function goTo(ply) {
+  state.ply = Math.max(0, Math.min(state.moves.length, ply));
+  writeHash();
+  render();
+}
+
+// ---------- wiring ----------
+$('load').addEventListener('click', () => load($('input').value));
+$('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) load($('input').value); });
+$('first').addEventListener('click', () => goTo(0));
+$('prev').addEventListener('click', () => goTo(state.ply - 1));
+$('next').addEventListener('click', () => goTo(state.ply + 1));
+$('last').addEventListener('click', () => goTo(state.moves.length));
+$('slider').addEventListener('input', (e) => goTo(Number(e.target.value)));
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('textarea, input')) return;
+  if (e.key === 'ArrowLeft') goTo(state.ply - 1);
+  if (e.key === 'ArrowRight') goTo(state.ply + 1);
+});
+
+const initial = readHash();
+try {
+  setPosition(initial || { kind: 'fen', fen: A.START_FEN });
+  if (initial) $('input').value = initial.kind === 'fen' ? initial.fen : initial.pgn;
+} catch {
+  setPosition({ kind: 'fen', fen: A.START_FEN });
+  $('error').textContent = 'The position in the link could not be read; showing the start position.';
+}
+render();
+window.__viewer = { state, render, VIEWS, A };
+</script>
+</body>
+</html>
