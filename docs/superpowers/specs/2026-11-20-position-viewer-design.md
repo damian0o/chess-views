@@ -275,3 +275,10 @@ since a pinned piece still gives check. Territory shows the padlock.
 **Move preview:** right-click any piece in any board view to see its legal
 moves (dots, red ring for captures); for the side not to move the turn is
 swapped for the lookup. Esc or a second right-click hides it.
+
+**Pawn paths (same day):** `pawnPaths(board)` gives each pawn its file
+ahead, the first blocker, the enemy pawns ahead on its own and neighbouring
+files (guards) and `passed = no guards`. Roads draws passed pawns' paths in
+the side colour (bar at a blocker) and stars the pawn; a toggle shows every
+pawn's path, guarded ones dashed; clicking a pawn focuses it with a sentence.
+Unused open roads are not drawn when the board has no rook, bishop or queen.
