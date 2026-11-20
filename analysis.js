@@ -421,8 +421,26 @@ export function kingHouseReport(board, color) {
   const weakest = { square: weakestCell.square, balance: weakestCell.balance, needs: Math.max(0, weakestCell.balance + 1) };
   const brokenSquares = cells.filter((c) => c.balance < 0).length;
   const shieldPawns = shield.filter((s) => s.status === 'pawn').length;
-  const score = shieldPawns - openFiles.length - brokenSquares - (aiming.length >= 3 ? 1 : 0);
-  const label = score >= 3 ? 'Strong' : score >= 1 ? 'Shaky' : 'In danger';
 
-  return { king: house.king, cells, shield, openFiles, aiming, defending, weakest, brokenSquares, shieldPawns, score, label };
+  // Squares the king could step to right now: in the house, not its own square, not own-occupied, not attacked.
+  const escapes = cells
+    .filter((c) => c.square !== house.king && c.attackers === 0)
+    .filter((c) => { const { row, col } = squareIndex(c.square); const p = board[row][col]; return !p || p.color === enemy; })
+    .map((c) => c.square);
+
+  // What the opponent has to attack with (kings and pawns excluded).
+  const VALUE = { q: 9, r: 5, b: 3, n: 3 };
+  const WORD = { q: 'a queen', r: 'a rook', b: 'a bishop', n: 'a knight' };
+  const enemyPieces = board.flat().filter((p) => p && p.color === enemy && VALUE[p.type]);
+  const enemyForce = enemyPieces.reduce((n, p) => n + VALUE[p.type], 0);
+  const enemyForceWords = enemyPieces.length ? enemyPieces.map((p) => WORD[p.type]).join(' and ') : 'nothing';
+  const quiet = enemyForce < 5;
+
+  // Being boxed in only matters when somebody is aiming at the house.
+  const escapePenalty = aiming.length ? (escapes.length === 0 ? 2 : escapes.length === 1 ? 1 : 0) : 0;
+  const score = shieldPawns - openFiles.length - brokenSquares - (aiming.length >= 3 ? 1 : 0) - escapePenalty;
+  const label = quiet ? 'Safe' : score >= 3 ? 'Strong' : score >= 1 ? 'Shaky' : 'In danger';
+
+  return { king: house.king, cells, shield, openFiles, aiming, defending, weakest, brokenSquares, shieldPawns,
+    escapes, escapePenalty, enemyForce, enemyForceWords, quiet, score, label };
 }

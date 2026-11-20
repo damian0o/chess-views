@@ -242,3 +242,12 @@ words for strengths, weaknesses and how much pressure breaks it.
 **Approaches considered.** Lines from attackers to targets (rejected: busy),
 a single engine-like safety number (rejected: opaque), this component list
 (chosen).
+
+**Follow-up (same day):** on `kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w` the view called
+White's king "In danger" with nobody to attack it and missed that Black's
+king is boxed in. Two additions: (1) *attacking force* = enemy queens 9,
+rooks 5, minors 3; below 5 the king is **Safe** and shield/open-file marks
+are not drawn; (2) *escape squares* = house squares the king can step to
+(not own-occupied, not attacked), drawn as dashed circles; when at least one
+enemy piece aims at the house, no escape squares costs −2 and a single one
+−1, and the panel says "A check could be mate!".
