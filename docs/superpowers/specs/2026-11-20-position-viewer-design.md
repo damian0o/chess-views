@@ -307,3 +307,9 @@ where every move there would stalemate get a grey ½ disc (dashed when only
 some moves do), a mover piece whose every move stalemates gets a dashed
 outline, and the right-click preview marks stalemating destinations ½. One
 neutral sentence under the board states the counts.
+
+**Stalemate ribbon (same day):** the side with no (or ≤ 2) legal moves is
+shown on the board itself in Reach: all its pieces hatched grey, its king
+tagged "no moves" (or "N moves"), and a ribbon across the top of the board
+("Black cannot move: a quiet White move is a draw (½)"). The sentence under
+the board stays as a secondary note.
