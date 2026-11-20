@@ -299,6 +299,12 @@
   .board .sq .half { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 58%; height: 58%; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.5em; color: #fff; background: rgba(110, 110, 110, 0.75); z-index: 2; pointer-events: none; }
   .board .sq .half.some { background: none; color: #666; border: 2px dashed #888; }
   .board .sq .reach.onlydraw { outline: 3px dashed #888; outline-offset: -3px; }
+  .board .sq.nomove { background-image: repeating-linear-gradient(-45deg, transparent 0 5px, rgba(110,110,110,0.28) 5px 8px); }
+  .board .sq.tagged .reach .badge { display: none; }
+  .board .sq .kingtag { position: absolute; left: 1px; bottom: 1px; z-index: 4; font-size: 0.34em; font-weight: 700; line-height: 1.1; padding: 1px 3px; border-radius: 3px; background: #6e6e6e; color: #fff; white-space: nowrap; }
+  .boardwrap { position: relative; display: inline-block; }
+  .boardwrap .ribbon { position: absolute; left: var(--cell); right: var(--cell); top: calc(var(--cell) * 0.1); z-index: 6; text-align: center; pointer-events: none; }
+  .boardwrap .ribbon span { display: inline-block; background: rgba(110,110,110,0.92); color: #fff; font-weight: 700; font-size: 0.8rem; padding: 3px 12px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
   .board .sq .mv.draw { background: rgba(110, 110, 110, 0.8); }
   .board .sq .mv.draw::after { content: '½'; color: #fff; font-size: 0.5em; font-weight: 700; display: grid; place-items: center; height: 100%; }
   .sw .half { position: static; transform: none; width: 18px; height: 18px; font-size: 10px; }
@@ -651,6 +657,19 @@ const VIEWS = {
           if (info.safe === 0 && info.stale > 0) grid.querySelector(`[data-square="${sq}"] .reach`)?.classList.add('onlydraw');
         }
         const only = [...watch.byMove.from].filter(([, i]) => i.safe === 0 && i.stale > 0).map(([sq]) => sq);
+        // The side that cannot move: hatch all its pieces, tag its king, and say it on the board.
+        const otherColor = ctx.turn === 'w' ? 'b' : 'w';
+        for (const p of board.flat()) {
+          if (!p || p.color !== otherColor) continue;
+          const cell = grid.querySelector(`[data-square="${p.square}"]`);
+          if (!cell) continue;
+          cell.classList.add('nomove');
+          if (p.type === 'k') cell.classList.add('tagged');
+          if (p.type === 'k') cell.append(el('span', { class: 'kingtag', text: watch.status === 'danger' ? 'no moves' : `${watch.otherMoves.length} move${watch.otherMoves.length === 1 ? '' : 's'}`, title: watch.text }));
+        }
+        const wrap = el('div', { class: 'boardwrap' });
+        grid.replaceWith(wrap); wrap.append(grid);
+        wrap.append(el('div', { class: 'ribbon' }, [el('span', { text: watch.status === 'danger' ? `${watch.other} cannot move: a quiet ${watch.mover} move is a draw (½)` : `${watch.other} has ${watch.otherMoves.length} move${watch.otherMoves.length === 1 ? '' : 's'} left: mind the stalemate (½)` })]));
         container.append(el('p', { class: 'summary' }, [
           el('strong', { text: watch.status === 'danger' ? `${watch.other} has no legal move.` : `${watch.other} has only ${watch.otherMoves.length} legal move${watch.otherMoves.length === 1 ? '' : 's'} (${watch.otherMoves.map((m) => m.san).join(', ')}).` }),
           ` ${watch.stalemating.length} of ${watch.mover}'s ${watch.stalemating.length + watch.safe.length} moves would stalemate: those squares are marked ½.`,
