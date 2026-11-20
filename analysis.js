@@ -128,3 +128,45 @@ export function territory(board) {
   }
   return { mark, diff, summary };
 }
+
+// ---------- mobility ----------
+
+/** Pseudo-legal destination count for the piece at (row, col): no castling, no en passant, check ignored. */
+export function movesFrom(board, row, col) {
+  const piece = board[row][col];
+  if (!piece) return 0;
+  if (piece.type === 'p') {
+    const dr = piece.color === 'w' ? -1 : 1;
+    const startRow = piece.color === 'w' ? 6 : 1;
+    let n = 0;
+    if (onBoard(row + dr, col) && !board[row + dr][col]) {
+      n++;
+      if (row === startRow && !board[row + 2 * dr][col]) n++;
+    }
+    for (const dc of [-1, 1]) {
+      const r = row + dr, c = col + dc;
+      if (onBoard(r, c) && board[r][c] && board[r][c].color !== piece.color) n++;
+    }
+    return n;
+  }
+  return attacksFrom(board, row, col).filter(([r, c]) => !board[r][c] || board[r][c].color !== piece.color).length;
+}
+
+export function mobility(board) {
+  const pieces = [];
+  const summary = { w: 0, b: 0 };
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const piece = board[row][col];
+      if (!piece) continue;
+      const count = movesFrom(board, row, col);
+      pieces.push({ square: piece.square, type: piece.type, color: piece.color, count });
+      summary[piece.color] += count;
+    }
+  }
+  return { pieces, summary };
+}
+
+export function mobilityTone(count) {
+  return count <= 2 ? 'low' : count <= 6 ? 'mid' : 'high';
+}
