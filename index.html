@@ -305,7 +305,10 @@
   <div class="status">
     <span id="turn" class="turn"></span>
     <span id="fen" class="mono hint" style="margin:0;font-size:0.75rem;word-break:break-all"></span>
-    <label class="hint" style="margin:0 0 0 auto;display:flex;gap:6px;align-items:center"><input type="checkbox" id="letters"> Letters for paper</label>
+    <span style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <label class="hint" style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="letters"> Letters for paper</label>
+      <button class="quiet" id="flip" type="button" title="Turn the board around (f)">Flip board</button>
+    </span>
   </div>
   <div class="nav" id="nav">
     <button class="quiet" id="first" title="Start">⏮</button>
@@ -333,7 +336,7 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -366,11 +369,13 @@ function writeHash() {
   if (state.source.kind === 'fen') p.set('fen', state.source.fen);
   else { p.set('pgn', state.source.pgn); p.set('ply', String(state.ply)); }
   if (state.tab !== 'board') p.set('view', state.tab);
+  if (state.flipped) p.set('flip', '1');
   history.replaceState(null, '', '#' + p.toString());
 }
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   if (p.get('view') && VIEWS[p.get('view')]) state.tab = p.get('view');
+  state.flipped = p.get('flip') === '1';
   if (p.get('fen')) {
     const parsed = A.parseInput(p.get('fen'));
     if (parsed.kind !== 'fen') throw new Error(parsed.reason || 'bad fen in link');
@@ -423,15 +428,22 @@ function el(tag, attrs = {}, children = []) {
   return n;
 }
 
+/** Centre of a square in the 8x8 overlay coordinate space, honouring the flip. */
+function cellXY(sq) {
+  const { row, col } = A.squareIndex(sq);
+  return state.flipped ? [7 - col + 0.5, 7 - row + 0.5] : [col + 0.5, row + 0.5];
+}
+
 /** Build a 10x10 board grid. cellFn(row, col, cell, name) returns a node (or nodes) for the square. */
 function boardGrid(board, cellFn, extraClass = '') {
   const g = el('div', { class: `board mono ${extraClass}`.trim(), role: 'img' });
-  const files = 'abcdefgh';
+  const files = state.flipped ? 'hgfedcba' : 'abcdefgh';
+  const order = state.flipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
   const coordRow = () => { g.append(el('div', { class: 'coord' })); for (const f of files) g.append(el('div', { class: 'coord', text: f })); g.append(el('div', { class: 'coord' })); };
   coordRow();
-  for (let row = 0; row < 8; row++) {
+  for (const row of order) {
     g.append(el('div', { class: 'coord', text: String(8 - row) }));
-    for (let col = 0; col < 8; col++) {
+    for (const col of order) {
       const name = A.squareName(row, col);
       const sq = el('div', { class: `sq ${A.squareColor(name)}`, title: name, 'data-square': name });
       const content = cellFn(row, col, board[row][col], name);
@@ -572,7 +584,7 @@ const VIEWS = {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 8 8');
       svg.setAttribute('aria-hidden', 'true');
-      const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
+      const centre = cellXY;
       // Without focus: blocked roads are hidden, half-open diagonals only when long, ranks only when a rook/queen uses them.
       const worthDrawing = (road, users) => {
         if (focus) return road.squares.includes(focus) && users.some((p) => p.square === focus);
@@ -671,7 +683,7 @@ const VIEWS = {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
       svg.innerHTML = '<defs><marker id="arrow-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c93b3b"/></marker><marker id="arrow-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2456c8"/></marker></defs>';
-      const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
+      const centre = cellXY;
       const arrow = (from, to, cls, side) => {
         const [x1, y1] = centre(from), [x2, y2] = centre(to);
         const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
@@ -766,7 +778,8 @@ const VIEWS = {
   diamond: {
     title: 'Diamond',
     render(container, board) {
-      const rows = A.diamondRows(board);
+      let rows = A.diamondRows(board);
+      if (state.flipped) rows = rows.slice().reverse().map((r) => r.slice().reverse());
       const wrap = el('div', { class: 'diamond mono', role: 'img', 'aria-label': 'Board turned 45 degrees' });
       for (const row of rows) {
         const r = el('div', { class: 'row' });
@@ -779,7 +792,7 @@ const VIEWS = {
         wrap.append(r);
       }
       container.append(wrap);
-      container.append(el('p', { class: 'summary', text: 'Same squares, same names: the board is turned so a1 is at the bottom and h8 at the top. Diagonals are now straight lines, so a bishop moves straight up, down, left or right. The a1–h8 diagonal is the middle column.' }));
+      container.append(el('p', { class: 'summary', text: `Same squares, same names: the board is turned so ${state.flipped ? 'h8' : 'a1'} is at the bottom and ${state.flipped ? 'a1' : 'h8'} at the top. Diagonals are now straight lines, so a bishop moves straight up, down, left or right. The a1–h8 diagonal is the middle column.` }));
       container.append(el('p', { class: 'legend', text: 'Each row across is one colour. A bishop can never leave its rows. Rooks now move on the slants.' }));
     },
   },
@@ -821,7 +834,7 @@ const VIEWS = {
       }
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
-      const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
+      const centre = cellXY;
       // Four lines: each direction paired with its opposite.
       const seen = new Set();
       for (const t of tracks) {
@@ -942,6 +955,8 @@ function render() {
   const board = chess.board();
   renderTabs();
   $('letters').checked = state.pieceStyle === 'letters';
+  $('flip').setAttribute('aria-pressed', String(state.flipped));
+  $('flip').textContent = state.flipped ? 'Flip board (Black side)' : 'Flip board';
   const turn = chess.turn() === 'w' ? 'White to move' : 'Black to move';
   const check = chess.inCheck();
   $('turn').textContent = check ? `${turn} (in check)` : turn;
@@ -972,6 +987,8 @@ function goTo(ply) {
 }
 
 // ---------- wiring ----------
+const flipBoard = () => { state.flipped = !state.flipped; writeHash(); render(); };
+$('flip').addEventListener('click', flipBoard);
 $('letters').addEventListener('change', (e) => {
   state.pieceStyle = e.target.checked ? 'letters' : 'images';
   try { localStorage.setItem('pieceStyle', state.pieceStyle); } catch {}
@@ -988,6 +1005,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.matches('textarea, input')) return;
   if (e.key === 'ArrowLeft') goTo(state.ply - 1);
   if (e.key === 'ArrowRight') goTo(state.ply + 1);
+  if (e.key === 'f' || e.key === 'F') flipBoard();
 });
 
 try {
