@@ -47,8 +47,11 @@ or share a link.
 - **Reach**: every piece shows how many squares it can move to right now.
 - **Roads**: files and diagonals drawn thick when open (no pawns), thin when
   only one side's pawns are on them. Pieces already on an open road get a ring.
-- **King houses**: the 3×3 zone around each king with enemy attackers / own
-  defenders per square. Red means more attackers than defenders.
+- **King houses**: the 3×3 zone around each king coloured by how well each
+  square is held, with the shield pawns, open files next to the king, the
+  pieces aiming at the house and the pieces defending it, a Strong / Shaky /
+  In danger label with its score explained, and the weakest square with how
+  many more attackers the opponent needs to break in.
 - **Diamond**: the board turned 45°, so diagonals are straight lines and each
   row is one colour.
 - **Knight**: a knight's four straight tracks with hop numbers; click any

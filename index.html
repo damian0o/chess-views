@@ -142,12 +142,25 @@
   .roadwrap line.half { stroke-width: 0.07; opacity: 0.5; }
   .roadwrap line.closed { stroke-width: 0.025; opacity: 0.45; stroke-dasharray: 0.12 0.12; }
   /* King houses */
-  .board .sq.out { opacity: 0.25; }
+  .board .sq.out { opacity: 0.45; }
   .board .sq.out .dot { display: none; }
-  .board .sq .ad { font-size: 0.55em; font-weight: 700; color: var(--ink); }
-  .board .sq.danger { background: #ff9c9c; }
-  .board .sq.danger .ad { color: #6b0000; }
+  .board .sq .ad { position: absolute; left: 3px; bottom: 2px; font-size: 0.42em; font-weight: 700; color: var(--ink); z-index: 1; background: rgba(255,255,255,0.7); padding: 0 2px; border-radius: 2px; }
   .board .sq.house { outline: 2px solid var(--ink); outline-offset: -2px; z-index: 1; }
+  .board .sq.h-p2 { background: #7fd49a; } .board .sq.h-p1 { background: #c6ecd0; } .board .sq.h-0 { background: #fbe9a0; }
+  .board .sq.h-m1 { background: #f8b76b; } .board .sq.h-m2 { background: #f26d6d; }
+  .board .sq.shield { box-shadow: inset 0 0 0 3px #1e8f4a; }
+  .board .sq.shield-missing { box-shadow: inset 0 0 0 3px transparent; background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(201,59,59,0.25) 6px 9px); }
+  .board .sq.openfile::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--pen-red); z-index: 1; }
+  .board .sq.aim .piece, .board .sq.aim .p { box-shadow: 0 0 0 3px var(--pen-red); border-radius: 50%; }
+  .board .sq.defend .piece, .board .sq.defend .p { box-shadow: 0 0 0 3px #1e8f4a; border-radius: 50%; }
+  .board .sq.aim.defend .piece, .board .sq.aim.defend .p { box-shadow: 0 0 0 3px #1e8f4a, 0 0 0 6px var(--pen-red); }
+  .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); max-width: 72ch; width: 100%; }
+  .houses h3 { margin: 0 0 4px; font-size: 1.05rem; }
+  .houses .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.85rem; margin-left: 8px; color: #fff; }
+  .houses .tag.Strong { background: #1e8f4a; } .houses .tag.Shaky { background: #d58a1f; } .houses .tag.danger { background: var(--pen-red); }
+  .houses ul { margin: 0; padding-left: 1.1em; }
+  .houses li { margin: 2px 0; }
+  .houses .score { color: var(--ink-soft); font-size: 0.85rem; margin: 4px 0 0; }
   .twocol { display: grid; gap: 4px 24px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); max-width: 70ch; }
   .twocol p { margin: 0; }
 
@@ -505,47 +518,68 @@ const VIEWS = {
   kings: {
     title: 'King houses',
     render(container, board, ctx) {
-      const h = A.kingHouses(board);
-      const houseCells = new Map();
-      for (const side of ['w', 'b']) if (h[side]) for (const c of h[side].cells) houseCells.set(c.square, { ...c, side });
-      container.append(boardGrid(board, (r, c, cell, name) => {
-        const hc = houseCells.get(name);
-        if (!hc) return pieceNode(cell, name);
-        const nodes = [];
-        if (cell && cell.type === 'k') nodes.push(pieceNode(cell, name));
-        else nodes.push(el('span', { class: 'ad', text: `${hc.attackers}/${hc.defenders}` }));
-        if (cell && cell.type !== 'k') nodes.push(ghostNode(cell, name));
-        return nodes;
-      }));
-      const grid = container.querySelector('.board');
-      for (const sq of grid.querySelectorAll('.sq')) {
-        const hc = houseCells.get(sq.dataset.square);
-        if (!hc) { sq.classList.add('out'); continue; }
-        sq.classList.add('house');
-        if (hc.danger) sq.classList.add('danger');
+      const reports = { w: A.kingHouseReport(board, 'w'), b: A.kingHouseReport(board, 'b') };
+      const cellInfo = new Map(), shieldInfo = new Map(), openFileCells = new Set(), aim = new Set(), defend = new Set();
+      for (const side of ['w', 'b']) {
+        const r = reports[side];
+        if (!r) continue;
+        for (const c of r.cells) cellInfo.set(c.square, c);
+        for (const sh of r.shield) shieldInfo.set(sh.square, sh.status);
+        for (const c of r.cells) if (r.openFiles.includes(c.square[0])) openFileCells.add(c.square);
+        for (const p of r.aiming) aim.add(p.square);
+        for (const p of r.defending) defend.add(p.square);
       }
-      const describe = (side) => {
+      const grid = boardGrid(board, (r, c, cell, name) => {
+        const nodes = [];
+        if (cell) nodes.push(pieceNode(cell, name));
+        else if (!cellInfo.has(name)) { const d = pieceNode(null, name); if (d) nodes.push(d); }
+        const info = cellInfo.get(name);
+        if (info && !(cell && cell.type === 'k')) nodes.push(el('span', { class: 'ad', text: `${info.attackers}/${info.defenders}` }));
+        return nodes;
+      });
+      for (const sq of grid.querySelectorAll('.sq')) {
+        const name = sq.dataset.square;
+        const info = cellInfo.get(name);
+        if (aim.has(name)) sq.classList.add('aim');
+        if (defend.has(name)) sq.classList.add('defend');
+        if (!info) { sq.classList.add('out'); continue; }
+        sq.classList.add('house');
+        const b = info.balance;
+        sq.classList.add(b >= 2 ? 'h-p2' : b === 1 ? 'h-p1' : b === 0 ? 'h-0' : b === -1 ? 'h-m1' : 'h-m2');
+        const sh = shieldInfo.get(name);
+        if (sh === 'pawn') sq.classList.add('shield');
+        if (sh === 'missing') sq.classList.add('shield-missing');
+        if (openFileCells.has(name)) sq.classList.add('openfile');
+        sq.title = `${name}: ${info.attackers} attacking, ${info.defenders} defending`;
+      }
+      container.append(grid);
+
+      const words = (list) => list.length ? `${list.length} (${list.map((p) => PIECE_WORDS[p.type]).join(', ')})` : 'none';
+      const panel = el('div', { class: 'houses' });
+      for (const side of ['w', 'b']) {
         const name = side === 'w' ? 'White' : 'Black';
-        const house = h[side];
-        if (!house) return el('p', { text: `${name}: no king on the board.` });
-        const att = house.cells.reduce((n, c) => n + c.attackers, 0);
-        const def = house.cells.reduce((n, c) => n + c.defenders, 0);
+        const r = reports[side];
+        if (!r) { panel.append(el('div', {}, [el('h3', { text: `${name}: no king on the board` })])); continue; }
+        const shieldText = r.shield.map((x) => x.status === 'pawn' ? x.square : x.status === 'advanced' ? `${x.square} moved up` : `${x.square} missing`).join(', ');
+        const breakText = r.weakest.balance < 0
+          ? `${r.weakest.square} is already broken: more attackers than defenders.`
+          : `${r.weakest.square}: the opponent needs ${r.weakest.needs} more attacker${r.weakest.needs === 1 ? '' : 's'} there to break in.`;
         const rights = ctx.chess.getCastlingRights(side);
-        const home = side === 'w' ? 'e1' : 'e8';
-        const castledSquares = side === 'w' ? ['g1', 'c1'] : ['g8', 'c8'];
-        let castle;
-        if (rights.k || rights.q) castle = `can still castle ${rights.k && rights.q ? 'both ways' : rights.k ? 'short' : 'long'}`;
-        else if (castledSquares.includes(house.king)) castle = 'has castled';
-        else if (house.king === home) castle = 'cannot castle any more';
-        else castle = 'has moved, cannot castle';
-        const hot = house.cells.filter((c) => c.danger).map((c) => c.square);
-        return el('p', {}, [
-          el('strong', { text: `${name} king on ${house.king}` }), `: attackers ${att}, defenders ${def}, ${castle}.`,
-          hot.length ? ` Weak squares: ${hot.join(', ')}.` : ' No weak squares right now.',
-        ]);
-      };
-      container.append(el('div', { class: 'twocol summary', style: 'text-align:left' }, [describe('w'), describe('b')]));
-      container.append(el('p', { class: 'legend', text: 'Each square in the king\'s house shows enemy attackers / own defenders. Red means more attackers than defenders. To attack a king, bring more pieces than it has defenders.' }));
+        const castle = rights.k || rights.q ? `Can still castle ${rights.k && rights.q ? 'both ways' : rights.k ? 'short' : 'long'}.` : '';
+        panel.append(el('div', {}, [
+          el('h3', {}, [`${name} king on ${r.king}`, el('span', { class: `tag ${r.label === 'In danger' ? 'danger' : r.label}`, text: r.label })]),
+          el('ul', {}, [
+            el('li', { text: `Shield: ${shieldText || 'no squares in front'}` }),
+            el('li', { text: `Open files next to the king: ${r.openFiles.length ? r.openFiles.join(', ') : 'none'}` }),
+            el('li', { text: `Aiming at the house: ${words(r.aiming)}` }),
+            el('li', { text: `Defending it: ${words(r.defending)}` }),
+            el('li', { text: `Weakest square ${breakText}` }),
+          ]),
+          el('p', { class: 'score', text: `Score ${r.score}: +${r.shieldPawns} shield pawns, −${r.openFiles.length} open files, −${r.brokenSquares} broken squares${r.aiming.length >= 3 ? ', −1 heavy attack' : ''}. ${castle}` }),
+        ]));
+      }
+      container.append(panel);
+      container.append(el('p', { class: 'legend', text: 'House squares: green = well held, yellow = even, orange = short by one, red = the opponent already has more. Small numbers are attackers/defenders. Green border = shield pawn, striped = missing shield pawn, red bar = open file next to the king. Red ring = enemy piece aiming at the house, green ring = piece defending it.' }));
     },
   },
   diamond: {
