@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pieces.css">
 <style>
   :root {
     --paper: #ffffff;
@@ -104,6 +105,12 @@
   .board .sq .p.w { background: #fff; color: #111; box-shadow: inset 0 0 0 1.5px #111; }
   .board .sq .p.b { background: #111; color: #fff; }
   .board .sq .dot { color: var(--ink-soft); opacity: 0.8; }
+  .board .sq .piece { width: 88%; height: 88%; }
+  .board .sq .piece.ghost { position: absolute; left: 1px; top: 1px; width: 38%; height: 38%; opacity: 0.85; }
+  .board .sq .reach { position: relative; }
+  .board .sq .reach .piece { width: 1.6em; height: 1.6em; }
+  .board .sq .reach .badge { position: absolute; right: 2px; bottom: 1px; font-size: 1.05em; font-weight: 700; line-height: 1; padding: 0 2px; border-radius: 3px; background: rgba(255,255,255,0.85); color: inherit; }
+  .dcell .piece { width: 62%; height: 62%; position: relative; z-index: 1; }
   .board .sq .sub { position: absolute; right: 2px; bottom: 1px; font-size: 0.42em; color: var(--ink-soft); }
   .board.plain .sq .p.w, .board.plain .sq .p.b { background: none; color: var(--ink); box-shadow: none; }
 
@@ -188,6 +195,23 @@
     #print-sheet .copy { margin: 3mm 0 2mm; text-align: center; font-size: 10pt; color: #000; }
   }
 
+  /* Knight */
+  .knightwrap { position: relative; display: inline-block; }
+  .knightwrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
+  .knightwrap line { stroke: var(--pen-blue); stroke-width: 0.06; opacity: 0.6; stroke-linecap: round; }
+  .knightwrap .board .sq { cursor: pointer; }
+  .knightwrap .board .sq .dot { display: none; }
+  .knightwrap .board .sq.origin { outline: 3px solid var(--pen-blue); outline-offset: -3px; z-index: 1; }
+  .knightwrap .board .sq .hop { display: grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: 50%; font-weight: 700; font-size: 0.6em; background: var(--pen-blue); color: #fff; position: relative; z-index: 1; }
+  .knightwrap .board .sq .hop.own { background: #999; color: #fff; text-decoration: line-through; }
+  .knightwrap .board .sq .hop.enemy { background: var(--pen-red); }
+  .knightwrap .board .sq .hop.far { opacity: 0.55; }
+  .knightwrap .board .sq .dist { font-weight: 700; font-size: 0.55em; color: var(--ink); position: relative; z-index: 1; }
+  .knightwrap .board .sq.d1 { background: #d9e6ff; } .knightwrap .board .sq.d2 { background: #e6efff; } .knightwrap .board .sq.d3 { background: #f6f1dc; }
+  .knightwrap .board .sq.d4 { background: #f3e2c2; } .knightwrap .board .sq.d5 { background: #f0cfa9; } .knightwrap .board .sq.d6 { background: #e9b98f; }
+  .knightwrap .board .sq .imaginary { opacity: 0.55; }
+  .toggle { display: flex; gap: 8px; align-items: center; color: var(--ink-soft); font-size: 0.95rem; }
+
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
 </style>
@@ -196,7 +220,7 @@
 <div class="page">
   <header>
     <h1>Position viewer</h1>
-    <p>Paste a position from lichess and look at it in different ways. The board uses letters you can copy onto squared paper.</p>
+    <p>Paste a position from lichess and look at it in different ways. Switch to letters when you want to copy a position onto squared paper.</p>
   </header>
 
   <section class="loader" aria-label="Load a position">
@@ -213,6 +237,7 @@
   <div class="status">
     <span id="turn" class="turn"></span>
     <span id="fen" class="mono hint" style="margin:0;font-size:0.75rem;word-break:break-all"></span>
+    <label class="hint" style="margin:0 0 0 auto;display:flex;gap:6px;align-items:center"><input type="checkbox" id="letters"> Letters for paper</label>
   </div>
   <div class="nav" id="nav">
     <button class="quiet" id="first" title="Start">⏮</button>
@@ -228,7 +253,7 @@
 
   <section id="print-sheet" aria-hidden="true"></section>
 
-  <footer>Paper rule: capitals are pieces, <span class="mono">'</span> means black, <span class="mono">o</span> is a white pawn, <span class="mono">x</span> a black pawn. a1 is dark.</footer>
+  <footer>Paper rule: capitals are pieces, <span class="mono">'</span> means black, <span class="mono">o</span> is a white pawn, <span class="mono">x</span> a black pawn. a1 is dark. Piece images by Colin M.L. Burnett (CC BY-SA 3.0).</footer>
 </div>
 
 <script type="module">
@@ -240,7 +265,8 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board' };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false };
+try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
   if (!state.moves.length) return state.chess;
@@ -250,6 +276,7 @@ function currentChess() {
 }
 
 function setPosition(source) {
+  state.knightSquare = null;
   const chess = new Chess();
   if (source.kind === 'fen') {
     chess.load(source.fen, { skipValidation: true });
@@ -348,9 +375,19 @@ function boardGrid(board, cellFn, extraClass = '') {
   return g;
 }
 
-function pieceNode(cell, name) {
+const PIECE_WORDS = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
+function pieceImage(cell, extra = '') {
+  const label = `${cell.color === 'w' ? 'white' : 'black'} ${PIECE_WORDS[cell.type]}`;
+  return el('span', { class: `piece ${cell.color}${cell.type.toUpperCase()} ${extra}`.trim(), role: 'img', 'aria-label': label, title: label });
+}
+function pieceNode(cell, name, style = state.pieceStyle) {
   if (!cell) return A.squareColor(name) === 'dark' ? el('span', { class: 'dot', text: '.' }) : null;
+  if (style === 'images') return pieceImage(cell);
   return el('span', { class: `p ${cell.color}`, text: A.symbol(cell, name) });
+}
+/** Small marker in a cell corner so a map can still show where the pieces are. */
+function ghostNode(cell, name) {
+  return state.pieceStyle === 'images' ? pieceImage(cell, 'ghost') : el('span', { class: 'ghost', text: A.symbol(cell, name) });
 }
 
 function pieceList(board) {
@@ -375,7 +412,7 @@ const VIEWS = {
     render(container, board) {
       container.append(boardGrid(board, (r, c, cell, name) => pieceNode(cell, name)));
       container.append(el('p', { class: 'summary mono', text: pieceList(board) }));
-      container.append(el('p', { class: 'legend', text: LEGEND }));
+      if (state.pieceStyle === 'letters') container.append(el('p', { class: 'legend', text: LEGEND }));
       container.append(el('div', { class: 'actions' }, [
         el('button', { class: 'quiet', type: 'button', text: 'Copy as text', onclick: async (e) => {
           await navigator.clipboard.writeText(A.boardText(board));
@@ -391,7 +428,7 @@ const VIEWS = {
       const t = A.territory(board);
       container.append(tintTerritory(boardGrid(board, (r, c, cell, name) => {
         const nodes = [];
-        if (cell) nodes.push(el('span', { class: 'ghost', text: A.symbol(cell, name) }));
+        if (cell) nodes.push(ghostNode(cell, name));
         const m = t.mark[r][c];
         if (m) nodes.push(el('span', { class: 'mark', text: m }));
         return nodes;
@@ -412,12 +449,15 @@ const VIEWS = {
       container.append(boardGrid(board, (r, c, cell, name) => {
         if (!cell) return pieceNode(cell, name);
         const n = byValue[name];
-        return el('span', { class: `reach ${A.mobilityTone(n)} ${cell.color}` }, [A.symbol(cell, name), el('br'), el('b', { text: String(n) })]);
+        const kids = state.pieceStyle === 'images'
+          ? [pieceImage(cell), el('b', { class: 'badge', text: String(n) })]
+          : [document.createTextNode(A.symbol(cell, name)), el('br'), el('b', { text: String(n) })];
+        return el('span', { class: `reach ${A.mobilityTone(n)} ${cell.color}` }, kids);
       }));
       container.append(el('p', { class: 'summary' }, [
         'Mobility: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '.',
       ]));
-      container.append(el('p', { class: 'legend', text: 'The number is how many squares that piece could go to right now. Red 0–2 is stuck, green 7+ is free. Black pieces have a black outline.' }));
+      container.append(el('p', { class: 'legend', text: 'The number is how many squares that piece could go to right now. Red 0–2 is stuck, green 7+ is free.' }));
     },
   },
   roads: {
@@ -472,9 +512,9 @@ const VIEWS = {
         const hc = houseCells.get(name);
         if (!hc) return pieceNode(cell, name);
         const nodes = [];
-        if (cell && cell.type === 'k') nodes.push(el('span', { class: `p ${cell.color}`, text: A.symbol(cell, name) }));
+        if (cell && cell.type === 'k') nodes.push(pieceNode(cell, name));
         else nodes.push(el('span', { class: 'ad', text: `${hc.attackers}/${hc.defenders}` }));
-        if (cell && cell.type !== 'k') nodes.push(el('span', { class: 'ghost', text: A.symbol(cell, name) }));
+        if (cell && cell.type !== 'k') nodes.push(ghostNode(cell, name));
         return nodes;
       }));
       const grid = container.querySelector('.board');
@@ -528,7 +568,79 @@ const VIEWS = {
       container.append(el('p', { class: 'legend', text: 'Each row across is one colour. A bishop can never leave its rows. Rooks now move on the slants.' }));
     },
   },
+  knight: {
+    title: 'Knight',
+    render(container, board, ctx) {
+      const origin = state.knightSquare ?? A.defaultKnightSquare(board, ctx.turn);
+      if (!origin) {
+        container.append(boardGridClickable(board, () => null, 'knightwrap'));
+        container.append(el('p', { class: 'summary', text: 'No knight here. Click a square to put an imaginary knight on it.' }));
+        return;
+      }
+      const { row: or, col: oc } = A.squareIndex(origin);
+      const originPiece = board[or][oc];
+      const tracks = A.knightTracks(board, origin);
+      const hopAt = new Map();
+      for (const t of tracks) for (const h of t.hops) hopAt.set(h.square, h);
+      const dist = state.knightDistances ? A.knightDistances(origin) : null;
+      const knightCell = originPiece && originPiece.type === 'n' ? originPiece : { type: 'n', color: originPiece ? originPiece.color : 'w', square: origin };
+
+      const grid = boardGrid(board, (r, c, cell, name) => {
+        if (name === origin) {
+          const node = pieceNode(knightCell, name);
+          if (!(originPiece && originPiece.type === 'n')) node.classList.add('imaginary');
+          return node;
+        }
+        const nodes = [];
+        if (cell) nodes.push(ghostNode(cell, name));
+        const h = hopAt.get(name);
+        if (h) nodes.push(el('span', { class: `hop ${h.status} ${h.n > 1 ? 'far' : ''}`.trim(), text: String(h.n) }));
+        else if (dist) nodes.push(el('span', { class: 'dist', text: String(dist[r][c]) }));
+        return nodes;
+      });
+      for (const sq of grid.querySelectorAll('.sq')) {
+        const name = sq.dataset.square;
+        if (name === origin) sq.classList.add('origin');
+        if (dist && name !== origin) { const { row, col } = A.squareIndex(name); sq.classList.add(`d${dist[row][col]}`); }
+        sq.addEventListener('click', () => { state.knightSquare = name; render(); });
+      }
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+      const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
+      // Four lines: each direction paired with its opposite.
+      const seen = new Set();
+      for (const t of tracks) {
+        const key = t.dir.join(','), opp = [-t.dir[0], -t.dir[1]].join(',');
+        if (seen.has(opp)) continue;
+        seen.add(key);
+        const other = tracks.find((x) => x.dir.join(',') === opp);
+        const endA = t.hops.length ? t.hops[t.hops.length - 1].square : origin;
+        const endB = other.hops.length ? other.hops[other.hops.length - 1].square : origin;
+        if (endA === endB) continue;
+        const [x1, y1] = centre(endA), [x2, y2] = centre(endB);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        for (const [k, v] of Object.entries({ x1, y1, x2, y2 })) line.setAttribute(k, v);
+        svg.append(line);
+      }
+      container.append(el('div', { class: 'knightwrap' }, [grid, svg]));
+
+      const one = tracks.reduce((n, t) => n + (t.hops[0] && t.hops[0].status !== 'own' ? 1 : 0), 0);
+      const who = originPiece && originPiece.type === 'n' ? `${knightCell.color === 'w' ? 'White' : 'Black'} knight on ${origin}` : `Imaginary knight on ${origin}`;
+      container.append(el('p', { class: 'summary' }, [el('strong', { text: who }), `: ${one} squares to jump to right now. Click any square to move the knight there.`]));
+      container.append(el('label', { class: 'toggle' }, [
+        Object.assign(el('input', { type: 'checkbox' }), { checked: state.knightDistances, onchange: (e) => { state.knightDistances = e.target.checked; render(); } }),
+        'Hop counts for every square',
+      ]));
+      container.append(el('p', { class: 'legend', text: 'A knight runs on four straight tracks: two across and one up, or one across and two up. Every number on a track is one hop further. Grey = your own piece is in the way, red = you can capture. Paper: lay a ruler two across and one up through the knight; every dot on it is one hop.' }));
+    },
+  },
 };
+
+function boardGridClickable(board, cellFn, cls) {
+  const grid = boardGrid(board, (r, c, cell, name) => cell ? ghostNode(cell, name) : null);
+  for (const sq of grid.querySelectorAll('.sq')) sq.addEventListener('click', () => { state.knightSquare = sq.dataset.square; render(); });
+  return el('div', { class: cls }, [grid]);
+}
 
 function tintTerritory(grid, t) {
   for (const sq of grid.querySelectorAll('.sq')) {
@@ -546,7 +658,7 @@ function buildPrintSheet(board) {
   const sheet = $('print-sheet');
   sheet.replaceChildren(
     el('h2', { text: 'Position' }),
-    boardGrid(board, (r, c, cell, name) => pieceNode(cell, name), 'plain'),
+    boardGrid(board, (r, c, cell, name) => pieceNode(cell, name, 'letters'), 'plain'),
     el('p', { class: 'summary mono', text: pieceList(board) }),
     el('p', { class: 'legend', text: LEGEND }),
     el('p', { class: 'fen mono', text: currentChess().fen() }),
@@ -568,6 +680,7 @@ function render() {
   const chess = currentChess();
   const board = chess.board();
   renderTabs();
+  $('letters').checked = state.pieceStyle === 'letters';
   const turn = chess.turn() === 'w' ? 'White to move' : 'Black to move';
   const check = chess.inCheck();
   $('turn').textContent = check ? `${turn} (in check)` : turn;
@@ -598,6 +711,11 @@ function goTo(ply) {
 }
 
 // ---------- wiring ----------
+$('letters').addEventListener('change', (e) => {
+  state.pieceStyle = e.target.checked ? 'letters' : 'images';
+  try { localStorage.setItem('pieceStyle', state.pieceStyle); } catch {}
+  render();
+});
 $('load').addEventListener('click', () => load($('input').value));
 $('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) load($('input').value); });
 $('first').addEventListener('click', () => goTo(0));
