@@ -251,3 +251,11 @@ are not drawn; (2) *escape squares* = house squares the king can step to
 (not own-occupied, not attacked), drawn as dashed circles; when at least one
 enemy piece aims at the house, no escape squares costs −2 and a single one
 −1, and the panel says "A check could be mate!".
+
+**Pins (same day):** `pins(board)` finds every slider, enemy piece, and king
+or more valuable piece behind it on one line. King houses draws them as
+orange lines (solid = to the king, dashed = relative), badges the pinned
+piece, lists them per side in words, and subtracts 1 per piece pinned to
+the king (max 2) from the house score. Pressure arrows (red, from each
+aiming piece to each house square it hits) were added just before, with an
+optional dashed green set for defenders.
