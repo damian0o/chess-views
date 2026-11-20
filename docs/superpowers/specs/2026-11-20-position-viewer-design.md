@@ -111,7 +111,7 @@ Summary line: total mobility per side.
 
 ### Roads
 
-Draw the 8 files, 8 ranks, and the 26 diagonals of length ≥ 3 as lines
+Draw the 8 files, 8 ranks, and the 22 diagonals of length ≥ 3 as lines
 over a faint board. A line is **thick** if it contains no pawns, **medium**
 if it contains only pawns of one colour (half-open), **thin** if blocked
 by pawns of both colours. Pieces drawn on top as symbols. Rooks and queens

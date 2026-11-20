@@ -261,22 +261,51 @@ export function normaliseFen(fen) {
   return fields.slice(0, 6).join(' ');
 }
 
+/** Returns null when the placement is well formed, otherwise a human-readable reason. */
+export function validatePlacement(placement) {
+  if (!PLACEMENT_RE.test(placement)) return 'Not a FEN: expected 8 ranks of pieces and digits separated by /.';
+  const ranks = placement.split('/');
+  for (let i = 0; i < 8; i++) {
+    const n = [...ranks[i]].reduce((sum, ch) => sum + (/\d/.test(ch) ? Number(ch) : 1), 0);
+    if (n !== 8) return `Rank ${8 - i} has ${n} squares, it needs 8.`;
+  }
+  return null;
+}
+
+// Lichess paths that are exactly 8 letters and would otherwise look like a game id.
+const RESERVED_PATHS = new Set(['analysis', 'training', 'practice', 'streamer', 'insights', 'settings', 'openings', 'password']);
+const GAME_URL_RE = /^(?:https?:\/\/)?(?:www\.)?lichess\.org\/([A-Za-z0-9]{8})(?:[A-Za-z0-9]{4})?(?:\/(?:white|black))?\/?(?:#(\d+))?$/i;
+
 export function parseInput(text) {
   const s = (text || '').trim();
   if (!s) return { kind: 'unknown' };
 
   const analysis = s.match(/lichess\.org\/analysis\/(?:standard\/)?([^?#\s]+)/i);
   if (analysis) {
-    const fen = decodeURIComponent(analysis[1]).replace(/_/g, ' ');
-    if (PLACEMENT_RE.test(fen.trim().split(/\s+/)[0])) return { kind: 'fen', fen: normaliseFen(fen) };
+    let fen;
+    try { fen = decodeURIComponent(analysis[1]).replace(/_/g, ' '); } catch { return { kind: 'unknown' }; }
+    const placement = fen.trim().split(/\s+/)[0];
+    if (PLACEMENT_RE.test(placement)) {
+      const reason = validatePlacement(placement);
+      return reason ? { kind: 'invalid', reason } : { kind: 'fen', fen: normaliseFen(fen) };
+    }
+    return { kind: 'unknown' };
   }
-
-  const game = s.match(/lichess\.org\/([A-Za-z0-9]{8})/i);
-  if (game) return { kind: 'lichess-game', gameId: game[1] };
 
   if (/\[Event\s/.test(s) || /(^|\s)1\.\s*[a-hNBRQKO]/.test(s)) return { kind: 'pgn', pgn: s };
 
-  if (PLACEMENT_RE.test(s.split(/\s+/)[0])) return { kind: 'fen', fen: normaliseFen(s) };
+  const game = s.match(GAME_URL_RE);
+  if (game && !RESERVED_PATHS.has(game[1].toLowerCase())) {
+    const out = { kind: 'lichess-game', gameId: game[1] };
+    if (game[2] !== undefined) out.ply = Number(game[2]);
+    return out;
+  }
+
+  const first = s.split(/\s+/)[0];
+  if (PLACEMENT_RE.test(first)) {
+    const reason = validatePlacement(first);
+    return reason ? { kind: 'invalid', reason } : { kind: 'fen', fen: normaliseFen(s) };
+  }
 
   return { kind: 'unknown' };
 }

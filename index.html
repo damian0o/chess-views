@@ -177,7 +177,7 @@
     #print-sheet .board { --cell: 10.5mm; margin: 0 auto; }
     #print-sheet .board .sq { border: 0.4pt solid #000; margin: 0; color: #000; }
     #print-sheet .board .sq.light { background: #fff; }
-    #print-sheet .board .sq.dark { background: #e6e6e6; }
+    #print-sheet .board .sq.dark { background: #e6e6e6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     #print-sheet .board .sq .p { background: none; color: #000; box-shadow: none; font-weight: 600; }
     #print-sheet .board .sq .dot { color: #000; opacity: 1; }
     #print-sheet .board .coord { color: #000; }
@@ -258,7 +258,9 @@ function setPosition(source) {
     chess.loadPgn(source.pgn);
     const moves = chess.history({ verbose: true });
     const startFen = chess.getHeaders()['FEN'] || A.START_FEN;
-    Object.assign(state, { chess, moves, ply: source.ply ?? moves.length, startFen, source });
+    const wanted = Number.isFinite(source.ply) ? source.ply : moves.length;
+    const ply = Math.max(0, Math.min(moves.length, wanted));
+    Object.assign(state, { chess, moves, ply, startFen, source });
   }
 }
 
@@ -273,7 +275,11 @@ function writeHash() {
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   if (p.get('view') && VIEWS[p.get('view')]) state.tab = p.get('view');
-  if (p.get('fen')) return { kind: 'fen', fen: A.normaliseFen(p.get('fen')) };
+  if (p.get('fen')) {
+    const parsed = A.parseInput(p.get('fen'));
+    if (parsed.kind !== 'fen') throw new Error(parsed.reason || 'bad fen in link');
+    return parsed;
+  }
   if (p.get('pgn')) return { kind: 'pgn', pgn: p.get('pgn'), ply: p.has('ply') ? Number(p.get('ply')) : undefined };
   return null;
 }
@@ -284,6 +290,7 @@ async function load(text) {
   $('error').textContent = '';
   try {
     if (parsed.kind === 'unknown') throw new Error('Could not read that as FEN, PGN or lichess link.');
+    if (parsed.kind === 'invalid') throw new Error(`Could not read that FEN. ${parsed.reason}`);
     if (parsed.kind === 'lichess-game') {
       $('error').textContent = '';
       $('load').disabled = true;
@@ -295,7 +302,7 @@ async function load(text) {
       } catch {
         throw new Error('Could not fetch that game from lichess; paste the PGN instead.');
       } finally { $('load').disabled = false; }
-      setPosition({ kind: 'pgn', pgn });
+      setPosition({ kind: 'pgn', pgn, ply: parsed.ply });
     } else {
       setPosition(parsed);
     }
@@ -604,15 +611,17 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') goTo(state.ply + 1);
 });
 
-const initial = readHash();
 try {
+  const initial = readHash();
   setPosition(initial || { kind: 'fen', fen: A.START_FEN });
   if (initial) $('input').value = initial.kind === 'fen' ? initial.fen : initial.pgn;
-} catch {
+  render();
+} catch (e) {
   setPosition({ kind: 'fen', fen: A.START_FEN });
+  render();
   $('error').textContent = 'The position in the link could not be read; showing the start position.';
 }
-render();
+window.addEventListener('beforeprint', () => buildPrintSheet(currentChess().board()));
 window.__viewer = { state, render, VIEWS, A, buildPrintSheet };
 </script>
 </body>

@@ -26,7 +26,7 @@ test('parseInput: lichess analysis URLs', () => {
 });
 
 test('parseInput: lichess game URLs', () => {
-  assert.deepEqual(parseInput('https://lichess.org/AbCd1234/black#33'), { kind: 'lichess-game', gameId: 'AbCd1234' });
+  assert.deepEqual(parseInput('https://lichess.org/AbCd1234/black#33'), { kind: 'lichess-game', gameId: 'AbCd1234', ply: 33 });
   assert.deepEqual(parseInput('https://lichess.org/AbCd1234wxyz'), { kind: 'lichess-game', gameId: 'AbCd1234' });
   assert.deepEqual(parseInput('lichess.org/AbCd1234'), { kind: 'lichess-game', gameId: 'AbCd1234' });
 });
@@ -48,4 +48,29 @@ test('parseInput: unknown', () => {
 test('normaliseFen infers castling from home squares', () => {
   assert.equal(normaliseFen('4k3/8/8/8/8/8/8/4K3'), '4k3/8/8/8/8/8/8/4K3 w - - 0 1');
   assert.equal(normaliseFen('r3k3/8/8/8/8/8/8/4K2R'), 'r3k3/8/8/8/8/8/8/4K2R w Kq - 0 1');
+});
+
+test('parseInput: a lichess-exported PGN with a [Site] header is PGN, not a game link', () => {
+  const pgn = '[Event "Rated Blitz game"]\n[Site "https://lichess.org/AbCd1234"]\n[Result "1-0"]\n\n1. e4 e5 2. Nf3 1-0';
+  assert.deepEqual(parseInput(pgn), { kind: 'pgn', pgn });
+});
+
+test('parseInput: game link only when the whole input is a lichess URL', () => {
+  assert.deepEqual(parseInput('https://lichess.org/AbCd1234#42'), { kind: 'lichess-game', gameId: 'AbCd1234', ply: 42 });
+  assert.deepEqual(parseInput('https://lichess.org/AbCd1234wxyz/black#7'), { kind: 'lichess-game', gameId: 'AbCd1234', ply: 7 });
+  assert.deepEqual(parseInput('https://lichess.org/training/daily'), { kind: 'unknown' });
+  assert.deepEqual(parseInput('https://lichess.org/analysis'), { kind: 'unknown' });
+  assert.deepEqual(parseInput('see https://lichess.org/AbCd1234 please'), { kind: 'unknown' });
+});
+
+test('parseInput: a FEN rank with the wrong number of squares is rejected with a reason', () => {
+  const r = parseInput('rnbqkbn/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+  assert.equal(r.kind, 'invalid');
+  assert.match(r.reason, /rank 8 .*7 squares/i);
+  assert.equal(parseInput('rnbqkbnr/ppppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR').kind, 'invalid');
+  assert.equal(parseInput(START_FEN).kind, 'fen');
+});
+
+test('parseInput: a malformed percent-escape in an analysis URL does not throw', () => {
+  assert.deepEqual(parseInput('https://lichess.org/analysis/%E0%A4%A'), { kind: 'unknown' });
 });
