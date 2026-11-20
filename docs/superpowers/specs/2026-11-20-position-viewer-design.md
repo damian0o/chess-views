@@ -267,3 +267,11 @@ respected (`mobility(board, { respectPins: true })`: only moves along the
 pin line towards or onto the pinner), Roads fades the roads a pinned slider
 cannot use, King houses shows the padlock instead of a text badge. Arrow
 overlays in King houses and Knight are drawn above the pieces.
+
+**Pins in attack counting (same day):** `attackMap(board, { respectPins: true })`
+limits a piece pinned to its king to the pin line. Territory and the King
+houses attacker/defender numbers use it; escape squares keep raw attacks,
+since a pinned piece still gives check. Territory shows the padlock.
+**Move preview:** right-click any piece in any board view to see its legal
+moves (dots, red ring for captures); for the side not to move the turn is
+swapped for the lookup. Esc or a second right-click hides it.

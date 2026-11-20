@@ -280,6 +280,13 @@
   .sw .hop { width: 16px; height: 16px; border-radius: 50%; background: var(--pen-blue); color: #fff; font-size: 9px; font-weight: 700; display: grid; place-items: center; }
   .sw .hop.own { background: #999; text-decoration: line-through; } .sw .hop.enemy { background: var(--pen-red); }
 
+  /* Right-click move preview */
+  .board .sq.mv-from { outline: 3px solid var(--focus); outline-offset: -3px; z-index: 2; }
+  .board .sq .mv { position: absolute; left: 50%; top: 50%; width: 30%; height: 30%; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(36, 86, 200, 0.55); z-index: 4; pointer-events: none; }
+  .board .sq .mv.capture { width: 86%; height: 86%; background: none; border: 4px solid rgba(201, 59, 59, 0.75); box-sizing: border-box; }
+  .board .sq .mv.illegal { background: rgba(120, 120, 120, 0.45); }
+  .mvhint { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
+
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
 </style>
@@ -336,7 +343,7 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -348,6 +355,7 @@ function currentChess() {
 
 function setPosition(source) {
   state.knightSquare = null;
+  state.showMoves = null;
   state.roadFocus = null;
   const chess = new Chess();
   if (source.kind === 'fen') {
@@ -428,6 +436,17 @@ function el(tag, attrs = {}, children = []) {
   return n;
 }
 
+/** Legal moves for the piece on `square`, even when it is not that side's turn (turn is swapped for the lookup). */
+function legalMovesFor(chess, square) {
+  const piece = chess.get(square);
+  if (!piece) return [];
+  if (piece.color === chess.turn()) return chess.moves({ square, verbose: true });
+  const f = chess.fen().split(' ');
+  f[1] = piece.color; f[3] = '-';
+  const alt = new Chess();
+  try { alt.load(f.join(' '), { skipValidation: true }); return alt.moves({ square, verbose: true }); } catch { return []; }
+}
+
 /** Centre of a square in the 8x8 overlay coordinate space, honouring the flip. */
 function cellXY(sq) {
   const { row, col } = A.squareIndex(sq);
@@ -448,11 +467,27 @@ function boardGrid(board, cellFn, extraClass = '') {
       const sq = el('div', { class: `sq ${A.squareColor(name)}`, title: name, 'data-square': name });
       const content = cellFn(row, col, board[row][col], name);
       if (content) sq.append(...[].concat(content));
+      sq.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        state.showMoves = board[row][col] && state.showMoves !== name ? name : null;
+        render();
+      });
       g.append(sq);
     }
     g.append(el('div', { class: 'coord', text: String(8 - row) }));
   }
   coordRow();
+  if (state.showMoves) {
+    const chess = currentChess();
+    const moves = legalMovesFor(chess, state.showMoves);
+    const from = g.querySelector(`[data-square="${state.showMoves}"]`);
+    if (from) from.classList.add('mv-from');
+    for (const m of moves) {
+      const cell = g.querySelector(`[data-square="${m.to}"]`);
+      if (cell) cell.append(el('span', { class: `mv ${m.captured ? 'capture' : ''}`.trim() }));
+    }
+    g.dataset.moves = String(moves.length);
+  }
   return g;
 }
 
@@ -507,13 +542,17 @@ const VIEWS = {
     title: 'Territory',
     render(container, board) {
       const t = A.territory(board);
-      container.append(tintTerritory(boardGrid(board, (r, c, cell, name) => {
+      const pinnedSquares = new Set(t.pinned.map((p) => p.square));
+      const tgrid = tintTerritory(boardGrid(board, (r, c, cell, name) => {
         const nodes = [];
         if (cell) nodes.push(ghostNode(cell, name));
         const m = t.mark[r][c];
         if (m) nodes.push(el('span', { class: 'mark', text: m }));
+        if (pinnedSquares.has(name)) nodes.push(lockNode('absolute'));
         return nodes;
-      }), t));
+      }), t);
+      for (const sq of tgrid.querySelectorAll('.sq')) if (pinnedSquares.has(sq.dataset.square)) sq.classList.add('frozen');
+      container.append(tgrid);
       const s = t.summary;
       container.append(el('p', { class: 'summary' }, [
         el('strong', { text: `White controls ${s.w} squares` }), ` (centre: ${s.centerW}), `,
@@ -524,6 +563,7 @@ const VIEWS = {
         { sw: 'mark', cls: 't-b', text2: '-', text: 'Black attacks it more' },
         { sw: 'mark', cls: 't-eq', text2: '=', text: 'both attack it the same' },
         { sw: 'sq', text: 'nobody attacks it' },
+        { sw: 'lock', kind: 'absolute', text: 'pinned to its king: only counts along the pin line' },
       ]));
     },
   },
@@ -978,6 +1018,14 @@ function render() {
   const container = $('view');
   container.replaceChildren();
   VIEWS[state.tab].render(container, board, { chess, turn: chess.turn(), fen: chess.fen() });
+  if (state.showMoves) {
+    const p = chess.get(state.showMoves);
+    const n = legalMovesFor(chess, state.showMoves).length;
+    const who = p ? `${p.color === 'w' ? 'White' : 'Black'} ${PIECE_WORDS[p.type]} on ${state.showMoves}` : state.showMoves;
+    container.prepend(el('p', { class: 'mvhint', text: `${who}: ${n} legal move${n === 1 ? '' : 's'}${p && p.color !== chess.turn() ? ' (if it were their turn)' : ''}. Right-click again or press Esc to hide.` }));
+  } else if (!container.querySelector('.mvhint')) {
+    container.prepend(el('p', { class: 'mvhint', text: 'Right-click a piece to see where it can go.' }));
+  }
 }
 
 function goTo(ply) {
@@ -1006,6 +1054,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') goTo(state.ply - 1);
   if (e.key === 'ArrowRight') goTo(state.ply + 1);
   if (e.key === 'f' || e.key === 'F') flipBoard();
+  if (e.key === 'Escape' && state.showMoves) { state.showMoves = null; render(); }
 });
 
 try {
