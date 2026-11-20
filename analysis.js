@@ -170,3 +170,48 @@ export function mobility(board) {
 export function mobilityTone(count) {
   return count <= 2 ? 'low' : count <= 6 ? 'mid' : 'high';
 }
+
+// ---------- roads (lines) ----------
+
+function buildLines() {
+  const lines = [];
+  for (let col = 0; col < 8; col++) {
+    lines.push({ id: FILES[col], kind: 'file', squares: Array.from({ length: 8 }, (_, i) => squareName(7 - i, col)) });
+  }
+  for (let rank = 1; rank <= 8; rank++) {
+    lines.push({ id: String(rank), kind: 'rank', squares: Array.from({ length: 8 }, (_, col) => squareName(8 - rank, col)) });
+  }
+  // Diagonals: walk from each starting square on the bottom/left edges going up-right, and bottom/right edges going up-left.
+  const diag = (startRow, startCol, dc) => {
+    const squares = [];
+    let r = startRow, c = startCol;
+    while (onBoard(r, c)) { squares.push(squareName(r, c)); r -= 1; c += dc; }
+    if (squares.length >= 3) lines.push({ id: `${squares[0]}-${squares[squares.length - 1]}`, kind: 'diag', squares });
+  };
+  for (let col = 0; col < 8; col++) diag(7, col, 1);          // from rank 1 going up-right
+  for (let row = 6; row >= 0; row--) diag(row, 0, 1);         // from a-file going up-right
+  for (let col = 7; col >= 0; col--) diag(7, col, -1);        // from rank 1 going up-left
+  for (let row = 6; row >= 0; row--) diag(row, 7, -1);        // from h-file going up-left
+  return lines;
+}
+
+export const LINES = buildLines();
+
+export function roads(board) {
+  return LINES.map((line) => {
+    const pieces = line.squares.map((sq) => { const { row, col } = squareIndex(sq); return board[row][col]; }).filter(Boolean);
+    const pawnColors = new Set(pieces.filter((p) => p.type === 'p').map((p) => p.color));
+    const state = pawnColors.size === 0 ? 'open' : pawnColors.size === 1 ? 'half' : 'closed';
+    return { id: line.id, kind: line.kind, squares: line.squares, state, pieces };
+  });
+}
+
+export function activeOnRoads(roadList) {
+  const active = new Set();
+  for (const road of roadList) {
+    if (road.state !== 'open' || road.kind === 'rank') continue;
+    const wants = road.kind === 'file' ? ['r', 'q'] : ['b', 'q'];
+    for (const p of road.pieces) if (wants.includes(p.type)) active.add(p.square);
+  }
+  return active;
+}
