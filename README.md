@@ -6,9 +6,12 @@ a parent helping, with a board that is easy to copy onto squared paper.
 
 Live: enable GitHub Pages on this repo (see below) and open the URL it gives you.
 
-## Paper symbols
+## Pieces
 
-One character per square, so it fits in a tiny paper square:
+On screen the board uses the standard piece images (the cburnett set by
+Colin M.L. Burnett, CC BY-SA 3.0, as shipped with chessground). Tick
+"Letters for paper" to switch every view to one-character symbols that fit
+in a tiny paper square; the print sheet always uses them:
 
 | Piece  | White | Black |
 |--------|-------|-------|
@@ -48,6 +51,8 @@ or share a link.
   defenders per square. Red means more attackers than defenders.
 - **Diamond**: the board turned 45°, so diagonals are straight lines and each
   row is one colour.
+- **Knight**: a knight's four straight tracks with hop numbers; click any
+  square to move the knight there, and toggle hop counts for every square.
 
 ## Run locally
 
@@ -74,8 +79,8 @@ node --test
 3. Branch `main`, folder `/ (root)`. Save.
 4. The page is live at `https://<user>.github.io/<repo>/` within a minute or two.
 
-Nothing to build: `index.html` loads chess.js from a CDN and `analysis.js`
-next to it.
+Nothing to build: `index.html` loads chess.js from a CDN, plus `analysis.js`
+and `pieces.css` next to it.
 
 ## Roadmap
 
