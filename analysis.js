@@ -367,3 +367,62 @@ export function defaultKnightSquare(board, turn) {
   const own = knights.find((p) => p.color === turn);
   return (own || knights[0] || null)?.square ?? null;
 }
+
+// ---------- king house report ----------
+
+/** Strengths, weaknesses and pressure on one king's 3x3 house. Null if that colour has no king. */
+export function kingHouseReport(board, color) {
+  const houses = kingHouses(board);
+  const house = houses[color];
+  if (!house) return null;
+  const enemy = color === 'w' ? 'b' : 'w';
+  const { row: kr, col: kc } = squareIndex(house.king);
+  const houseSet = new Set(house.cells.map((c) => c.square));
+
+  const cells = house.cells.map((c) => ({ ...c, balance: c.defenders - c.attackers }));
+
+  // Shield: the three squares in front of the king.
+  const forward = color === 'w' ? -1 : 1;
+  const shield = [];
+  for (let dc = -1; dc <= 1; dc++) {
+    const c = kc + dc, r = kr + forward;
+    if (!onBoard(r, c)) continue;
+    const sq = squareName(r, c);
+    const here = board[r][c];
+    let status = 'missing';
+    if (here && here.type === 'p' && here.color === color) status = 'pawn';
+    else if (onBoard(r + forward, c)) {
+      const up = board[r + forward][c];
+      if (up && up.type === 'p' && up.color === color) status = 'advanced';
+    }
+    shield.push({ square: sq, status });
+  }
+
+  // Files next to the king with no own pawn.
+  const openFiles = [];
+  for (let dc = -1; dc <= 1; dc++) {
+    const c = kc + dc;
+    if (c < 0 || c > 7) continue;
+    const ownPawn = board.some((rowCells) => rowCells[c] && rowCells[c].type === 'p' && rowCells[c].color === color);
+    if (!ownPawn) openFiles.push(FILES[c]);
+  }
+
+  // Pieces touching the house.
+  const aiming = [], defending = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = board[r][c];
+    if (!p || (p.type === 'k' && p.color === color)) continue;
+    const hits = attacksFrom(board, r, c).map(([ar, ac]) => squareName(ar, ac)).filter((sq) => houseSet.has(sq));
+    if (!hits.length) continue;
+    (p.color === enemy ? aiming : defending).push({ square: p.square, type: p.type, color: p.color, hits });
+  }
+
+  const weakestCell = cells.reduce((w, c) => (c.balance < w.balance ? c : w), cells[0]);
+  const weakest = { square: weakestCell.square, balance: weakestCell.balance, needs: Math.max(0, weakestCell.balance + 1) };
+  const brokenSquares = cells.filter((c) => c.balance < 0).length;
+  const shieldPawns = shield.filter((s) => s.status === 'pawn').length;
+  const score = shieldPawns - openFiles.length - brokenSquares - (aiming.length >= 3 ? 1 : 0);
+  const label = score >= 3 ? 'Strong' : score >= 1 ? 'Shaky' : 'In danger';
+
+  return { king: house.king, cells, shield, openFiles, aiming, defending, weakest, brokenSquares, shieldPawns, score, label };
+}

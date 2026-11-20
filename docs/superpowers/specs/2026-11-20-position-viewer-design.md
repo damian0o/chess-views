@@ -216,3 +216,29 @@ URIs in `pieces.css`, no runtime CDN) is the default in every view; a
 "Letters for paper" checkbox (remembered in localStorage) switches all views
 to the one-character scheme, and the print sheet always uses letters since
 it exists to be copied by hand.
+
+## Addendum 2026-11-20: King houses, strengths and pressure
+
+**Intent.** Make the house itself the subject: colour for health, plain
+words for strengths, weaknesses and how much pressure breaks it.
+
+**Behaviour.**
+- House cells coloured by `defenders − attackers`: ≥ +2 green, +1 light
+  green, 0 yellow, −1 orange, ≤ −2 red. The `attackers/defenders` text stays.
+- Shield = the three squares in front of the king (next rank, files k−1..k+1).
+  Each is `pawn` (own pawn there), `advanced` (own pawn one rank further) or
+  `missing`. Pawns in the shield get a green border; missing slots a dashed one.
+- Files k−1..k+1 with no own pawn are "open files next to the king" and get a
+  red mark on their house cells.
+- Enemy pieces attacking at least one house square are "aiming at the house"
+  (red ring on the piece). Own pieces other than the king attacking at least
+  one house square are "defending it" (green ring).
+- Weakest square = the house square with the lowest balance; "opponent needs
+  N more attackers" where N = balance + 1 (balance < 0 → "already broken").
+- Score = shield pawns − open files − broken squares − (1 if ≥ 3 pieces aim).
+  Label: ≥ 3 Strong, 1–2 Shaky, ≤ 0 In danger. The components are listed so
+  the number is never a mystery.
+
+**Approaches considered.** Lines from attackers to targets (rejected: busy),
+a single engine-like safety number (rejected: opaque), this component list
+(chosen).
