@@ -207,3 +207,12 @@ knight slopes onto the queen's four.
 
 **Left to the builder.** Colours; whether hop numbers beyond 1 on blocked
 tracks are dimmed.
+
+## Addendum 2026-11-20: piece images
+
+After seeing the letter chips live, the user asked for standard piece images
+on screen. Decision: the cburnett SVG set (CC BY-SA 3.0, embedded as data
+URIs in `pieces.css`, no runtime CDN) is the default in every view; a
+"Letters for paper" checkbox (remembered in localStorage) switches all views
+to the one-character scheme, and the print sheet always uses letters since
+it exists to be copied by hand.
