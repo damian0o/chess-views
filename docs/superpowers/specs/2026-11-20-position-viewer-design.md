@@ -174,3 +174,36 @@ a8–h1 are drawn as faint guide lines through the centre.
 - Whether tabs or a sidebar; tabs are the suggestion.
 - How much of the Roads diagonal set to draw; dropping length-3 diagonals
   is acceptable if the picture gets cluttered.
+
+## Addendum 2026-11-20: Knight view
+
+**Intent.** Show that a knight moves in straight lines (slopes 2 and ½) by
+drawing its four tracks across the whole board, and teach knight distance
+with a hop-count map. For an 8-year-old; drawable on paper with a ruler.
+
+**Approaches considered.** (A) Knight tracks: four straight lines through
+the knight with hop numbers — chosen. (B) Distance map: hop count on
+every square — chosen as a toggle inside A. (C) Eight-target star only —
+rejected, it is what every beginner book shows. Skewing the board so knight
+lines become rook/bishop lines was rejected: no linear map sends all four
+knight slopes onto the queen's four.
+
+**Behaviour.**
+- New tab **Knight**. Origin square = the first knight of the side to
+  move, else any knight, else none (message: "No knight here. Click a
+  square to put an imaginary knight on it."). Clicking any square moves
+  the origin there (an imaginary knight if the square is empty or holds
+  another piece). The origin resets whenever a new position is loaded.
+- Tracks: for each of the 8 knight directions, walk hops 1, 2, 3… until
+  off the board. Each hop square shows its hop number. A hop square holding
+  the knight's own piece is marked "own" (cannot land), an enemy piece
+  "enemy" (capture). Tracks are drawn as thin straight lines through all
+  hop squares of the two opposite directions (4 lines).
+- Toggle "Hop counts for every square": every square shows the minimum
+  number of knight moves from the origin on an empty board (pure geometry,
+  pieces ignored), tinted by distance. The tracks stay drawn.
+- Legend for paper: "Lay a ruler two across and one up through the
+  knight: every dot on it is one hop."
+
+**Left to the builder.** Colours; whether hop numbers beyond 1 on blocked
+tracks are dimmed.
