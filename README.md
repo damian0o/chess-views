@@ -36,6 +36,7 @@ Paste any of these into the box and press Load (or Ctrl/Cmd+Enter):
   fetched from lichess; if that fails, paste the PGN instead.
 
 With a PGN you get a move slider and the arrow keys step through the game.
+"Flip board" (or the `f` key) turns every view around to play from Black's side.
 The position and the current view are kept in the URL, so you can bookmark
 or share a link.
 
