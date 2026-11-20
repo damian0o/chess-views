@@ -20,11 +20,11 @@ test('a rook pinned on its file can still slide along the file', () => {
   assert.equal(r.count, 6); // e3 e4 e5 e6 e7 and the capture on e8
 });
 
-test('a pawn pinned on its file can push, pinned on a diagonal it cannot', () => {
+test('a pinned pawn only keeps attack squares on the pin line', () => {
   const file = mobility(boardFromFen('4r1k1/8/8/8/8/8/4P3/4K3 w - - 0 1'), { respectPins: true });
-  assert.equal(piece(file, 'e2').count, 2);
+  assert.equal(piece(file, 'e2').count, 0);   // d3 and f3 are off the e-file
   const diag = mobility(boardFromFen('6k1/8/8/b7/8/8/3P4/4K3 w - - 0 1'), { respectPins: true });
-  assert.equal(piece(diag, 'd2').count, 0);
+  assert.equal(piece(diag, 'd2').count, 1);   // c3 lies on the a5-e1 pin line, e3 does not
   assert.equal(piece(diag, 'd2').pinned, 'absolute');
 });
 

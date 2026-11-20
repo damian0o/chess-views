@@ -593,12 +593,13 @@ const VIEWS = {
         return node;
       }));
       container.append(el('p', { class: 'summary' }, [
-        'Mobility: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '.',
+        'Reach: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '. Pieces count squares they can move to; pawns the squares they attack.',
       ]));
       container.append(legend([
         { sw: 'num', cls: 'low', text2: '0–2', text: 'stuck: almost nowhere to go' },
         { sw: 'num', cls: 'mid', text2: '3–6', text: 'some room' },
         { sw: 'num', cls: 'high', text2: '7+', text: 'free: many squares to go to' },
+        { sw: 'piece', type: 'p', color: 'w', text: 'pawns count the two squares they attack, left and right ahead (one on the edge)' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to the king: only moves along the pin line count' },
         { sw: 'lock', kind: 'relative', text: 'pinned to a bigger piece: can move, but it costs' },
       ]));
