@@ -323,3 +323,47 @@ export function diamondRows(board) {
   }
   return rows;
 }
+
+// ---------- knight ----------
+
+export const KNIGHT_DIRS = KNIGHT_OFFSETS;
+
+/** The knight's 8 straight tracks from `origin`: hop squares with hop number and landing status. */
+export function knightTracks(board, origin) {
+  const { row, col } = squareIndex(origin);
+  const originPiece = board[row][col];
+  const color = originPiece ? originPiece.color : 'w';
+  return KNIGHT_DIRS.map(([dr, dc]) => {
+    const hops = [];
+    let r = row + dr, c = col + dc, n = 1;
+    while (onBoard(r, c)) {
+      const p = board[r][c];
+      hops.push({ square: squareName(r, c), n, status: !p ? 'free' : p.color === color ? 'own' : 'enemy' });
+      r += dr; c += dc; n += 1;
+    }
+    return { dir: [dr, dc], hops };
+  });
+}
+
+/** Minimum knight moves from `origin` to every square on an empty board. */
+export function knightDistances(origin) {
+  const d = emptyGrid(-1);
+  const { row, col } = squareIndex(origin);
+  d[row][col] = 0;
+  const queue = [[row, col]];
+  while (queue.length) {
+    const [r, c] = queue.shift();
+    for (const [dr, dc] of KNIGHT_DIRS) {
+      const nr = r + dr, nc = c + dc;
+      if (onBoard(nr, nc) && d[nr][nc] < 0) { d[nr][nc] = d[r][c] + 1; queue.push([nr, nc]); }
+    }
+  }
+  return d;
+}
+
+/** First knight of `turn`'s side, else any knight, else null. */
+export function defaultKnightSquare(board, turn) {
+  const knights = board.flat().filter((p) => p && p.type === 'n');
+  const own = knights.find((p) => p.color === turn);
+  return (own || knights[0] || null)?.square ?? null;
+}
