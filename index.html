@@ -131,9 +131,10 @@
 
   /* Roads */
   .roadwrap { position: relative; display: inline-block; }
-  .roadwrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
+  .roadwrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
   .roadwrap .board .sq { background: transparent !important; }
   .roadwrap .board .sq.dark { background: color-mix(in srgb, var(--square-dark) 45%, transparent) !important; }
+  .roadwrap .board .sq.frozen { background-image: repeating-linear-gradient(-45deg, transparent 0 5px, rgba(224,122,16,0.35) 5px 8px) !important; }
   .roadwrap .board .sq .p { position: relative; z-index: 1; }
   .roadwrap .board .sq .dot { display: none; }
   .roadwrap .board .sq.active .p { }
@@ -168,13 +169,19 @@
   .board .sq.defend.side-b .piece, .board .sq.defend.side-b .p { outline: 3px dashed var(--side-b); outline-offset: 1px; }
   .board .sq.aim.defend .piece, .board .sq.aim.defend .p { outline-offset: 4px; }
   .presswrap { position: relative; display: inline-block; }
-  .presswrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
+  .presswrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; z-index: 5; }
   .presswrap line { stroke: var(--side-b); stroke-width: 0.09; stroke-linecap: round; opacity: 0.85; }
   .presswrap line.by-w { stroke: var(--side-w); }
   .presswrap line.pin { stroke: #e07a10; stroke-width: 0.07; opacity: 0.9; }
   .presswrap line.pin.relative { stroke-dasharray: 0.2 0.12; opacity: 0.75; }
   .board .sq.pinned .piece, .board .sq.pinned .p { box-shadow: 0 0 0 3px #e07a10; border-radius: 50%; }
-  .board .sq.pinned::before { content: 'pin'; position: absolute; right: 2px; top: 1px; font-size: 0.32em; font-weight: 700; color: #fff; background: #e07a10; padding: 0 3px; border-radius: 3px; z-index: 2; }
+  .lock { position: absolute; right: 2px; top: 2px; width: 34%; height: 34%; z-index: 3; }
+  .lock svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 1px #fff); }
+  .board .sq.frozen { background-image: repeating-linear-gradient(-45deg, transparent 0 5px, rgba(224,122,16,0.28) 5px 8px); }
+  .board .sq.frozen .piece { opacity: 0.75; }
+  .board .sq .reach.frozen { background: #f8d9b5; color: #7a3a00; }
+  .roadwrap line.frozen { stroke-dasharray: 0.16 0.14; opacity: 0.35; }
+  .sw .lock { position: static; width: 18px; height: 18px; }
   .presswrap line.defend { stroke-width: 0.05; opacity: 0.6; stroke-dasharray: 0.18 0.14; }
   .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); max-width: 72ch; width: 100%; }
   .houses h3 { margin: 0 0 4px; font-size: 1.05rem; }
@@ -234,7 +241,7 @@
 
   /* Knight */
   .knightwrap { position: relative; display: inline-block; }
-  .knightwrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
+  .knightwrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; z-index: 5; }
   .knightwrap line { stroke: var(--pen-blue); stroke-width: 0.06; opacity: 0.6; stroke-linecap: round; }
   .knightwrap .board .sq { cursor: pointer; }
   .knightwrap .board .sq .dot { display: none; }
@@ -511,15 +518,19 @@ const VIEWS = {
   reach: {
     title: 'Reach',
     render(container, board) {
-      const m = A.mobility(board);
+      const m = A.mobility(board, { respectPins: true });
       const byValue = Object.fromEntries(m.pieces.map((p) => [p.square, p.count]));
+      const pinnedAs = Object.fromEntries(m.pieces.filter((p) => p.pinned).map((p) => [p.square, p.pinned]));
       container.append(boardGrid(board, (r, c, cell, name) => {
         if (!cell) return pieceNode(cell, name);
         const n = byValue[name];
         const kids = state.pieceStyle === 'images'
           ? [pieceImage(cell), el('b', { class: 'badge', text: String(n) })]
           : [document.createTextNode(A.symbol(cell, name)), el('br'), el('b', { text: String(n) })];
-        return el('span', { class: `reach ${A.mobilityTone(n)} ${cell.color}` }, kids);
+        const pin = pinnedAs[name];
+        const node = el('span', { class: `reach ${A.mobilityTone(n)} ${cell.color} ${pin === 'absolute' ? 'frozen' : ''}`.trim() }, kids);
+        if (pin) node.append(lockNode(pin));
+        return node;
       }));
       container.append(el('p', { class: 'summary' }, [
         'Mobility: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '.',
@@ -528,6 +539,8 @@ const VIEWS = {
         { sw: 'num', cls: 'low', text2: '0–2', text: 'stuck: almost nowhere to go' },
         { sw: 'num', cls: 'mid', text2: '3–6', text: 'some room' },
         { sw: 'num', cls: 'high', text2: '7+', text: 'free: many squares to go to' },
+        { sw: 'lock', kind: 'absolute', text: 'pinned to the king: only moves along the pin line count' },
+        { sw: 'lock', kind: 'relative', text: 'pinned to a bigger piece: can move, but it costs' },
       ]));
     },
   },
@@ -540,12 +553,15 @@ const VIEWS = {
       const focus = state.roadFocus && board.flat().find((p) => p && p.square === state.roadFocus && 'rbq'.includes(p.type)) ? state.roadFocus : null;
       if (!focus) state.roadFocus = null;
 
+      const frozen = new Map();
+      for (const pn of A.pins(board)) if (pn.absolute && 'rbq'.includes(pn.pinned.type)) frozen.set(pn.pinned.square, pn);
       const grid = boardGrid(board, (r, c, cell, name) => pieceNode(cell, name));
       for (const sq of grid.querySelectorAll('.sq')) {
         const name = sq.dataset.square;
         const { row, col } = A.squareIndex(name);
         const p = board[row][col];
         if (p && 'rbq'.includes(p.type)) sq.classList.add('slider');
+        if (frozen.has(name)) { sq.classList.add('frozen'); sq.append(lockNode('absolute')); }
         if (name === focus) sq.classList.add('focused');
         sq.addEventListener('click', () => {
           state.roadFocus = p && 'rbq'.includes(p.type) && state.roadFocus !== name ? name : null;
@@ -573,7 +589,9 @@ const VIEWS = {
         const [x2, y2] = centre(road.squares[road.squares.length - 1]);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         const side = sideOf(users);
-        const cls = [road.state, side !== 'none' ? `used-${side}` : '', focus ? 'focus' : ''].filter(Boolean).join(' ');
+        // A road only a pinned piece stands on is a road it cannot use (unless it is the pin line itself).
+        const usable = users.filter((u) => !frozen.has(u.square) || frozen.get(u.square).between.concat([frozen.get(u.square).pinner.square, frozen.get(u.square).target.square]).every((sq) => road.squares.includes(sq)));
+        const cls = [road.state, side !== 'none' ? `used-${side}` : '', focus ? 'focus' : '', users.length && !usable.length ? 'frozen' : ''].filter(Boolean).join(' ');
         for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) line.setAttribute(k, v);
         line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${road.kind} ${road.id}: ${road.state}${users.length ? ', used by ' + users.map((p) => p.square).join(' ') : ''}` }));
         svg.append(line);
@@ -602,6 +620,7 @@ const VIEWS = {
         { sw: 'road', width: 6, text: 'open road nobody uses yet' },
         { sw: 'road', width: 2, text: 'half open: pawns of one side only' },
         { sw: 'road', cls: 'road-dashed', width: 2, text: 'blocked by pawns of both sides (shown only for a clicked piece)' },
+        { sw: 'lock', kind: 'absolute', text: 'pinned to the king: its roads are faded, it cannot use them' },
       ]));
     },
   },
@@ -609,7 +628,7 @@ const VIEWS = {
     title: 'King houses',
     render(container, board, ctx) {
       const reports = { w: A.kingHouseReport(board, 'w'), b: A.kingHouseReport(board, 'b') };
-      const cellInfo = new Map(), shieldInfo = new Map(), openFileCells = new Set(), aim = new Map(), defend = new Map(), escapes = new Set(), pinned = new Set();
+      const cellInfo = new Map(), shieldInfo = new Map(), openFileCells = new Set(), aim = new Map(), defend = new Map(), escapes = new Set(), pinned = new Map();
       for (const side of ['w', 'b']) {
         const r = reports[side];
         if (!r) continue;
@@ -619,7 +638,7 @@ const VIEWS = {
           for (const c of r.cells) if (r.openFiles.includes(c.square[0])) openFileCells.add(c.square);
         }
         for (const sq of r.escapes) escapes.add(sq);
-        for (const pn of r.pins) pinned.add(pn.pinned.square);
+        for (const pn of r.pins) if (!pinned.has(pn.pinned.square) || pn.absolute) pinned.set(pn.pinned.square, pn.absolute ? 'absolute' : 'relative');
         for (const p of r.aiming) aim.set(p.square, p.color);
         for (const p of r.defending) defend.set(p.square, p.color);
       }
@@ -636,7 +655,7 @@ const VIEWS = {
         const info = cellInfo.get(name);
         if (aim.has(name)) sq.classList.add('aim', `side-${aim.get(name)}`);
         if (defend.has(name)) sq.classList.add('defend', `side-${defend.get(name)}`);
-        if (pinned.has(name)) sq.classList.add('pinned');
+        if (pinned.has(name)) { sq.classList.add('pinned'); if (pinned.get(name) === 'absolute') sq.classList.add('frozen'); sq.append(lockNode(pinned.get(name))); }
         if (!info) { sq.classList.add('out'); continue; }
         sq.classList.add('house');
         const b = info.balance;
@@ -738,7 +757,8 @@ const VIEWS = {
         { sw: 'sq', cls: 'openfile', text: 'open file next to the king' },
         { sw: 'pin', text: 'pin to the king (piece may not move)' },
         { sw: 'pin-dashed', text: 'pin to a more valuable piece' },
-        { sw: 'pinbadge', text: 'the pinned piece' },
+        { sw: 'lock', kind: 'absolute', text: 'pinned to the king: cannot leave the pin line' },
+        { sw: 'lock', kind: 'relative', text: 'pinned to a bigger piece: can move, but it costs' },
         { sw: 'defend-line', color: 'w', text: 'guard line (optional, same colours)' },
       ]));
     },
@@ -853,6 +873,7 @@ function legend(items) {
       case 'road': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><line x1="4" y1="13" x2="40" y2="13" stroke="#1d2a44" stroke-width="${it.width || 5}" stroke-linecap="round" opacity="0.6"/></svg>`; break;
       case 'ring': sw.classList.add('none'); sw.append(el('span', { class: `ring ${it.cls || ''}` })); sw.className = 'sw none'; break;
       case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
+      case 'lock': sw.classList.add('none'); sw.append(lockNode(it.kind)); break;
       case 'num': sw.append(el('span', { class: 'num', text: it.text2 || '2/1' })); break;
       case 'mark': sw.append(el('span', { class: 'mark', text: it.text2 })); break;
       case 'hop': sw.append(el('span', { class: `hop ${it.cls || ''}`, text: it.text2 || '1' })); sw.className = 'sw'; break;
@@ -862,6 +883,14 @@ function legend(items) {
     ul.append(el('li', {}, [sw, document.createTextNode(it.text)]));
   }
   return ul;
+}
+
+function lockNode(kind) {
+  const closed = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="2" fill="#e07a10"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="#e07a10" stroke-width="2.4"/><circle cx="12" cy="16" r="1.8" fill="#fff"/></svg>';
+  const open = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="2" fill="none" stroke="#e07a10" stroke-width="2.2"/><path d="M8 10V7a4 4 0 0 1 8 0" fill="none" stroke="#e07a10" stroke-width="2.4"/><circle cx="12" cy="16" r="1.8" fill="#e07a10"/></svg>';
+  const n = el('span', { class: `lock ${kind}`, title: kind === 'absolute' ? 'Pinned to the king: it cannot leave the pin line' : 'Pinned to a bigger piece: moving it costs material' });
+  n.innerHTML = kind === 'absolute' ? closed : open;
+  return n;
 }
 
 function pinWords(list) {
