@@ -154,6 +154,10 @@
   .board .sq.aim .piece, .board .sq.aim .p { box-shadow: 0 0 0 3px var(--pen-red); border-radius: 50%; }
   .board .sq.defend .piece, .board .sq.defend .p { box-shadow: 0 0 0 3px #1e8f4a; border-radius: 50%; }
   .board .sq.aim.defend .piece, .board .sq.aim.defend .p { box-shadow: 0 0 0 3px #1e8f4a, 0 0 0 6px var(--pen-red); }
+  .presswrap { position: relative; display: inline-block; }
+  .presswrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
+  .presswrap line { stroke: var(--pen-red); stroke-width: 0.09; stroke-linecap: round; opacity: 0.85; }
+  .presswrap line.defend { stroke: #1e8f4a; stroke-width: 0.05; opacity: 0.6; stroke-dasharray: 0.18 0.14; }
   .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); max-width: 72ch; width: 100%; }
   .houses h3 { margin: 0 0 4px; font-size: 1.05rem; }
   .houses .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.85rem; margin-left: 8px; color: #fff; }
@@ -558,7 +562,32 @@ const VIEWS = {
         if (escapes.has(name)) sq.classList.add('escape');
         sq.title = `${name}: ${info.attackers} attacking, ${info.defenders} defending`;
       }
-      container.append(grid);
+      // Pressure arrows: each aiming piece to every house square it hits; defenders as thin dashed green.
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c93b3b"/></marker></defs>';
+      const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
+      const arrow = (from, to, cls) => {
+        const [x1, y1] = centre(from), [x2, y2] = centre(to);
+        const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+        // Stop a little short of the target centre so the head does not cover the piece.
+        const k = (len - 0.32) / len;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        for (const [key, v] of Object.entries({ x1, y1, x2: x1 + dx * k, y2: y1 + dy * k })) line.setAttribute(key, v);
+        if (cls) line.setAttribute('class', cls); else line.setAttribute('marker-end', 'url(#arrow)');
+        svg.append(line);
+      };
+      for (const side of ['w', 'b']) {
+        const r = reports[side];
+        if (!r) continue;
+        if (state.kingDefLines) for (const d of r.defending) for (const sq of d.hits) arrow(d.square, sq, 'defend');
+        for (const a of r.aiming) for (const sq of a.hits) arrow(a.square, sq);
+      }
+      container.append(el('div', { class: 'presswrap' }, [grid, svg]));
+      container.append(el('label', { class: 'toggle' }, [
+        Object.assign(el('input', { type: 'checkbox' }), { checked: !!state.kingDefLines, onchange: (e) => { state.kingDefLines = e.target.checked; render(); } }),
+        'Also show defender lines',
+      ]));
 
       const words = (list) => list.length ? `${list.length} (${list.map((p) => PIECE_WORDS[p.type]).join(', ')})` : 'none';
       const panel = el('div', { class: 'houses' });
@@ -601,7 +630,7 @@ const VIEWS = {
         ]));
       }
       container.append(panel);
-      container.append(el('p', { class: 'legend', text: 'House squares: green = well held, yellow = even, orange = short by one, red = the opponent already has more. Small numbers are attackers/defenders. Dashed circle = a square the king can escape to. Green border = shield pawn, striped = missing shield pawn, red bar = open file next to the king. Red ring = enemy piece aiming at the house, green ring = piece defending it.' }));
+      container.append(el('p', { class: 'legend', text: 'Red arrows = pressure: an enemy piece hitting a house square. House squares: green = well held, yellow = even, orange = short by one, red = the opponent already has more. Small numbers are attackers/defenders. Dashed circle = a square the king can escape to. Green border = shield pawn, striped = missing shield pawn, red bar = open file next to the king. Red ring = enemy piece aiming at the house, green ring = piece defending it.' }));
     },
   },
   diamond: {
