@@ -107,6 +107,21 @@
   .board .sq .sub { position: absolute; right: 2px; bottom: 1px; font-size: 0.42em; color: var(--ink-soft); }
   .board.plain .sq .p.w, .board.plain .sq .p.b { background: none; color: var(--ink); box-shadow: none; }
 
+  /* Territory */
+  .board .sq .mark { font-weight: 700; font-size: 1.1em; }
+  .board .sq .ghost { position: absolute; left: 3px; top: 1px; font-size: 0.42em; color: var(--ink-soft); opacity: 0.9; }
+  .board .sq.t-w1 { background: #dce8ff; } .board .sq.t-w2 { background: #b9d0ff; } .board .sq.t-w3 { background: #8fb3ff; }
+  .board .sq.t-b1 { background: #ffdede; } .board .sq.t-b2 { background: #ffbcbc; } .board .sq.t-b3 { background: #ff9494; }
+  .board .sq.t-eq { background: #d9d9d9; }
+  .board .sq.t-w1 .mark, .board .sq.t-w2 .mark, .board .sq.t-w3 .mark { color: #1b3f9e; }
+  .board .sq.t-b1 .mark, .board .sq.t-b2 .mark, .board .sq.t-b3 .mark { color: #9e1b1b; }
+  .board .sq.t-eq .mark { color: #333; }
+  /* Reach */
+  .board .sq .reach { display: grid; place-items: center; width: 92%; height: 92%; border-radius: 0.2em; font-size: 0.55em; line-height: 1.05; font-weight: 600; text-align: center; }
+  .board .sq .reach b { font-size: 1.5em; }
+  .board .sq .reach.low { background: #ffd6d6; color: #7a1414; } .board .sq .reach.mid { background: #f1e9c6; color: #5c4a05; } .board .sq .reach.high { background: #cdebd7; color: #0f5a2b; }
+  .board .sq .reach.b { outline: 2px solid #111; outline-offset: -2px; }
+
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
 </style>
@@ -294,7 +309,54 @@ const VIEWS = {
       ]));
     },
   },
+  territory: {
+    title: 'Territory',
+    render(container, board) {
+      const t = A.territory(board);
+      container.append(tintTerritory(boardGrid(board, (r, c, cell, name) => {
+        const nodes = [];
+        if (cell) nodes.push(el('span', { class: 'ghost', text: A.symbol(cell, name) }));
+        const m = t.mark[r][c];
+        if (m) nodes.push(el('span', { class: 'mark', text: m }));
+        return nodes;
+      }), t));
+      const s = t.summary;
+      container.append(el('p', { class: 'summary' }, [
+        el('strong', { text: `White controls ${s.w} squares` }), ` (centre: ${s.centerW}), `,
+        el('strong', { text: `Black controls ${s.b}` }), ` (centre: ${s.centerB}).`,
+      ]));
+      container.append(el('p', { class: 'legend', text: '+ white attacks it more, − black attacks it more, = both the same. Darker tint means a bigger difference.' }));
+    },
+  },
+  reach: {
+    title: 'Reach',
+    render(container, board) {
+      const m = A.mobility(board);
+      const byValue = Object.fromEntries(m.pieces.map((p) => [p.square, p.count]));
+      container.append(boardGrid(board, (r, c, cell, name) => {
+        if (!cell) return pieceNode(cell, name);
+        const n = byValue[name];
+        return el('span', { class: `reach ${A.mobilityTone(n)} ${cell.color}` }, [A.symbol(cell, name), el('br'), el('b', { text: String(n) })]);
+      }));
+      container.append(el('p', { class: 'summary' }, [
+        'Mobility: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '.',
+      ]));
+      container.append(el('p', { class: 'legend', text: 'The number is how many squares that piece could go to right now. Red 0–2 is stuck, green 7+ is free. Black pieces have a black outline.' }));
+    },
+  },
 };
+
+function tintTerritory(grid, t) {
+  for (const sq of grid.querySelectorAll('.sq')) {
+    const { row, col } = A.squareIndex(sq.dataset.square);
+    const d = t.diff[row][col];
+    const mark = t.mark[row][col];
+    if (mark === '=') sq.classList.add('t-eq');
+    else if (d > 0) sq.classList.add(`t-w${Math.min(3, d)}`);
+    else if (d < 0) sq.classList.add(`t-b${Math.min(3, -d)}`);
+  }
+  return grid;
+}
 
 function renderTabs() {
   const nav = $('tabs');
