@@ -136,11 +136,20 @@
   .roadwrap .board .sq.dark { background: color-mix(in srgb, var(--square-dark) 45%, transparent) !important; }
   .roadwrap .board .sq .p { position: relative; z-index: 1; }
   .roadwrap .board .sq .dot { display: none; }
-  .roadwrap .board .sq.active .p { box-shadow: 0 0 0 3px var(--ok); }
-  .roadwrap line { stroke: var(--ink); stroke-linecap: round; }
-  .roadwrap line.open { stroke-width: 0.16; opacity: 0.55; }
-  .roadwrap line.half { stroke-width: 0.07; opacity: 0.5; }
-  .roadwrap line.closed { stroke-width: 0.025; opacity: 0.45; stroke-dasharray: 0.12 0.12; }
+  .roadwrap .board .sq.active .p { }
+  .roadwrap line { stroke: var(--ink); stroke-linecap: round; opacity: 0.2; }
+  .roadwrap line.open { stroke-width: 0.16; }
+  .roadwrap line.half { stroke-width: 0.07; }
+  .roadwrap line.closed { stroke-width: 0.06; stroke-dasharray: 0.14 0.12; }
+  .roadwrap line.used-w { stroke: var(--side-w); opacity: 0.8; }
+  .roadwrap line.used-b { stroke: var(--side-b); opacity: 0.8; }
+  .roadwrap line.used-both { stroke: #7a3fb0; opacity: 0.85; }
+  .roadwrap line.dim { opacity: 0.06; }
+  .roadwrap line.focus { opacity: 0.95; }
+  .roadwrap .board .sq.slider { cursor: pointer; }
+  .roadwrap .board .sq.focused .piece, .roadwrap .board .sq.focused .p { box-shadow: 0 0 0 3px var(--focus); border-radius: 50%; }
+  .sw.road-w svg line { stroke: var(--side-w) !important; opacity: 0.8 !important; } .sw.road-b svg line { stroke: var(--side-b) !important; opacity: 0.8 !important; } .sw.road-both svg line { stroke: #7a3fb0 !important; opacity: 0.85 !important; }
+  .sw.road-dashed svg line { stroke-dasharray: 5 4; }
   /* King houses */
   .board .sq.out { opacity: 0.45; }
   .board .sq.out .dot { display: none; }
@@ -317,7 +326,7 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -329,6 +338,7 @@ function currentChess() {
 
 function setPosition(source) {
   state.knightSquare = null;
+  state.roadFocus = null;
   const chess = new Chess();
   if (source.kind === 'fen') {
     chess.load(source.fen, { skipValidation: true });
@@ -525,46 +535,73 @@ const VIEWS = {
     title: 'Roads',
     render(container, board) {
       const list = A.roads(board);
-      const active = A.activeOnRoads(list);
+      const usersOf = (road) => road.pieces.filter((p) => (road.kind === 'diag' ? 'bq' : 'rq').includes(p.type));
+      const sideOf = (users) => { const w = users.some((p) => p.color === 'w'), b = users.some((p) => p.color === 'b'); return w && b ? 'both' : w ? 'w' : b ? 'b' : 'none'; };
+      const focus = state.roadFocus && board.flat().find((p) => p && p.square === state.roadFocus && 'rbq'.includes(p.type)) ? state.roadFocus : null;
+      if (!focus) state.roadFocus = null;
+
       const grid = boardGrid(board, (r, c, cell, name) => pieceNode(cell, name));
-      for (const sq of grid.querySelectorAll('.sq')) if (active.has(sq.dataset.square)) sq.classList.add('active');
+      for (const sq of grid.querySelectorAll('.sq')) {
+        const name = sq.dataset.square;
+        const { row, col } = A.squareIndex(name);
+        const p = board[row][col];
+        if (p && 'rbq'.includes(p.type)) sq.classList.add('slider');
+        if (name === focus) sq.classList.add('focused');
+        sq.addEventListener('click', () => {
+          state.roadFocus = p && 'rbq'.includes(p.type) && state.roadFocus !== name ? name : null;
+          render();
+        });
+      }
+
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 8 8');
       svg.setAttribute('aria-hidden', 'true');
       const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
-      // Keep the picture readable: blocked roads are not drawn, half-open ones only when long,
-      // ranks only when open and actually used by a rook or queen.
-      const worthDrawing = (road) => {
+      // Without focus: blocked roads are hidden, half-open diagonals only when long, ranks only when a rook/queen uses them.
+      const worthDrawing = (road, users) => {
+        if (focus) return road.squares.includes(focus) && users.some((p) => p.square === focus);
         if (road.state === 'closed') return false;
-        if (road.kind === 'rank') return road.state === 'open' && road.pieces.some((p) => p.type === 'r' || p.type === 'q');
-        if (road.kind === 'diag' && road.state === 'half') return road.squares.length >= 5;
+        if (road.kind === 'rank') return road.state === 'open' && users.length > 0;
+        if (road.kind === 'diag' && road.state === 'half') return road.squares.length >= 5 || users.length > 0;
         return true;
       };
-      for (const state of ['half', 'open']) {
-        for (const road of list.filter((x) => x.state === state && worthDrawing(x))) {
-          const [x1, y1] = centre(road.squares[0]);
-          const [x2, y2] = centre(road.squares[road.squares.length - 1]);
-          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: road.state })) line.setAttribute(k, v);
-          line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${road.kind} ${road.id}: ${road.state}` }));
-          svg.append(line);
-        }
+      const order = { closed: 0, half: 1, open: 2 };
+      const drawn = list.map((road) => ({ road, users: usersOf(road) })).filter(({ road, users }) => worthDrawing(road, users));
+      drawn.sort((a, b) => (order[a.road.state] - order[b.road.state]) || ((a.users.length ? 1 : 0) - (b.users.length ? 1 : 0)));
+      for (const { road, users } of drawn) {
+        const [x1, y1] = centre(road.squares[0]);
+        const [x2, y2] = centre(road.squares[road.squares.length - 1]);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        const side = sideOf(users);
+        const cls = [road.state, side !== 'none' ? `used-${side}` : '', focus ? 'focus' : ''].filter(Boolean).join(' ');
+        for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) line.setAttribute(k, v);
+        line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${road.kind} ${road.id}: ${road.state}${users.length ? ', used by ' + users.map((p) => p.square).join(' ') : ''}` }));
+        svg.append(line);
       }
-      const wrap = el('div', { class: 'roadwrap' }, [grid, svg]);
-      container.append(wrap);
+      container.append(el('div', { class: 'roadwrap' }, [grid, svg]));
+
       const open = list.filter((x) => x.state === 'open');
       const files = open.filter((x) => x.kind === 'file').map((x) => x.id);
-      const diags = open.filter((x) => x.kind === 'diag').map((x) => x.id);
-      container.append(el('p', { class: 'summary' }, [
-        el('strong', { text: `Open files: ${files.length ? files.join(' ') : 'none'}` }), '. ',
-        el('strong', { text: `Open diagonals: ${diags.length}` }), diags.length ? ` (${diags.slice(0, 6).join(', ')}${diags.length > 6 ? ', …' : ''}).` : '.',
-        active.size ? ` Pieces already on an open road: ${[...active].sort().join(', ')}.` : ' No rook, bishop or queen is on an open road yet.',
-      ]));
+      const usedBy = (color) => list.filter((x) => x.state !== 'closed' && x.kind !== 'rank' && usersOf(x).some((p) => p.color === color)).length;
+      if (focus) {
+        const { row, col } = A.squareIndex(focus);
+        const p = board[row][col];
+        const mine = list.filter((x) => x.squares.includes(focus) && usersOf(x).some((u) => u.square === focus));
+        const words = mine.map((x) => `${x.kind === 'file' ? x.id + '-file' : x.kind === 'rank' ? 'rank ' + x.id : x.id} ${x.state === 'open' ? 'open' : x.state === 'half' ? 'half open' : 'blocked'}`).join(', ');
+        container.append(el('p', { class: 'summary' }, [el('strong', { text: `${p.color === 'w' ? 'White' : 'Black'} ${PIECE_WORDS[p.type]} on ${focus}` }), `: ${words}. Click it again to see every road.`]));
+      } else {
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: `Open files: ${files.length ? files.join(' ') : 'none'}` }), '. ',
+          el('strong', { text: `White uses ${usedBy('w')} road${usedBy('w') === 1 ? '' : 's'}, Black ${usedBy('b')}` }), '. Click a rook, bishop or queen to see only its roads.',
+        ]));
+      }
       container.append(legend([
-        { sw: 'road', width: 6, text: 'open road: no pawns on it' },
+        { sw: 'road', cls: 'road-w', width: 6, text: 'open road with a white rook, bishop or queen on it' },
+        { sw: 'road', cls: 'road-b', width: 6, text: 'open road with a black one on it' },
+        { sw: 'road', cls: 'road-both', width: 6, text: 'both sides have a piece on it' },
+        { sw: 'road', width: 6, text: 'open road nobody uses yet' },
         { sw: 'road', width: 2, text: 'half open: pawns of one side only' },
-        { sw: 'ring', cls: 'green', text: 'rook, bishop or queen already on an open road' },
-        { sw: 'none', cls: 'none', text: 'blocked roads are not drawn' },
+        { sw: 'road', cls: 'road-dashed', width: 2, text: 'blocked by pawns of both sides (shown only for a clicked piece)' },
       ]));
     },
   },
