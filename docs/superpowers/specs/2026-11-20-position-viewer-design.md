@@ -259,3 +259,11 @@ piece, lists them per side in words, and subtracts 1 per piece pinned to
 the king (max 2) from the house score. Pressure arrows (red, from each
 aiming piece to each house square it hits) were added just before, with an
 optional dashed green set for defenders.
+
+**Pinned pieces (same day):** a closed padlock marks a piece pinned to its
+king, an open padlock one pinned to a more valuable piece, with orange
+hatching on the square for the closed case. Reach counts moves with pins
+respected (`mobility(board, { respectPins: true })`: only moves along the
+pin line towards or onto the pinner), Roads fades the roads a pinned slider
+cannot use, King houses shows the padlock instead of a text badge. Arrow
+overlays in King houses and Knight are drawn above the pieces.

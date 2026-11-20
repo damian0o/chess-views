@@ -131,36 +131,61 @@ export function territory(board) {
 
 // ---------- mobility ----------
 
-/** Pseudo-legal destination count for the piece at (row, col): no castling, no en passant, check ignored. */
-export function movesFrom(board, row, col) {
+/** Pseudo-legal destination squares for the piece at (row, col): no castling, no en passant, check ignored. */
+export function destinationsFrom(board, row, col) {
   const piece = board[row][col];
-  if (!piece) return 0;
+  if (!piece) return [];
+  const out = [];
   if (piece.type === 'p') {
     const dr = piece.color === 'w' ? -1 : 1;
     const startRow = piece.color === 'w' ? 6 : 1;
-    let n = 0;
     if (onBoard(row + dr, col) && !board[row + dr][col]) {
-      n++;
-      if (row === startRow && !board[row + 2 * dr][col]) n++;
+      out.push(squareName(row + dr, col));
+      if (row === startRow && !board[row + 2 * dr][col]) out.push(squareName(row + 2 * dr, col));
     }
     for (const dc of [-1, 1]) {
       const r = row + dr, c = col + dc;
-      if (onBoard(r, c) && board[r][c] && board[r][c].color !== piece.color) n++;
+      if (onBoard(r, c) && board[r][c] && board[r][c].color !== piece.color) out.push(squareName(r, c));
     }
-    return n;
+    return out;
   }
-  return attacksFrom(board, row, col).filter(([r, c]) => !board[r][c] || board[r][c].color !== piece.color).length;
+  return attacksFrom(board, row, col)
+    .filter(([r, c]) => !board[r][c] || board[r][c].color !== piece.color)
+    .map(([r, c]) => squareName(r, c));
 }
 
-export function mobility(board) {
+export function movesFrom(board, row, col) {
+  return destinationsFrom(board, row, col).length;
+}
+
+/**
+ * Mobility per piece. With { respectPins: true } a piece pinned to its king may only move along the
+ * pin line (towards or capturing the pinner); pieces pinned to lesser targets are flagged but unrestricted.
+ */
+export function mobility(board, { respectPins = false } = {}) {
   const pieces = [];
   const summary = { w: 0, b: 0 };
+  const pinInfo = new Map();
+  if (respectPins) {
+    for (const pn of pins(board)) {
+      const prev = pinInfo.get(pn.pinned.square);
+      if (!prev || (pn.absolute && !prev.absolute)) pinInfo.set(pn.pinned.square, pn);
+    }
+  }
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const piece = board[row][col];
       if (!piece) continue;
-      const count = movesFrom(board, row, col);
-      pieces.push({ square: piece.square, type: piece.type, color: piece.color, count });
+      let dests = destinationsFrom(board, row, col);
+      const pn = pinInfo.get(piece.square);
+      if (pn && pn.absolute) {
+        // Squares strictly between pinner and target, plus the pinner itself.
+        const line = new Set(pn.between.concat([pn.pinner.square]));
+        line.delete(piece.square);
+        dests = dests.filter((sq) => line.has(sq));
+      }
+      const count = dests.length;
+      pieces.push({ square: piece.square, type: piece.type, color: piece.color, count, pinned: pn ? (pn.absolute ? 'absolute' : 'relative') : null });
       summary[piece.color] += count;
     }
   }
@@ -382,6 +407,7 @@ export function pins(board) {
     for (const [dr, dc] of dirs) {
       let r = row + dr, c = col + dc, pinned = null;
       const between = [];
+      // `between` collects every square strictly between pinner and target, the pinned square included.
       while (onBoard(r, c)) {
         const p = board[r][c];
         if (p) {
@@ -394,7 +420,7 @@ export function pins(board) {
             break;
           }
         }
-        if (pinned) between.push(squareName(r, c));
+        between.push(squareName(r, c));
         r += dr; c += dc;
       }
     }
