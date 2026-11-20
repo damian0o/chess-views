@@ -293,3 +293,10 @@ bottom-right.
 is a pawn's job; a blocked pawn still controls its diagonals. Pins still
 apply: a file-pinned pawn counts 0. Other pieces keep "squares it can move
 to". Summary line renamed from Mobility to Reach.
+
+**Stalemate watch (same day):** computed from legal moves (chess.js), never
+from Reach numbers. If the side not to move has no legal move (turn swapped
+for the lookup) and is not in check, the Reach view shows a box listing the
+mover's moves that would stalemate and those that keep the game going (each
+tried and undone). With 1–2 legal moves left it warns instead. A real
+stalemate or checkmate is named. A status-bar chip on every view links to it.
