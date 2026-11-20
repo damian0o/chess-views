@@ -530,3 +530,36 @@ export function kingHouseReport(board, color) {
   return { king: house.king, cells, shield, openFiles, aiming, defending, weakest, brokenSquares, shieldPawns,
     escapes, escapePenalty, pins: sidePins, pinPenalty, enemyForce, enemyForceWords, quiet, score, label };
 }
+
+// ---------- pawn paths ----------
+
+/** For every pawn: the squares ahead on its file, the first blocker, enemy pawns that could stop it, and whether it is passed. */
+export function pawnPaths(board) {
+  const out = [];
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const p = board[row][col];
+    if (!p || p.type !== 'p') continue;
+    const dr = p.color === 'w' ? -1 : 1;
+    const path = [];
+    let blocker = null;
+    for (let r = row + dr; onBoard(r, col); r += dr) {
+      path.push(squareName(r, col));
+      if (board[r][col] && blocker === null) blocker = squareName(r, col);
+    }
+    const guards = [];
+    for (let r = row + dr; onBoard(r, col); r += dr) {
+      for (const dc of [-1, 0, 1]) {
+        const c = col + dc;
+        if (!onBoard(r, c)) continue;
+        const q = board[r][c];
+        if (q && q.type === 'p' && q.color !== p.color) guards.push(squareName(r, c));
+      }
+    }
+    out.push({
+      square: p.square, color: p.color, path, blocker, guards,
+      passed: guards.length === 0, clear: blocker === null,
+      promotion: path.length ? path[path.length - 1] : null, stepsToPromote: path.length,
+    });
+  }
+  return out;
+}

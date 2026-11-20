@@ -146,6 +146,12 @@
   .roadwrap line.used-b { stroke: var(--side-b); opacity: 0.8; }
   .roadwrap line.used-both { stroke: #7a3fb0; opacity: 0.85; }
   .roadwrap line.dim { opacity: 0.06; }
+  .roadwrap line.pawn { stroke-width: 0.1; opacity: 0.85; stroke-linecap: butt; }
+  .roadwrap line.pawn.by-w { stroke: var(--side-w); } .roadwrap line.pawn.by-b { stroke: var(--side-b); }
+  .roadwrap line.pawn.guarded { stroke-dasharray: 0.18 0.14; opacity: 0.5; stroke-width: 0.06; }
+  .roadwrap line.pawn.stop { stroke-width: 0.12; opacity: 0.9; }
+  .roadwrap .board .sq.passed::after { content: '★'; position: absolute; right: 2px; top: 0; font-size: 0.45em; color: #d58a1f; z-index: 3; text-shadow: 0 0 2px #fff; }
+  .sw .star { color: #d58a1f; font-size: 16px; }
   .roadwrap line.focus { opacity: 0.95; }
   .roadwrap .board .sq.slider { cursor: pointer; }
   .roadwrap .board .sq.focused .piece, .roadwrap .board .sq.focused .p { box-shadow: 0 0 0 3px var(--focus); border-radius: 50%; }
@@ -343,7 +349,7 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -602,7 +608,9 @@ const VIEWS = {
       const list = A.roads(board);
       const usersOf = (road) => road.pieces.filter((p) => (road.kind === 'diag' ? 'bq' : 'rq').includes(p.type));
       const sideOf = (users) => { const w = users.some((p) => p.color === 'w'), b = users.some((p) => p.color === 'b'); return w && b ? 'both' : w ? 'w' : b ? 'b' : 'none'; };
-      const focus = state.roadFocus && board.flat().find((p) => p && p.square === state.roadFocus && 'rbq'.includes(p.type)) ? state.roadFocus : null;
+      const focus = state.roadFocus && board.flat().find((p) => p && p.square === state.roadFocus && 'rbqp'.includes(p.type)) ? state.roadFocus : null;
+      const paths = A.pawnPaths(board);
+      const focusPawn = focus ? paths.find((x) => x.square === focus) : null;
       if (!focus) state.roadFocus = null;
 
       const frozen = new Map();
@@ -612,11 +620,13 @@ const VIEWS = {
         const name = sq.dataset.square;
         const { row, col } = A.squareIndex(name);
         const p = board[row][col];
-        if (p && 'rbq'.includes(p.type)) sq.classList.add('slider');
+        if (p && 'rbqp'.includes(p.type)) sq.classList.add('slider');
         if (frozen.has(name)) { sq.classList.add('frozen'); sq.append(lockNode('absolute')); }
+        const pp = paths.find((x) => x.square === name);
+        if (pp && pp.passed) sq.classList.add('passed');
         if (name === focus) sq.classList.add('focused');
         sq.addEventListener('click', () => {
-          state.roadFocus = p && 'rbq'.includes(p.type) && state.roadFocus !== name ? name : null;
+          state.roadFocus = p && 'rbqp'.includes(p.type) && state.roadFocus !== name ? name : null;
           render();
         });
       }
@@ -626,7 +636,10 @@ const VIEWS = {
       svg.setAttribute('aria-hidden', 'true');
       const centre = cellXY;
       // Without focus: blocked roads are hidden, half-open diagonals only when long, ranks only when a rook/queen uses them.
+      const anySlider = board.flat().some((p) => p && 'rbq'.includes(p.type));
       const worthDrawing = (road, users) => {
+        if (focusPawn) return false;
+        if (!users.length && !anySlider) return false; // nobody on the board could use it
         if (focus) return road.squares.includes(focus) && users.some((p) => p.square === focus);
         if (road.state === 'closed') return false;
         if (road.kind === 'rank') return road.state === 'open' && users.length > 0;
@@ -648,12 +661,39 @@ const VIEWS = {
         line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${road.kind} ${road.id}: ${road.state}${users.length ? ', used by ' + users.map((p) => p.square).join(' ') : ''}` }));
         svg.append(line);
       }
+      // Pawn paths: passed pawns always (or every pawn with the toggle); a focused pawn alone.
+      const pawnLine = (pp, cls) => {
+        if (!pp.path.length) return;
+        const stopAt = pp.blocker ? pp.path[pp.path.indexOf(pp.blocker)] : pp.path[pp.path.length - 1];
+        const [x1, y0] = centre(pp.square), [x2, y2] = centre(stopAt);
+        const y1 = y0 + Math.sign(y2 - y0) * 0.42; // start at the pawn's edge, not under it
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: `pawn by-${pp.color} ${cls}`.trim() })) line.setAttribute(k, v);
+        line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${pp.square}: ${pp.passed ? 'passed pawn' : 'can be stopped by ' + pp.guards.join(', ')}${pp.blocker ? ', blocked at ' + pp.blocker : ''}` }));
+        svg.append(line);
+        if (pp.blocker) {
+          const bar = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          const [bx, by] = centre(pp.blocker);
+          const dy = pp.color === 'w' ? 0.5 : -0.5;
+          for (const [k, v] of Object.entries({ x1: bx - 0.3, y1: by + (state.flipped ? -dy : dy), x2: bx + 0.3, y2: by + (state.flipped ? -dy : dy), class: `pawn by-${pp.color} stop` })) bar.setAttribute(k, v);
+          svg.append(bar);
+        }
+      };
+      const shown = focusPawn ? [focusPawn] : paths.filter((pp) => state.allPawnPaths || pp.passed);
+      for (const pp of shown) pawnLine(pp, pp.passed ? '' : 'guarded');
       container.append(el('div', { class: 'roadwrap' }, [grid, svg]));
 
       const open = list.filter((x) => x.state === 'open');
       const files = open.filter((x) => x.kind === 'file').map((x) => x.id);
       const usedBy = (color) => list.filter((x) => x.state !== 'closed' && x.kind !== 'rank' && usersOf(x).some((p) => p.color === color)).length;
-      if (focus) {
+      if (focusPawn) {
+        const pp = focusPawn;
+        const who = `${pp.color === 'w' ? 'White' : 'Black'} pawn on ${pp.square}`;
+        const status = pp.passed
+          ? `passed pawn: no enemy pawn can stop it${pp.clear ? `, clear run to ${pp.promotion} in ${pp.stepsToPromote} move${pp.stepsToPromote === 1 ? '' : 's'}` : `, but ${pp.blocker} is in the way`}`
+          : `not passed: ${pp.guards.join(', ')} can still stop it${pp.blocker ? `, and ${pp.blocker} is in the way` : ''}`;
+        container.append(el('p', { class: 'summary' }, [el('strong', { text: who }), `: ${status}. Click it again to see every road.`]));
+      } else if (focus) {
         const { row, col } = A.squareIndex(focus);
         const p = board[row][col];
         const mine = list.filter((x) => x.squares.includes(focus) && usersOf(x).some((u) => u.square === focus));
@@ -662,7 +702,13 @@ const VIEWS = {
       } else {
         container.append(el('p', { class: 'summary' }, [
           el('strong', { text: `Open files: ${files.length ? files.join(' ') : 'none'}` }), '. ',
-          el('strong', { text: `White uses ${usedBy('w')} road${usedBy('w') === 1 ? '' : 's'}, Black ${usedBy('b')}` }), '. Click a rook, bishop or queen to see only its roads.',
+          el('strong', { text: `White uses ${usedBy('w')} road${usedBy('w') === 1 ? '' : 's'}, Black ${usedBy('b')}` }), '. ',
+          el('strong', { text: `Passed pawns: ${['w', 'b'].map((c) => { const ps = paths.filter((pp) => pp.color === c && pp.passed).map((pp) => pp.square); return `${c === 'w' ? 'White' : 'Black'} ${ps.length ? ps.join(' ') : 'none'}`; }).join(', ')}` }),
+          '. Click a rook, bishop, queen or pawn to see only its road.',
+        ]));
+        container.append(el('label', { class: 'toggle' }, [
+          Object.assign(el('input', { type: 'checkbox' }), { checked: state.allPawnPaths, onchange: (e) => { state.allPawnPaths = e.target.checked; render(); } }),
+          'Show every pawn\'s path, not just passed pawns',
         ]));
       }
       container.append(legend([
@@ -673,6 +719,9 @@ const VIEWS = {
         { sw: 'road', width: 2, text: 'half open: pawns of one side only' },
         { sw: 'road', cls: 'road-dashed', width: 2, text: 'blocked by pawns of both sides (shown only for a clicked piece)' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to the king: its roads are faded, it cannot use them' },
+        { sw: 'star', text: 'passed pawn: no enemy pawn can stop it' },
+        { sw: 'road', cls: 'road-w', width: 4, text: 'pawn path: the file ahead of a passed pawn, up to promotion or the first piece in the way (bar)' },
+        { sw: 'road', cls: 'road-w road-dashed', width: 2, text: 'pawn path that an enemy pawn can still stop' },
       ]));
     },
   },
@@ -927,6 +976,7 @@ function legend(items) {
       case 'ring': sw.classList.add('none'); sw.append(el('span', { class: `ring ${it.cls || ''}` })); sw.className = 'sw none'; break;
       case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
       case 'lock': sw.classList.add('none'); sw.append(lockNode(it.kind)); break;
+      case 'star': sw.classList.add('none'); sw.append(el('span', { class: 'star', text: '★' })); break;
       case 'num': sw.append(el('span', { class: 'num', text: it.text2 || '2/1' })); break;
       case 'mark': sw.append(el('span', { class: 'mark', text: it.text2 })); break;
       case 'hop': sw.append(el('span', { class: `hop ${it.cls || ''}`, text: it.text2 || '1' })); sw.className = 'sw'; break;
