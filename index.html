@@ -157,6 +157,10 @@
   .presswrap { position: relative; display: inline-block; }
   .presswrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
   .presswrap line { stroke: var(--pen-red); stroke-width: 0.09; stroke-linecap: round; opacity: 0.85; }
+  .presswrap line.pin { stroke: #e07a10; stroke-width: 0.07; opacity: 0.9; }
+  .presswrap line.pin.relative { stroke-dasharray: 0.2 0.12; opacity: 0.75; }
+  .board .sq.pinned .piece, .board .sq.pinned .p { box-shadow: 0 0 0 3px #e07a10; border-radius: 50%; }
+  .board .sq.pinned::before { content: 'pin'; position: absolute; right: 2px; top: 1px; font-size: 0.32em; font-weight: 700; color: #fff; background: #e07a10; padding: 0 3px; border-radius: 3px; z-index: 2; }
   .presswrap line.defend { stroke: #1e8f4a; stroke-width: 0.05; opacity: 0.6; stroke-dasharray: 0.18 0.14; }
   .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); max-width: 72ch; width: 100%; }
   .houses h3 { margin: 0 0 4px; font-size: 1.05rem; }
@@ -525,7 +529,7 @@ const VIEWS = {
     title: 'King houses',
     render(container, board, ctx) {
       const reports = { w: A.kingHouseReport(board, 'w'), b: A.kingHouseReport(board, 'b') };
-      const cellInfo = new Map(), shieldInfo = new Map(), openFileCells = new Set(), aim = new Set(), defend = new Set(), escapes = new Set();
+      const cellInfo = new Map(), shieldInfo = new Map(), openFileCells = new Set(), aim = new Set(), defend = new Set(), escapes = new Set(), pinned = new Set();
       for (const side of ['w', 'b']) {
         const r = reports[side];
         if (!r) continue;
@@ -535,6 +539,7 @@ const VIEWS = {
           for (const c of r.cells) if (r.openFiles.includes(c.square[0])) openFileCells.add(c.square);
         }
         for (const sq of r.escapes) escapes.add(sq);
+        for (const pn of r.pins) pinned.add(pn.pinned.square);
         for (const p of r.aiming) aim.add(p.square);
         for (const p of r.defending) defend.add(p.square);
       }
@@ -550,6 +555,7 @@ const VIEWS = {
         const name = sq.dataset.square;
         const info = cellInfo.get(name);
         if (aim.has(name)) sq.classList.add('aim');
+        if (pinned.has(name)) sq.classList.add('pinned');
         if (defend.has(name)) sq.classList.add('defend');
         if (!info) { sq.classList.add('out'); continue; }
         sq.classList.add('house');
@@ -581,6 +587,7 @@ const VIEWS = {
         const r = reports[side];
         if (!r) continue;
         if (state.kingDefLines) for (const d of r.defending) for (const sq of d.hits) arrow(d.square, sq, 'defend');
+        for (const pn of r.pins) arrow(pn.pinner.square, pn.target.square, `pin ${pn.absolute ? 'absolute' : 'relative'}`);
         for (const a of r.aiming) for (const sq of a.hits) arrow(a.square, sq);
       }
       container.append(el('div', { class: 'presswrap' }, [grid, svg]));
@@ -611,6 +618,7 @@ const VIEWS = {
               el('li', { text: `${force}. Shield pawns and open files don't matter now.` }),
               el('li', { text: `Escape squares: ${r.escapes.length ? r.escapes.join(', ') : 'none right now'}.` }),
               el('li', { text: 'In the endgame the king is a fighting piece: bring it towards the pawns.' }),
+              ...(r.pins.length ? [el('li', { text: `Pins: ${pinWords(r.pins)}` })] : []),
             ]),
           ]));
           continue;
@@ -625,12 +633,13 @@ const VIEWS = {
             el('li', { text: `Aiming at the house: ${words(r.aiming)}` }),
             el('li', { text: `Defending it: ${words(r.defending)}` }),
             el('li', { text: `Weakest square ${breakText}` }),
+            el('li', { text: `Pins: ${r.pins.length ? pinWords(r.pins) : 'none'}` }),
           ]),
-          el('p', { class: 'score', text: `Score ${r.score}: +${r.shieldPawns} shield pawns, −${r.openFiles.length} open files, −${r.brokenSquares} broken squares${r.aiming.length >= 3 ? ', −1 heavy attack' : ''}${r.escapePenalty ? `, −${r.escapePenalty} ${r.escapes.length ? 'only one escape square' : 'no escape squares'}` : ''}. ${castle}` }),
+          el('p', { class: 'score', text: `Score ${r.score}: +${r.shieldPawns} shield pawns, −${r.openFiles.length} open files, −${r.brokenSquares} broken squares${r.aiming.length >= 3 ? ', −1 heavy attack' : ''}${r.escapePenalty ? `, −${r.escapePenalty} ${r.escapes.length ? 'only one escape square' : 'no escape squares'}` : ''}${r.pinPenalty ? `, −${r.pinPenalty} pinned to the king` : ''}. ${castle}` }),
         ]));
       }
       container.append(panel);
-      container.append(el('p', { class: 'legend', text: 'Red arrows = pressure: an enemy piece hitting a house square. House squares: green = well held, yellow = even, orange = short by one, red = the opponent already has more. Small numbers are attackers/defenders. Dashed circle = a square the king can escape to. Green border = shield pawn, striped = missing shield pawn, red bar = open file next to the king. Red ring = enemy piece aiming at the house, green ring = piece defending it.' }));
+      container.append(el('p', { class: 'legend', text: 'Red arrows = pressure: an enemy piece hitting a house square. Orange line = a pin (solid: to the king, so the pinned piece may not move; dashed: to a more valuable piece). House squares: green = well held, yellow = even, orange = short by one, red = the opponent already has more. Small numbers are attackers/defenders. Dashed circle = a square the king can escape to. Green border = shield pawn, striped = missing shield pawn, red bar = open file next to the king. Red ring = enemy piece aiming at the house, green ring = piece defending it.' }));
     },
   },
   diamond: {
@@ -720,6 +729,10 @@ const VIEWS = {
     },
   },
 };
+
+function pinWords(list) {
+  return list.map((pn) => `${PIECE_WORDS[pn.pinned.type]} on ${pn.pinned.square} is pinned to the ${pn.absolute ? 'king' : PIECE_WORDS[pn.target.type]} by the ${PIECE_WORDS[pn.pinner.type]} on ${pn.pinner.square}`).join('; ');
+}
 
 function boardGridClickable(board, cellFn, cls) {
   const grid = boardGrid(board, (r, c, cell, name) => cell ? ghostNode(cell, name) : null);

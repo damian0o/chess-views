@@ -368,6 +368,40 @@ export function defaultKnightSquare(board, turn) {
   return (own || knights[0] || null)?.square ?? null;
 }
 
+// ---------- pins ----------
+
+const PIECE_VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+
+/** Every pin on the board: a slider, one enemy piece in between, and the king or a more valuable piece behind it. */
+export function pins(board) {
+  const out = [];
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const pinner = board[row][col];
+    if (!pinner || !'brq'.includes(pinner.type)) continue;
+    const dirs = pinner.type === 'b' ? BISHOP_DIRS : pinner.type === 'r' ? ROOK_DIRS : [...BISHOP_DIRS, ...ROOK_DIRS];
+    for (const [dr, dc] of dirs) {
+      let r = row + dr, c = col + dc, pinned = null;
+      const between = [];
+      while (onBoard(r, c)) {
+        const p = board[r][c];
+        if (p) {
+          if (p.color === pinner.color) break;
+          if (!pinned) { if (p.type === 'k') break; pinned = p; }
+          else {
+            if (p.type === 'k' || PIECE_VALUE[p.type] > PIECE_VALUE[pinned.type]) {
+              out.push({ pinner, pinned, target: p, absolute: p.type === 'k', between: between.slice() });
+            }
+            break;
+          }
+        }
+        if (pinned) between.push(squareName(r, c));
+        r += dr; c += dc;
+      }
+    }
+  }
+  return out;
+}
+
 // ---------- king house report ----------
 
 /** Strengths, weaknesses and pressure on one king's 3x3 house. Null if that colour has no king. */
@@ -438,9 +472,12 @@ export function kingHouseReport(board, color) {
 
   // Being boxed in only matters when somebody is aiming at the house.
   const escapePenalty = aiming.length ? (escapes.length === 0 ? 2 : escapes.length === 1 ? 1 : 0) : 0;
-  const score = shieldPawns - openFiles.length - brokenSquares - (aiming.length >= 3 ? 1 : 0) - escapePenalty;
+  // Pins against this side: pieces pinned to the king count against the house.
+  const sidePins = pins(board).filter((p) => p.pinned.color === color);
+  const pinPenalty = Math.min(2, sidePins.filter((p) => p.absolute).length);
+  const score = shieldPawns - openFiles.length - brokenSquares - (aiming.length >= 3 ? 1 : 0) - escapePenalty - pinPenalty;
   const label = quiet ? 'Safe' : score >= 3 ? 'Strong' : score >= 1 ? 'Shaky' : 'In danger';
 
   return { king: house.king, cells, shield, openFiles, aiming, defending, weakest, brokenSquares, shieldPawns,
-    escapes, escapePenalty, enemyForce, enemyForceWords, quiet, score, label };
+    escapes, escapePenalty, pins: sidePins, pinPenalty, enemyForce, enemyForceWords, quiet, score, label };
 }

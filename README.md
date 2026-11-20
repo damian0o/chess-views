@@ -51,7 +51,8 @@ or share a link.
   square is held, with the shield pawns, open files next to the king, the
   pieces aiming at the house and the pieces defending it, a Strong / Shaky /
   In danger label with its score explained, and the weakest square with how
-  many more attackers the opponent needs to break in.
+  many more attackers the opponent needs to break in. Red arrows show the
+  pressure, orange lines show pins, dashed circles the king's escape squares.
 - **Diamond**: the board turned 45°, so diagonals are straight lines and each
   row is one colour.
 - **Knight**: a knight's four straight tracks with hop numbers; click any
