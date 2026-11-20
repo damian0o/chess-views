@@ -191,11 +191,17 @@ export function mobility(board, { respectPins = false } = {}) {
       if (!prev || (pn.absolute && !prev.absolute)) pinInfo.set(pn.pinned.square, pn);
     }
   }
+  const enemyAttacks = attackMap(board);
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const piece = board[row][col];
       if (!piece) continue;
       let dests = destinationsFrom(board, row, col);
+      if (piece.type === 'k') {
+        // A king may not step onto a square the enemy attacks.
+        const enemy = piece.color === 'w' ? 'b' : 'w';
+        dests = dests.filter((sq) => { const { row: r, col: c } = squareIndex(sq); return enemyAttacks[enemy][r][c] === 0; });
+      }
       const pn = pinInfo.get(piece.square);
       if (pn && pn.absolute) {
         // Squares strictly between pinner and target, plus the pinner itself.

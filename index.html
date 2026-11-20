@@ -108,8 +108,10 @@
   .board .sq .piece { width: 88%; height: 88%; }
   .board .sq .piece.ghost { position: absolute; left: 1px; top: 1px; width: 38%; height: 38%; opacity: 0.85; }
   .board .sq .reach { position: relative; }
-  .board .sq .reach .piece { width: 1.6em; height: 1.6em; }
-  .board .sq .reach .badge { position: absolute; right: 2px; bottom: 1px; font-size: 1.05em; font-weight: 700; line-height: 1; padding: 0 2px; border-radius: 3px; background: rgba(255,255,255,0.85); color: inherit; }
+  .board .sq .reach .piece { position: absolute; left: 1px; top: 1px; width: 62%; height: 62%; }
+  .board .sq .reach .badge { position: absolute; right: 1px; bottom: 1px; min-width: 1.45em; text-align: center; font-size: 1.1em; font-weight: 700; line-height: 1.35; padding: 0 2px; border-radius: 4px; background: rgba(255,255,255,0.92); color: inherit; box-shadow: 0 0 0 1px rgba(0,0,0,0.15); }
+  .board .sq .reach.low .badge { background: var(--pen-red); color: #fff; }
+  .board .sq .reach.frozen .badge { background: #e07a10; color: #fff; }
   .dcell .piece { width: 62%; height: 62%; position: relative; z-index: 1; }
   .board .sq .sub { position: absolute; right: 2px; bottom: 1px; font-size: 0.42em; color: var(--ink-soft); }
   .board.plain .sq .p.w, .board.plain .sq .p.b { background: none; color: var(--ink); box-shadow: none; }
