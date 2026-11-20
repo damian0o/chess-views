@@ -295,6 +295,17 @@
   .board .sq .mv.illegal { background: rgba(120, 120, 120, 0.45); }
   .mvhint { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
 
+  /* Stalemate watch */
+  .alert { max-width: 70ch; width: 100%; border: 2px solid #d58a1f; border-radius: 8px; padding: 10px 14px; background: color-mix(in srgb, #ffd98a 35%, var(--paper)); }
+  .alert.draw { border-color: var(--ink-soft); background: color-mix(in srgb, #ccc 35%, var(--paper)); }
+  .alert.mate { border-color: var(--pen-red); background: color-mix(in srgb, #ffb3b3 35%, var(--paper)); }
+  .alert h3 { margin: 0 0 4px; font-size: 1rem; }
+  .alert p { margin: 4px 0; }
+  .alert .bad { color: var(--pen-red); font-weight: 700; }
+  .alert .good { color: var(--ok); font-weight: 700; }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; background: #d58a1f; color: #fff; margin-left: 6px; vertical-align: middle; }
+  .chip.draw { background: var(--ink-soft); } .chip.mate { background: var(--pen-red); }
+
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
 </style>
@@ -455,6 +466,34 @@ function legalMovesFor(chess, square) {
   try { alt.load(f.join(' '), { skipValidation: true }); return alt.moves({ square, verbose: true }); } catch { return []; }
 }
 
+/** Stalemate watch: who is out of moves, and which moves by the side to move would stalemate. */
+function stalemateWatch(chess) {
+  const mover = chess.turn(), other = mover === 'w' ? 'b' : 'w';
+  const name = (c) => (c === 'w' ? 'White' : 'Black');
+  const myMoves = chess.moves({ verbose: true });
+  if (chess.isCheckmate()) return { status: 'mate', text: `Checkmate. ${name(other)} wins.` };
+  if (chess.isStalemate()) return { status: 'draw', text: `Stalemate: ${name(mover)} has no legal move and is not in check. It is a draw.` };
+  // The other side's legal moves, as if it were their turn.
+  const f = chess.fen().split(' '); f[1] = other; f[3] = '-';
+  const alt = new Chess();
+  try { alt.load(f.join(' '), { skipValidation: true }); } catch { return null; }
+  const otherMoves = alt.moves({ verbose: true });
+  const otherInCheck = alt.inCheck();
+  if (otherInCheck || otherMoves.length > 2) return null;
+  const stalemating = [], safe = [];
+  for (const m of myMoves) {
+    chess.move(m.san);
+    (chess.isStalemate() ? stalemating : safe).push(m.san);
+    chess.undo();
+  }
+  if (otherMoves.length === 0) {
+    return { status: 'danger', mover: name(mover), other: name(other), otherMoves, stalemating, safe,
+      text: `${name(other)} has no legal move right now. If ${name(mover)} plays a quiet move that gives no check and frees nothing, it is stalemate: a draw.` };
+  }
+  return { status: 'near', mover: name(mover), other: name(other), otherMoves, stalemating, safe,
+    text: `${name(other)} has only ${otherMoves.length} legal move${otherMoves.length === 1 ? '' : 's'} (${otherMoves.map((m) => m.san).join(', ')}). Take them away without giving check and it is stalemate.` };
+}
+
 /** Centre of a square in the 8x8 overlay coordinate space, honouring the flip. */
 function cellXY(sq) {
   const { row, col } = A.squareIndex(sq);
@@ -577,7 +616,7 @@ const VIEWS = {
   },
   reach: {
     title: 'Reach',
-    render(container, board) {
+    render(container, board, ctx) {
       const m = A.mobility(board, { respectPins: true });
       const byValue = Object.fromEntries(m.pieces.map((p) => [p.square, p.count]));
       const pinnedAs = Object.fromEntries(m.pieces.filter((p) => p.pinned).map((p) => [p.square, p.pinned]));
@@ -592,6 +631,16 @@ const VIEWS = {
         if (pin) node.append(lockNode(pin));
         return node;
       }));
+      const watch = stalemateWatch(ctx.chess);
+      if (watch) {
+        const box = el('div', { class: `alert ${watch.status}` }, [el('h3', { text: watch.status === 'mate' ? 'Checkmate' : watch.status === 'draw' ? 'Stalemate' : 'Stalemate watch' }), el('p', { text: watch.text })]);
+        if (watch.stalemating) {
+          const list = (arr) => arr.length > 10 ? `${arr.slice(0, 10).join(', ')} and ${arr.length - 10} more` : arr.join(', ');
+          if (watch.stalemating.length) box.append(el('p', {}, [el('span', { class: 'bad', text: `Moves that stalemate (${watch.stalemating.length}): ` }), list(watch.stalemating)]));
+          if (watch.safe.length) box.append(el('p', {}, [el('span', { class: 'good', text: `Moves that keep the game going (${watch.safe.length}): ` }), list(watch.safe)]));
+        }
+        container.append(box);
+      }
       container.append(el('p', { class: 'summary' }, [
         'Reach: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '. Pieces count squares they can move to; pawns the squares they attack.',
       ]));
@@ -1054,6 +1103,13 @@ function render() {
   const check = chess.inCheck();
   $('turn').textContent = check ? `${turn} (in check)` : turn;
   $('turn').classList.toggle('check', check);
+  const watch = stalemateWatch(chess);
+  if (watch) {
+    const label = watch.status === 'mate' ? 'checkmate' : watch.status === 'draw' ? 'stalemate: draw' : 'stalemate watch';
+    const chip = el('button', { class: `chip ${watch.status}`, type: 'button', text: label, title: 'See the Reach view', onclick: () => { state.tab = 'reach'; writeHash(); render(); } });
+    chip.style.border = '0'; chip.style.cursor = 'pointer';
+    $('turn').append(chip);
+  }
   $('fen').textContent = chess.fen();
 
   const hasMoves = state.moves.length > 0;
