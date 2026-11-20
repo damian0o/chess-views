@@ -122,6 +122,28 @@
   .board .sq .reach.low { background: #ffd6d6; color: #7a1414; } .board .sq .reach.mid { background: #f1e9c6; color: #5c4a05; } .board .sq .reach.high { background: #cdebd7; color: #0f5a2b; }
   .board .sq .reach.b { outline: 2px solid #111; outline-offset: -2px; }
 
+  /* Roads */
+  .roadwrap { position: relative; display: inline-block; }
+  .roadwrap svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
+  .roadwrap .board .sq { background: transparent !important; }
+  .roadwrap .board .sq.dark { background: color-mix(in srgb, var(--square-dark) 45%, transparent) !important; }
+  .roadwrap .board .sq .p { position: relative; z-index: 1; }
+  .roadwrap .board .sq .dot { display: none; }
+  .roadwrap .board .sq.active .p { box-shadow: 0 0 0 3px var(--ok); }
+  .roadwrap line { stroke: var(--ink); stroke-linecap: round; }
+  .roadwrap line.open { stroke-width: 0.16; opacity: 0.55; }
+  .roadwrap line.half { stroke-width: 0.07; opacity: 0.5; }
+  .roadwrap line.closed { stroke-width: 0.025; opacity: 0.45; stroke-dasharray: 0.12 0.12; }
+  /* King houses */
+  .board .sq.out { opacity: 0.25; }
+  .board .sq.out .dot { display: none; }
+  .board .sq .ad { font-size: 0.55em; font-weight: 700; color: var(--ink); }
+  .board .sq.danger { background: #ff9c9c; }
+  .board .sq.danger .ad { color: #6b0000; }
+  .board .sq.house { outline: 2px solid var(--ink); outline-offset: -2px; z-index: 1; }
+  .twocol { display: grid; gap: 4px 24px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); max-width: 70ch; }
+  .twocol p { margin: 0; }
+
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
 </style>
@@ -342,6 +364,94 @@ const VIEWS = {
         'Mobility: ', el('strong', { text: `White ${m.summary.w}` }), ', ', el('strong', { text: `Black ${m.summary.b}` }), '.',
       ]));
       container.append(el('p', { class: 'legend', text: 'The number is how many squares that piece could go to right now. Red 0–2 is stuck, green 7+ is free. Black pieces have a black outline.' }));
+    },
+  },
+  roads: {
+    title: 'Roads',
+    render(container, board) {
+      const list = A.roads(board);
+      const active = A.activeOnRoads(list);
+      const grid = boardGrid(board, (r, c, cell, name) => pieceNode(cell, name));
+      for (const sq of grid.querySelectorAll('.sq')) if (active.has(sq.dataset.square)) sq.classList.add('active');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 8 8');
+      svg.setAttribute('aria-hidden', 'true');
+      const centre = (sq) => { const { row, col } = A.squareIndex(sq); return [col + 0.5, row + 0.5]; };
+      // Keep the picture readable: blocked roads are not drawn, half-open ones only when long,
+      // ranks only when open and actually used by a rook or queen.
+      const worthDrawing = (road) => {
+        if (road.state === 'closed') return false;
+        if (road.kind === 'rank') return road.state === 'open' && road.pieces.some((p) => p.type === 'r' || p.type === 'q');
+        if (road.kind === 'diag' && road.state === 'half') return road.squares.length >= 5;
+        return true;
+      };
+      for (const state of ['half', 'open']) {
+        for (const road of list.filter((x) => x.state === state && worthDrawing(x))) {
+          const [x1, y1] = centre(road.squares[0]);
+          const [x2, y2] = centre(road.squares[road.squares.length - 1]);
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: road.state })) line.setAttribute(k, v);
+          line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${road.kind} ${road.id}: ${road.state}` }));
+          svg.append(line);
+        }
+      }
+      const wrap = el('div', { class: 'roadwrap' }, [grid, svg]);
+      container.append(wrap);
+      const open = list.filter((x) => x.state === 'open');
+      const files = open.filter((x) => x.kind === 'file').map((x) => x.id);
+      const diags = open.filter((x) => x.kind === 'diag').map((x) => x.id);
+      container.append(el('p', { class: 'summary' }, [
+        el('strong', { text: `Open files: ${files.length ? files.join(' ') : 'none'}` }), '. ',
+        el('strong', { text: `Open diagonals: ${diags.length}` }), diags.length ? ` (${diags.slice(0, 6).join(', ')}${diags.length > 6 ? ', …' : ''}).` : '.',
+        active.size ? ` Pieces already on an open road: ${[...active].sort().join(', ')}.` : ' No rook, bishop or queen is on an open road yet.',
+      ]));
+      container.append(el('p', { class: 'legend', text: 'Thick = open road (no pawns on it). Thin = pawns of one side only. Roads blocked by both sides are not drawn. Rooks and queens want open files; bishops and queens want open diagonals. Green ring = already there.' }));
+    },
+  },
+  kings: {
+    title: 'King houses',
+    render(container, board, ctx) {
+      const h = A.kingHouses(board);
+      const houseCells = new Map();
+      for (const side of ['w', 'b']) if (h[side]) for (const c of h[side].cells) houseCells.set(c.square, { ...c, side });
+      container.append(boardGrid(board, (r, c, cell, name) => {
+        const hc = houseCells.get(name);
+        if (!hc) return pieceNode(cell, name);
+        const nodes = [];
+        if (cell && cell.type === 'k') nodes.push(el('span', { class: `p ${cell.color}`, text: A.symbol(cell, name) }));
+        else nodes.push(el('span', { class: 'ad', text: `${hc.attackers}/${hc.defenders}` }));
+        if (cell && cell.type !== 'k') nodes.push(el('span', { class: 'ghost', text: A.symbol(cell, name) }));
+        return nodes;
+      }));
+      const grid = container.querySelector('.board');
+      for (const sq of grid.querySelectorAll('.sq')) {
+        const hc = houseCells.get(sq.dataset.square);
+        if (!hc) { sq.classList.add('out'); continue; }
+        sq.classList.add('house');
+        if (hc.danger) sq.classList.add('danger');
+      }
+      const describe = (side) => {
+        const name = side === 'w' ? 'White' : 'Black';
+        const house = h[side];
+        if (!house) return el('p', { text: `${name}: no king on the board.` });
+        const att = house.cells.reduce((n, c) => n + c.attackers, 0);
+        const def = house.cells.reduce((n, c) => n + c.defenders, 0);
+        const rights = ctx.chess.getCastlingRights(side);
+        const home = side === 'w' ? 'e1' : 'e8';
+        const castledSquares = side === 'w' ? ['g1', 'c1'] : ['g8', 'c8'];
+        let castle;
+        if (rights.k || rights.q) castle = `can still castle ${rights.k && rights.q ? 'both ways' : rights.k ? 'short' : 'long'}`;
+        else if (castledSquares.includes(house.king)) castle = 'has castled';
+        else if (house.king === home) castle = 'cannot castle any more';
+        else castle = 'has moved, cannot castle';
+        const hot = house.cells.filter((c) => c.danger).map((c) => c.square);
+        return el('p', {}, [
+          el('strong', { text: `${name} king on ${house.king}` }), `: attackers ${att}, defenders ${def}, ${castle}.`,
+          hot.length ? ` Weak squares: ${hot.join(', ')}.` : ' No weak squares right now.',
+        ]);
+      };
+      container.append(el('div', { class: 'twocol summary', style: 'text-align:left' }, [describe('w'), describe('b')]));
+      container.append(el('p', { class: 'legend', text: 'Each square in the king\'s house shows enemy attackers / own defenders. Red means more attackers than defenders. To attack a king, bring more pieces than it has defenders.' }));
     },
   },
 };
