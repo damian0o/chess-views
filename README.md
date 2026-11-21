@@ -62,6 +62,10 @@ or share a link.
   pressure, orange lines show pins, dashed circles the king's escape squares.
 - **Diamond**: the board turned 45°, so diagonals are straight lines and each
   row is one colour.
+- **Shapes**: the chunking exercise from "How Masters See the Board": pieces
+  become squares (sized by value, or all the same), optionally boxed into
+  groups of touching pieces per wing. Look, say what each square is, then
+  press Reveal pieces.
 - **Knight**: a knight's four straight tracks with hop numbers; click any
   square to move the knight there, and toggle hop counts for every square.
 
