@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Position Viewer</title>
+<title>Chess Views</title>
 <meta name="description" content="Paste a chess position from lichess and see it in learning views you can copy onto paper.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,17 +47,98 @@
     min-height: 100vh;
   }
   .mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
-  .page { max-width: 1040px; margin: 0 auto; padding: 24px 16px 64px; }
-  header h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; letter-spacing: -0.01em; }
-  header p { margin: 0 0 20px; color: var(--ink-soft); max-width: 60ch; }
+  :root { --bar-h: 54px; }
+  .app { max-width: 1040px; margin: 0 auto; padding: 0 16px 48px; }
 
-  .loader { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
-  textarea {
-    width: 100%; min-height: 64px; resize: vertical; padding: 10px 12px;
-    font: inherit; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85rem;
-    color: var(--ink); background: var(--paper); border: 2px solid var(--pencil); border-radius: 6px;
+  /* App bar */
+  .appbar {
+    position: sticky; top: 0; z-index: 20; height: var(--bar-h);
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 -16px; padding: 0 12px 0 16px;
+    background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 2px solid var(--pencil);
   }
-  textarea:focus, button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; margin-right: auto; white-space: nowrap; }
+  .brand .piece { width: 26px; height: 26px; display: inline-block; }
+  .appbar .acts { display: flex; align-items: center; gap: 6px; }
+  button.icon {
+    width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 10px;
+    background: transparent; color: var(--ink); border: 2px solid transparent; font-weight: 400;
+  }
+  button.icon:hover { border-color: var(--pencil); }
+  button.icon[aria-pressed="true"] { background: var(--pen-blue); color: #fff; border-color: var(--pen-blue); }
+  button.icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .letters-toggle { position: relative; }
+  .letters-toggle input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .letters-toggle span {
+    width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; border: 2px solid transparent;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 700; font-size: 0.95rem;
+  }
+  .letters-toggle:hover span { border-color: var(--pencil); }
+  .letters-toggle input:checked + span { background: var(--pen-blue); color: #fff; border-color: var(--pen-blue); }
+  .letters-toggle input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button.primary { padding: 8px 14px; border-radius: 10px; }
+
+  /* View pills */
+  nav.tabs {
+    position: sticky; top: var(--bar-h); z-index: 15;
+    display: flex; gap: 6px; margin: 0 -16px; padding: 10px 16px;
+    overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity;
+    background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  nav.tabs::-webkit-scrollbar { display: none; }
+  nav.tabs button {
+    flex: 0 0 auto; scroll-snap-align: start; white-space: nowrap;
+    background: var(--paper); border: 2px solid var(--pencil); color: var(--ink); padding: 6px 13px; border-radius: 999px; font-weight: 700; font-size: 0.92rem;
+  }
+  nav.tabs button[aria-selected="true"] { background: var(--pen-blue); border-color: var(--pen-blue); color: #fff; }
+
+  /* Status line above the board */
+  .status { display: flex; align-items: baseline; gap: 12px; margin: 4px 0 10px; min-height: 1.5em; }
+  .status .turn { font-weight: 700; white-space: nowrap; }
+  .status .turn.check { color: var(--pen-red); }
+  .status .hint { margin: 0 0 0 auto; font-size: 0.82rem; text-align: right; }
+
+  /* Player bar for a loaded game */
+  .player {
+    display: none; position: sticky; bottom: 0; z-index: 15;
+    margin: 18px -16px 0; padding: 8px 12px 10px;
+    background: color-mix(in srgb, var(--paper) 94%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-top: 2px solid var(--pencil);
+  }
+  .player.on { display: block; }
+  .moves { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px 6px; margin: 0 0 6px; font-size: 0.9rem; overflow-x: auto; scrollbar-width: none; padding: 2px 4px; }
+  .moves::-webkit-scrollbar { display: none; }
+  .moves .num { color: var(--ink-soft); margin-left: 6px; flex: 0 0 auto; }
+  .moves button { background: none; border: 0; color: var(--ink); padding: 1px 5px; font-weight: 400; border-radius: 4px; flex: 0 0 auto; }
+  .moves button.cur { background: var(--pen-blue); color: #fff; }
+  .nav { display: flex; align-items: center; gap: 6px; }
+  .nav button.icon { width: 40px; height: 36px; border-color: var(--pencil); border-radius: 8px; }
+  .nav input[type=range] { flex: 1 1 120px; min-width: 60px; accent-color: var(--pen-blue); margin: 0 6px; }
+  .nav .ply { font-size: 0.85rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: center; }
+
+  /* Details under the board */
+  details.more { width: 100%; max-width: 70ch; margin: 6px auto 0; font-size: 0.85rem; color: var(--ink-soft); }
+  details.more summary { cursor: pointer; font-weight: 700; color: var(--ink-soft); }
+  details.more .fenrow { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+  details.more .fenrow code { flex: 1 1 auto; word-break: break-all; font-size: 0.78rem; }
+
+  /* Load dialog */
+  dialog.loader { border: 2px solid var(--pencil); border-radius: 14px; padding: 18px 18px 16px; width: min(640px, calc(100vw - 32px)); background: var(--paper); color: var(--ink); }
+  dialog.loader::backdrop { background: rgba(10, 16, 30, 0.45); backdrop-filter: blur(2px); }
+  dialog.loader h2 { margin: 0 0 4px; font-size: 1.2rem; }
+  dialog.loader p.lead { margin: 0 0 12px; color: var(--ink-soft); max-width: 60ch; }
+  dialog.loader .examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+  dialog.loader .examples button { background: var(--paper); border: 2px solid var(--pencil); color: var(--ink); padding: 5px 11px; border-radius: 999px; font-weight: 400; font-size: 0.88rem; }
+  dialog.loader .examples button:hover { border-color: var(--pen-blue); color: var(--pen-blue); }
+  dialog.loader .row { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+  dialog.loader .row .error { margin: 0 auto 0 0; }
+  textarea {
+    width: 100%; min-height: 96px; resize: vertical; padding: 10px 12px;
+    font: inherit; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85rem;
+    color: var(--ink); background: var(--paper); border: 2px solid var(--pencil); border-radius: 8px;
+  }
+  textarea:focus, button:focus-visible, input:focus-visible, [tabindex]:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
   button {
     font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 6px; cursor: pointer;
     border: 2px solid var(--ink); background: var(--ink); color: var(--paper);
@@ -68,23 +149,9 @@
   .error { color: var(--pen-red); margin: 6px 0 0; min-height: 1.4em; font-weight: 700; }
   .error:empty { display: none; }
 
-  nav.tabs { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 24px 0 14px; border-bottom: 2px solid var(--pencil); }
-  nav.tabs button {
-    background: none; border: 0; color: var(--ink-soft); padding: 8px 2px 10px; border-radius: 0; font-weight: 700;
-    border-bottom: 3px solid transparent; margin-bottom: -2px;
-  }
-  nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--pen-blue); }
-
-  .status { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin: 0 0 12px; }
-  .status .turn { font-weight: 700; }
-  .status .turn.check { color: var(--pen-red); }
-  .nav { display: none; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
-  .nav.on { display: flex; }
-  .nav input[type=range] { flex: 1 1 200px; accent-color: var(--pen-blue); }
-  .moves { display: flex; flex-wrap: wrap; gap: 2px 6px; margin: 0 0 14px; font-size: 0.9rem; max-height: 6.5em; overflow: auto; }
-  .moves .num { color: var(--ink-soft); margin-left: 6px; }
-  .moves button { background: none; border: 0; color: var(--ink); padding: 0 3px; font-weight: 400; border-radius: 3px; }
-  .moves button.cur { background: var(--pen-blue); color: #fff; }
+  /* Toast */
+  .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(10px); z-index: 30; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 999px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
 
   main { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 14px; }
   main > * { max-width: 100%; min-width: 0; box-sizing: border-box; }
@@ -236,8 +303,8 @@
   @media print {
     @page { margin: 12mm; }
     body { background: #fff; color: #000; font-size: 11pt; min-height: 0; }
-    .page { padding: 0; max-width: none; }
-    .page > *:not(#print-sheet) { display: none !important; }
+    .app { padding: 0; max-width: none; }
+    .app > *:not(#print-sheet) { display: none !important; }
     #print-sheet { display: block; }
     #print-sheet h2 { font-size: 13pt; margin: 0 0 2mm; }
     #print-sheet .board { --cell: 10.5mm; margin: 0 auto; }
@@ -316,7 +383,6 @@
   .board .sq .mv { position: absolute; left: 50%; top: 50%; width: 30%; height: 30%; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(36, 86, 200, 0.55); z-index: 4; pointer-events: none; }
   .board .sq .mv.capture { width: 86%; height: 86%; background: none; border: 4px solid rgba(201, 59, 59, 0.75); box-sizing: border-box; }
   .board .sq .mv.illegal { background: rgba(120, 120, 120, 0.45); }
-  .mvhint { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
 
   /* Stalemate watch */
   .board .sq .half { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 58%; height: 58%; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.5em; color: #fff; background: rgba(110, 110, 110, 0.75); z-index: 2; pointer-events: none; }
@@ -333,57 +399,77 @@
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
   @media (max-width: 600px) {
     .loader { grid-template-columns: 1fr; }
-    .page { padding: 16px 16px 48px; }
-    header h1 { font-size: 1.4rem; }
-    nav.tabs { gap: 2px 14px; margin: 18px 0 12px; }
-    nav.tabs button { padding: 8px 0; }
-    .nav input[type=range] { flex: 1 1 100%; order: 10; }
+    .brand { font-size: 1rem; }
+    button.primary { padding: 8px 12px; }
     .summary { max-width: none; }
   }
 </style>
 </head>
 <body>
-<div class="page">
-  <header>
-    <h1>Position viewer</h1>
-    <p>Paste a position from lichess and look at it in different ways. Switch to letters when you want to copy a position onto squared paper.</p>
-  </header>
-
-  <section class="loader" aria-label="Load a position">
-    <div>
-      <label for="input" class="hint" style="margin:0 0 4px;display:block">FEN, PGN, or a lichess link</label>
-      <textarea id="input" spellcheck="false" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
-      <p id="error" class="error" role="alert"></p>
+<div class="app">
+  <header class="appbar">
+    <div class="brand"><span class="piece wN" role="img" aria-label="Chess Views"></span><span class="word">Chess Views</span></div>
+    <div class="acts">
+      <button class="icon" id="flip" type="button" title="Turn the board around (f)" aria-label="Flip board" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>
+      </button>
+      <label class="letters-toggle" title="Letters for paper instead of piece images"><input type="checkbox" id="letters" aria-label="Letters for paper"><span aria-hidden="true">Aa</span></label>
+      <button class="icon" id="share" type="button" title="Copy a link to this position" aria-label="Copy link">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>
+      </button>
+      <button class="primary" id="open-load" type="button" title="Paste a FEN, PGN or lichess link (l)">Load</button>
     </div>
-    <button id="load" type="button" style="margin-top:26px">Load</button>
-  </section>
+  </header>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Views"></nav>
 
   <div class="status">
     <span id="turn" class="turn"></span>
-    <span id="fen" class="mono hint" style="margin:0;font-size:0.75rem;word-break:break-all"></span>
-    <span style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-      <label class="hint" style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="letters"> Letters for paper</label>
-      <button class="quiet" id="flip" type="button" title="Turn the board around (f)">Flip board</button>
-    </span>
+    <span id="hint" class="hint"></span>
   </div>
-  <div class="nav" id="nav">
-    <button class="quiet" id="first" title="Start">⏮</button>
-    <button class="quiet" id="prev" title="Back one move">◀</button>
-    <input type="range" id="slider" min="0" max="0" value="0" aria-label="Move">
-    <button class="quiet" id="next" title="Forward one move">▶</button>
-    <button class="quiet" id="last" title="End">⏭</button>
-    <span id="plyLabel" class="hint" style="margin:0"></span>
-  </div>
-  <div class="moves" id="moves"></div>
 
   <main id="view" aria-live="polite"></main>
+
+  <details class="more">
+    <summary>Position details</summary>
+    <div class="fenrow"><code id="fen" class="mono"></code><button class="quiet" id="copy-fen" type="button">Copy FEN</button></div>
+  </details>
+
+  <div class="player" id="nav">
+    <div class="moves" id="moves"></div>
+    <div class="nav">
+      <button class="icon" id="first" title="Start" aria-label="Start">⏮</button>
+      <button class="icon" id="prev" title="Back one move" aria-label="Back one move">◀</button>
+      <input type="range" id="slider" min="0" max="0" value="0" aria-label="Move">
+      <button class="icon" id="next" title="Forward one move" aria-label="Forward one move">▶</button>
+      <button class="icon" id="last" title="End" aria-label="End">⏭</button>
+      <span id="plyLabel" class="ply"></span>
+    </div>
+  </div>
 
   <section id="print-sheet" aria-hidden="true"></section>
 
   <footer>Paper rule: capitals are pieces, <span class="mono">'</span> means black, <span class="mono">o</span> is a white pawn, <span class="mono">x</span> a black pawn. a1 is dark. Piece images by Colin M.L. Burnett (CC BY-SA 3.0).</footer>
 </div>
+
+<dialog class="loader" id="loader" aria-labelledby="loader-title">
+  <h2 id="loader-title">Load a position</h2>
+  <p class="lead">Paste a FEN, a PGN, or a lichess game link. On lichess: Analysis board → Share → FEN or PGN.</p>
+  <label for="input" class="hint" style="margin:0 0 4px;display:block">FEN, PGN, or a lichess link</label>
+  <textarea id="input" spellcheck="false" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
+  <div class="examples" aria-label="Examples">
+    <button type="button" data-example="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Start position</button>
+    <button type="button" data-example="r1bqk1nr/pp2ppbp/2n3p1/3pP3/3P4/5N2/PP3PPP/RNBQKB1R w KQkq - 0 1">Alapin structure</button>
+    <button type="button" data-example="kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w - - 0 1">King trap study</button>
+    <button type="button" data-example="1. e4 c5 2. c3 d5 3. exd5 Qxd5 4. d4 g6 5. Nf3 Bg7 6. Be2 Nc6 7. O-O Nf6 8. c4 Qd8 9. d5 Ne5">A short game</button>
+  </div>
+  <div class="row">
+    <p id="error" class="error" role="alert"></p>
+    <button class="quiet" id="close-load" type="button">Close</button>
+    <button id="load" type="button">Load</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
@@ -472,6 +558,7 @@ async function load(text) {
   }
   writeHash();
   render();
+  if ($('loader').open) $('loader').close();
 }
 
 // ---------- rendering helpers ----------
@@ -539,7 +626,7 @@ function cellXY(sq) {
 
 let lastLongPress = 0;
 const TOUCH = window.matchMedia ? window.matchMedia('(hover: none) and (pointer: coarse)').matches : false;
-const PREVIEW_VERB = TOUCH ? 'Press and hold' : 'Right-click';
+const PREVIEW_VERB = TOUCH ? 'Hold' : 'Right-click';
 
 /** Build a 10x10 board grid. cellFn(row, col, cell, name) returns a node (or nodes) for the square. */
 function boardGrid(board, cellFn, extraClass = '') {
@@ -1252,12 +1339,38 @@ function buildPrintSheet(board) {
   return sheet;
 }
 
+let shownTab = null;
 function renderTabs() {
   const nav = $('tabs');
   nav.replaceChildren();
   for (const [key, v] of Object.entries(VIEWS)) {
     nav.append(el('button', { role: 'tab', 'aria-selected': String(key === state.tab), text: v.title, onclick: () => { state.tab = key; writeHash(); render(); } }));
   }
+  if (shownTab !== state.tab) {
+    shownTab = state.tab;
+    const cur = nav.querySelector('[aria-selected="true"]');
+    if (cur) nav.scrollLeft = Math.max(0, cur.offsetLeft - 16);
+  }
+}
+
+let toastTimer = null;
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+async function copyText(text, done) {
+  try { await navigator.clipboard.writeText(text); toast(done); }
+  catch { toast('Could not copy; select the text and copy it by hand.'); }
+}
+
+function openLoader() {
+  const dlg = $('loader');
+  $('error').textContent = '';
+  if (!$('input').value) $('input').value = state.source.kind === 'fen' ? state.source.fen : state.source.pgn;
+  if (!dlg.open) dlg.showModal();
+  $('input').focus(); $('input').select();
 }
 
 function render() {
@@ -1266,7 +1379,7 @@ function render() {
   renderTabs();
   $('letters').checked = state.pieceStyle === 'letters';
   $('flip').setAttribute('aria-pressed', String(state.flipped));
-  $('flip').textContent = state.flipped ? 'Flip board (Black side)' : 'Flip board';
+  $('flip').title = state.flipped ? 'Board seen from Black. Turn it around (f)' : 'Turn the board around (f)';
   const turn = chess.turn() === 'w' ? 'White to move' : 'Black to move';
   const check = chess.inCheck();
   $('turn').textContent = check ? `${turn} (in check)` : turn;
@@ -1285,6 +1398,8 @@ function render() {
     if (i % 2 === 0) movesEl.append(el('span', { class: 'num', text: `${i / 2 + 1}.` }));
     movesEl.append(el('button', { type: 'button', class: i + 1 === state.ply ? 'cur' : '', text: m.san, onclick: () => goTo(i + 1) }));
   });
+  const cur = movesEl.querySelector('.cur');
+  if (cur) movesEl.scrollLeft = Math.max(0, cur.offsetLeft - movesEl.clientWidth / 2);
 
   const container = $('view');
   container.replaceChildren();
@@ -1293,9 +1408,9 @@ function render() {
     const p = chess.get(state.showMoves);
     const n = legalMovesFor(chess, state.showMoves).length;
     const who = p ? `${p.color === 'w' ? 'White' : 'Black'} ${PIECE_WORDS[p.type]} on ${state.showMoves}` : state.showMoves;
-    container.prepend(el('p', { class: 'mvhint', text: `${who}: ${n} legal move${n === 1 ? '' : 's'}${p && p.color !== chess.turn() ? ' (if it were their turn)' : ''}. ${PREVIEW_VERB} again${TOUCH ? '' : ' or press Esc'} to hide.` }));
-  } else if (!container.querySelector('.mvhint')) {
-    container.prepend(el('p', { class: 'mvhint', text: `${PREVIEW_VERB} a piece to see where it can go.` }));
+    $('hint').textContent = `${who}: ${n} legal move${n === 1 ? '' : 's'}${p && p.color !== chess.turn() ? ' (if it were their turn)' : ''}. ${PREVIEW_VERB} again${TOUCH ? '' : ' or Esc'} to hide.`;
+  } else {
+    $('hint').textContent = `${PREVIEW_VERB} a piece to see its moves.`;
   }
 }
 
@@ -1315,6 +1430,16 @@ $('letters').addEventListener('change', (e) => {
 });
 $('load').addEventListener('click', () => load($('input').value));
 $('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) load($('input').value); });
+$('open-load').addEventListener('click', openLoader);
+$('close-load').addEventListener('click', () => $('loader').close());
+$('loader').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+for (const b of document.querySelectorAll('[data-example]')) b.addEventListener('click', () => { $('input').value = b.dataset.example; load(b.dataset.example); });
+$('copy-fen').addEventListener('click', () => copyText(currentChess().fen(), 'FEN copied'));
+$('share').addEventListener('click', async () => {
+  const url = location.href;
+  if (TOUCH && navigator.share) { try { await navigator.share({ title: 'Chess Views', url }); return; } catch { /* cancelled */ } }
+  copyText(url, 'Link copied');
+});
 $('first').addEventListener('click', () => goTo(0));
 $('prev').addEventListener('click', () => goTo(state.ply - 1));
 $('next').addEventListener('click', () => goTo(state.ply + 1));
@@ -1325,6 +1450,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') goTo(state.ply - 1);
   if (e.key === 'ArrowRight') goTo(state.ply + 1);
   if (e.key === 'f' || e.key === 'F') flipBoard();
+  if (e.key === 'l' || e.key === 'L') openLoader();
   if (e.key === 'Escape' && state.showMoves) { state.showMoves = null; render(); }
 });
 

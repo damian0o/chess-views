@@ -370,3 +370,24 @@ Touch: press and hold a piece for 450ms does what right-click does. A
 `contextmenu` event within 800ms of a long press is ignored, because
 Android fires one after the hold. The hint sentence says "Press and hold"
 on coarse-pointer devices and "Right-click" elsewhere.
+
+## Addendum 2026-11-21: app shell
+
+The page is an app, not an article. Top bar, sticky: knight mark and the
+name "Chess Views", then flip (icon, pressed state when flipped), the
+letters toggle (an "Aa" button), share (native share sheet on touch,
+otherwise copies the link and shows a toast) and a filled **Load** button.
+The view tabs are one horizontally scrollable row of pills, sticky under
+the bar, and the active pill is scrolled into view when the view changes.
+A one-line status (side to move, the hold/right-click hint) sits above the
+board, and the board is the first thing under it.
+
+The paste box lives in a modal dialog opened by Load or the `l` key, with
+four example positions (start, Alapin structure, king-trap study, a short
+game); a successful load closes it, an error shows inside it. The FEN moved
+to a "Position details" disclosure under the view with a Copy FEN button.
+
+A loaded game shows a player bar stuck to the bottom of the viewport: the
+move list as one scrolling strip (current move centred) and the transport
+buttons with the slider and ply counter. The intro paragraph is gone; the
+footer keeps the paper rule and the piece-image credit.
