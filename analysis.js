@@ -187,6 +187,46 @@ export function territory(board) {
   return { mark, diff, lead, cheapest, summary, pinned };
 }
 
+/**
+ * How safe every piece stands. For each occupied square: the enemy attackers and own defenders
+ * (pins respected), the cheapest attacker `by`, and a status:
+ *  'free'  attacked and nobody defends it (even a king may take it)
+ *  'cheap' defended, but an attacker is worth less than the piece, so taking it wins material
+ *  'held'  attacked, but every attacker is worth at least as much and it is defended
+ *  'quiet' not attacked
+ */
+export function pieceSafety(board) {
+  const pinMap = absolutePinMap(board);
+  const hits = new Map(); // square → { w: [], b: [] }
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const piece = board[row][col];
+    if (!piece) continue;
+    for (const [r, c] of attacksFromPinned(board, row, col, pinMap)) {
+      const target = board[r][c];
+      if (!target) continue;
+      if (!hits.has(target.square)) hits.set(target.square, { w: [], b: [] });
+      hits.get(target.square)[piece.color].push(piece);
+    }
+  }
+  const out = new Map();
+  for (const piece of board.flat()) {
+    if (!piece) continue;
+    const h = hits.get(piece.square) || { w: [], b: [] };
+    const enemy = piece.color === 'w' ? 'b' : 'w';
+    const sortByValue = (list) => list.slice().sort((a, b) => (PIECE_VALUE[a.type] - PIECE_VALUE[b.type]) || a.square.localeCompare(b.square));
+    const attackers = sortByValue(h[enemy]), defenders = sortByValue(h[piece.color]);
+    const by = attackers[0] || null;
+    let status = 'quiet';
+    if (by) {
+      if (!defenders.length) status = 'free';
+      else if (PIECE_VALUE[by.type] < PIECE_VALUE[piece.type]) status = 'cheap';
+      else status = 'held';
+    }
+    out.set(piece.square, { piece, attackers, defenders, by, status });
+  }
+  return out;
+}
+
 // ---------- mobility ----------
 
 /** Pseudo-legal destination squares for the piece at (row, col): no castling, no en passant, check ignored. */
