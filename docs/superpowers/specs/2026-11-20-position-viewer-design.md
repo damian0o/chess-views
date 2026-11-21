@@ -355,3 +355,18 @@ applies as on every view.
 Sentence under the board: how many groups each side has, then the exercise
 instruction. Not in the print sheet (it already fills one A4 page); left
 for later.
+
+## Addendum 2026-11-21: phone layout
+
+Squares scale to the screen: `--cell` is `(100vw - 32px) / 10`, clamped
+between 28 and 52px, so a 390px phone gets 36px squares; the Diamond uses
+`(100vw - 32px) / 8`. Nothing in `main` may be wider than the screen
+(`minmax(0, 1fr)` column, `max-width: 100%` on children, legend and panel
+grids use `minmax(min(Npx, 100%), 1fr)`), which stops the browser zooming
+the page out to 772px as it did when the legend box forced its 760px
+max-width. Under 600px the move slider takes its own row.
+
+Touch: press and hold a piece for 450ms does what right-click does. A
+`contextmenu` event within 800ms of a long press is ignored, because
+Android fires one after the hold. The hint sentence says "Press and hold"
+on coarse-pointer devices and "Right-click" elsewhere.

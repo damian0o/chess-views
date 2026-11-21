@@ -22,7 +22,7 @@
     --pen-red: #c93b3b;
     --ok: #2f8f5b;
     --focus: #ffb703;
-    --cell: clamp(28px, 6vw, 52px);
+    --cell: clamp(28px, calc((100vw - 32px) / 10), 52px);
     font-size: 17px;
   }
   @media (prefers-color-scheme: dark) {
@@ -86,7 +86,9 @@
   .moves button { background: none; border: 0; color: var(--ink); padding: 0 3px; font-weight: 400; border-radius: 3px; }
   .moves button.cur { background: var(--pen-blue); color: #fff; }
 
-  main { display: grid; justify-items: center; gap: 14px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 14px; }
+  main > * { max-width: 100%; min-width: 0; box-sizing: border-box; }
+  .board, .roadwrap, .presswrap, .knightwrap, .groupwrap, .diamond { touch-action: manipulation; -webkit-touch-callout: none; }
   .summary { max-width: 70ch; text-align: center; color: var(--ink-soft); margin: 0; white-space: pre-line; }
   .summary strong { color: var(--ink); }
   .legend { font-size: 0.9rem; color: var(--ink-soft); text-align: center; max-width: 60ch; margin: 0; }
@@ -196,7 +198,7 @@
   .roadwrap line.frozen { stroke-dasharray: 0.16 0.14; opacity: 0.35; }
   .sw .lock { position: static; width: 18px; height: 18px; }
   .presswrap line.defend { stroke-width: 0.05; opacity: 0.6; stroke-dasharray: 0.18 0.14; }
-  .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); max-width: 72ch; width: 100%; }
+  .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); max-width: 72ch; width: 100%; }
   .houses h3 { margin: 0 0 4px; font-size: 1.05rem; }
   .houses .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.85rem; margin-left: 8px; color: #fff; }
   .board .sq.escape::after { content: ''; position: absolute; width: 38%; height: 38%; border: 3px dashed #1e8f4a; border-radius: 50%; left: 31%; top: 31%; z-index: 1; }
@@ -205,11 +207,11 @@
   .houses ul { margin: 0; padding-left: 1.1em; }
   .houses li { margin: 2px 0; }
   .houses .score { color: var(--ink-soft); font-size: 0.85rem; margin: 4px 0 0; }
-  .twocol { display: grid; gap: 4px 24px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); max-width: 70ch; }
+  .twocol { display: grid; gap: 4px 24px; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); max-width: 70ch; }
   .twocol p { margin: 0; }
 
   /* Diamond */
-  .diamond { --d: clamp(34px, 6.4vw, 60px); position: relative; padding: calc(var(--d) * 0.3) 0; user-select: none; }
+  .diamond { --d: clamp(30px, calc((100vw - 32px) / 8), 60px); position: relative; padding: calc(var(--d) * 0.3) 0; user-select: none; }
   .diamond::before, .diamond::after { content: ''; position: absolute; background: var(--pen-blue); opacity: 0.35; pointer-events: none; }
   .diamond::before { left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); }
   .diamond::after { top: 50%; left: 0; right: 0; height: 2px; transform: translateY(-1px); }
@@ -286,7 +288,7 @@
   .sw .grpsw { width: 18px; height: 14px; border: 3px solid #d33b3b; border-radius: 3px; }
 
   /* Visual legend */
-  .vlegend { list-style: none; margin: 4px 0 0; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px 18px; max-width: 760px; width: 100%; font-size: 0.9rem; color: var(--ink-soft); border: 1px solid var(--pencil); border-radius: 8px; background: color-mix(in srgb, var(--paper) 85%, transparent); }
+  .vlegend { list-style: none; margin: 4px 0 0; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 6px 18px; max-width: 760px; width: 100%; box-sizing: border-box; font-size: 0.9rem; color: var(--ink-soft); border: 1px solid var(--pencil); border-radius: 8px; background: color-mix(in srgb, var(--paper) 85%, transparent); }
   .vlegend li { display: flex; align-items: center; gap: 10px; min-height: 26px; }
   .sw { flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center; position: relative; border: 1px solid var(--pencil); background: var(--square-light); font-family: "IBM Plex Mono", ui-monospace, monospace; }
   .sw svg { width: 100%; height: 100%; overflow: visible; }
@@ -329,7 +331,15 @@
   .sw .half { position: static; transform: none; width: 18px; height: 18px; font-size: 10px; }
 
   footer { margin-top: 48px; font-size: 0.85rem; color: var(--ink-soft); }
-  @media (max-width: 600px) { .loader { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) {
+    .loader { grid-template-columns: 1fr; }
+    .page { padding: 16px 16px 48px; }
+    header h1 { font-size: 1.4rem; }
+    nav.tabs { gap: 2px 14px; margin: 18px 0 12px; }
+    nav.tabs button { padding: 8px 0; }
+    .nav input[type=range] { flex: 1 1 100%; order: 10; }
+    .summary { max-width: none; }
+  }
 </style>
 </head>
 <body>
@@ -527,6 +537,10 @@ function cellXY(sq) {
   return state.flipped ? [7 - col + 0.5, 7 - row + 0.5] : [col + 0.5, row + 0.5];
 }
 
+let lastLongPress = 0;
+const TOUCH = window.matchMedia ? window.matchMedia('(hover: none) and (pointer: coarse)').matches : false;
+const PREVIEW_VERB = TOUCH ? 'Press and hold' : 'Right-click';
+
 /** Build a 10x10 board grid. cellFn(row, col, cell, name) returns a node (or nodes) for the square. */
 function boardGrid(board, cellFn, extraClass = '') {
   const g = el('div', { class: `board mono ${extraClass}`.trim(), role: 'img' });
@@ -541,11 +555,21 @@ function boardGrid(board, cellFn, extraClass = '') {
       const sq = el('div', { class: `sq ${A.squareColor(name)}`, title: name, 'data-square': name });
       const content = cellFn(row, col, board[row][col], name);
       if (content) sq.append(...[].concat(content));
+      const toggleMoves = () => { state.showMoves = board[row][col] && state.showMoves !== name ? name : null; render(); };
       sq.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        state.showMoves = board[row][col] && state.showMoves !== name ? name : null;
-        render();
+        if (Date.now() - lastLongPress < 800) return; // Android fires contextmenu after our long press
+        toggleMoves();
       });
+      // Press and hold on a touch screen does what right-click does with a mouse.
+      let hold = null;
+      sq.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'touch') return;
+        hold = setTimeout(() => { hold = null; lastLongPress = Date.now(); toggleMoves(); }, 450);
+      });
+      for (const ev of ['pointerup', 'pointercancel', 'pointerleave', 'pointermove']) {
+        sq.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType !== 'touch') return; if (hold) { clearTimeout(hold); hold = null; } });
+      }
       g.append(sq);
     }
     g.append(el('div', { class: 'coord', text: String(8 - row) }));
@@ -1269,9 +1293,9 @@ function render() {
     const p = chess.get(state.showMoves);
     const n = legalMovesFor(chess, state.showMoves).length;
     const who = p ? `${p.color === 'w' ? 'White' : 'Black'} ${PIECE_WORDS[p.type]} on ${state.showMoves}` : state.showMoves;
-    container.prepend(el('p', { class: 'mvhint', text: `${who}: ${n} legal move${n === 1 ? '' : 's'}${p && p.color !== chess.turn() ? ' (if it were their turn)' : ''}. Right-click again or press Esc to hide.` }));
+    container.prepend(el('p', { class: 'mvhint', text: `${who}: ${n} legal move${n === 1 ? '' : 's'}${p && p.color !== chess.turn() ? ' (if it were their turn)' : ''}. ${PREVIEW_VERB} again${TOUCH ? '' : ' or press Esc'} to hide.` }));
   } else if (!container.querySelector('.mvhint')) {
-    container.prepend(el('p', { class: 'mvhint', text: 'Right-click a piece to see where it can go.' }));
+    container.prepend(el('p', { class: 'mvhint', text: `${PREVIEW_VERB} a piece to see where it can go.` }));
   }
 }
 
