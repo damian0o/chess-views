@@ -149,6 +149,29 @@
   .error { color: var(--pen-red); margin: 6px 0 0; min-height: 1.4em; font-weight: 700; }
   .error:empty { display: none; }
 
+  /* Library */
+  dialog.library { width: min(760px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 16px; }
+  .libhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .libhead h2 { margin: 0; }
+  #libsearch { width: 100%; font: inherit; padding: 9px 12px; border: 2px solid var(--pencil); border-radius: 10px; background: var(--paper); color: var(--ink); }
+  .libtags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 12px; }
+  .libtags button { background: var(--paper); border: 2px solid var(--pencil); color: var(--ink-soft); padding: 3px 10px; border-radius: 999px; font-weight: 400; font-size: 0.82rem; }
+  .libtags button[aria-pressed="true"] { background: var(--pen-blue); border-color: var(--pen-blue); color: #fff; }
+  .liblist { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 8px; }
+  .libitem { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: start; text-align: left; padding: 10px; border-radius: 12px; border: 2px solid var(--pencil); background: var(--paper); color: var(--ink); font-weight: 400; cursor: pointer; }
+  .libitem:hover, .libitem:focus-visible { border-color: var(--pen-blue); }
+  .libitem .name { font-weight: 700; display: block; margin-bottom: 2px; }
+  .libitem .note { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.35; display: block; }
+  .libitem .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .libitem .chips span { font-size: 0.72rem; color: var(--ink-soft); border: 1px solid var(--pencil); border-radius: 999px; padding: 0 7px; }
+  .libitem .chips span.view { color: var(--pen-blue); border-color: var(--pen-blue); }
+  .thumb { display: grid; grid-template-columns: repeat(8, 1fr); width: 72px; height: 72px; border: 1px solid var(--pencil); border-radius: 4px; overflow: hidden; }
+  .thumb i { display: block; }
+  .thumb i.dark { background-color: var(--square-dark); } .thumb i.light { background-color: var(--square-light); }
+  .thumb i.piece { background-size: 100% 100%; }
+  .libempty { color: var(--ink-soft); padding: 12px 4px; grid-column: 1 / -1; }
+  @media (max-width: 420px) { .brand .word { display: none; } }
+
   /* Toast */
   .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(10px); z-index: 30; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 999px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; }
   .toast.show { opacity: 1; transform: translateX(-50%); }
@@ -417,6 +440,9 @@
       <button class="icon" id="share" type="button" title="Copy a link to this position" aria-label="Copy link">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>
       </button>
+      <button class="icon" id="open-library" type="button" title="Positions library (p)" aria-label="Positions library">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2z"/><path d="M20 5a2 2 0 0 0-2-2h-5v18h5a2 2 0 0 0 2-2z"/><path d="M7 7h2M7 10h2M15 7h2M15 10h2"/></svg>
+      </button>
       <button class="primary" id="open-load" type="button" title="Paste a FEN, PGN or lichess link (l)">Load</button>
     </div>
   </header>
@@ -468,6 +494,15 @@
     <button class="quiet" id="close-load" type="button">Close</button>
     <button id="load" type="button">Load</button>
   </div>
+</dialog>
+<dialog class="loader library" id="library" aria-labelledby="library-title">
+  <div class="libhead">
+    <h2 id="library-title">Positions library</h2>
+    <button class="quiet" id="close-library" type="button">Close</button>
+  </div>
+  <input type="search" id="libsearch" placeholder="Search names, notes and tags" aria-label="Search the library" autocomplete="off">
+  <div class="libtags" id="libtags" aria-label="Filter by tag"></div>
+  <div class="liblist" id="liblist"></div>
 </dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1365,6 +1400,71 @@ async function copyText(text, done) {
   catch { toast('Could not copy; select the text and copy it by hand.'); }
 }
 
+// ---------- positions library ----------
+const library = { positions: [], tag: null, query: '' };
+async function loadLibrary() {
+  try {
+    const res = await fetch('positions.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error(String(res.status));
+    library.positions = (await res.json()).positions;
+  } catch { library.positions = []; }
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (p.get('pos') && !p.get('fen') && !p.get('pgn')) {
+    const entry = library.positions.find((x) => x.id === p.get('pos'));
+    if (entry) openEntry(entry);
+  }
+}
+function entryFen(entry) {
+  if (entry.fen) return entry.fen;
+  const c = new Chess();
+  try { c.loadPgn(entry.pgn); } catch { return A.START_FEN; }
+  const hist = c.history();
+  for (let i = hist.length; i > entry.ply; i--) c.undo();
+  return c.fen();
+}
+function thumb(fen) {
+  const t = el('div', { class: 'thumb', 'aria-hidden': 'true' });
+  const board = A.boardFromFen(fen);
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const cell = board[r][c];
+    const name = A.squareName(r, c);
+    t.append(el('i', { class: `${A.squareColor(name)} ${cell ? `piece ${cell.color}${cell.type.toUpperCase()}` : ''}`.trim() }));
+  }
+  return t;
+}
+function openEntry(entry) {
+  setPosition(entry.fen ? { kind: 'fen', fen: entry.fen } : { kind: 'pgn', pgn: entry.pgn, ply: entry.ply });
+  state.tab = entry.view;
+  $('input').value = entry.fen || entry.pgn;
+  writeHash();
+  render();
+  if ($('library').open) $('library').close();
+  toast(entry.name);
+}
+function renderLibrary() {
+  const tags = [...new Set(library.positions.flatMap((p) => p.tags))];
+  const tagBox = $('libtags');
+  tagBox.replaceChildren(...tags.map((t) => el('button', { type: 'button', 'aria-pressed': String(library.tag === t), text: t, onclick: () => { library.tag = library.tag === t ? null : t; renderLibrary(); } })));
+  const q = library.query.trim().toLowerCase();
+  const shown = library.positions.filter((p) => (!library.tag || p.tags.includes(library.tag)) && (!q || `${p.name} ${p.note} ${p.tags.join(' ')}`.toLowerCase().includes(q)));
+  const list = $('liblist');
+  list.replaceChildren(...shown.map((p) => el('button', { type: 'button', class: 'libitem', onclick: () => openEntry(p) }, [
+    thumb(entryFen(p)),
+    el('span', {}, [
+      el('span', { class: 'name', text: p.name }),
+      el('span', { class: 'note', text: p.note }),
+      el('span', { class: 'chips' }, [el('span', { class: 'view', text: VIEWS[p.view].title }), ...p.tags.map((t) => el('span', { text: t }))]),
+    ]),
+  ])));
+  if (!shown.length) list.append(el('p', { class: 'libempty', text: library.positions.length ? 'Nothing matches. Try another word or clear the tag.' : 'The library could not be loaded.' }));
+}
+function openLibrary() {
+  renderLibrary();
+  const dlg = $('library');
+  if (!dlg.open) dlg.showModal();
+  $('libsearch').focus();
+}
+
 function openLoader() {
   const dlg = $('loader');
   $('error').textContent = '';
@@ -1431,6 +1531,10 @@ $('letters').addEventListener('change', (e) => {
 $('load').addEventListener('click', () => load($('input').value));
 $('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) load($('input').value); });
 $('open-load').addEventListener('click', openLoader);
+$('open-library').addEventListener('click', openLibrary);
+$('close-library').addEventListener('click', () => $('library').close());
+$('library').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+$('libsearch').addEventListener('input', (e) => { library.query = e.target.value; renderLibrary(); });
 $('close-load').addEventListener('click', () => $('loader').close());
 $('loader').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
 for (const b of document.querySelectorAll('[data-example]')) b.addEventListener('click', () => { $('input').value = b.dataset.example; load(b.dataset.example); });
@@ -1451,6 +1555,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') goTo(state.ply + 1);
   if (e.key === 'f' || e.key === 'F') flipBoard();
   if (e.key === 'l' || e.key === 'L') openLoader();
+  if (e.key === 'p' || e.key === 'P') openLibrary();
   if (e.key === 'Escape' && state.showMoves) { state.showMoves = null; render(); }
 });
 
@@ -1465,7 +1570,8 @@ try {
   $('error').textContent = 'The position in the link could not be read; showing the start position.';
 }
 window.addEventListener('beforeprint', () => buildPrintSheet(currentChess().board()));
-window.__viewer = { state, render, VIEWS, A, buildPrintSheet };
+loadLibrary();
+window.__viewer = { state, render, VIEWS, A, buildPrintSheet, library };
 </script>
 </body>
 </html>

@@ -391,3 +391,20 @@ A loaded game shows a player bar stuck to the bottom of the viewport: the
 move list as one scrolling strip (current move centred) and the transport
 buttons with the slider and ply counter. The intro paragraph is gone; the
 footer keeps the paper rule and the piece-image credit.
+
+## Addendum 2026-11-21: positions library
+
+A curated, built-in library, no browser storage (the user's call: the page
+is published from the repo, so the collection lives there too).
+`positions.json` holds entries `{ id, name, note, tags, view, fen | pgn+ply }`.
+`tests/library.test.js` validates every entry: unique kebab-case ids, name
+and note length, known view and tags, six-field FEN with 8 valid ranks, one
+king per side, no pawn on the first or last rank. A Playwright check opens
+every entry in the browser (chess.js is the final judge of legality).
+
+UI: a book icon in the top bar (or `p`) opens a modal with a search box,
+one toggle chip per tag, and a card per entry (72px thumbnail, name, note,
+view chip, tag chips). Choosing a card loads the position, switches to its
+view, writes the usual `fen`/`pgn` hash and closes the modal. A `#pos=<id>`
+hash opens an entry once the library has loaded, unless `fen` or `pgn` is
+also present.
