@@ -8,15 +8,24 @@ test('shapeSize: pawns small, minors and rooks medium, royals big', () => {
   for (const t of ['k', 'q']) assert.equal(shapeSize(t), 'big');
 });
 
-test('pieceGroups: start position is one group per side', () => {
+test('pieceGroups: start position splits into queenside, centre and kingside per side', () => {
   const groups = pieceGroups(boardFromFen(START_FEN));
-  assert.equal(groups.length, 2);
-  const w = groups.find((g) => g.color === 'w');
-  const b = groups.find((g) => g.color === 'b');
-  assert.equal(w.squares.length, 16);
-  assert.equal(b.squares.length, 16);
-  assert.deepEqual(w.box, { r0: 6, r1: 7, c0: 0, c1: 7 });
-  assert.deepEqual(b.box, { r0: 0, r1: 1, c0: 0, c1: 7 });
+  assert.equal(groups.length, 6);
+  const w = groups.filter((g) => g.color === 'w');
+  assert.deepEqual(w.map((g) => g.zone), ['queenside', 'centre', 'kingside']);
+  assert.deepEqual(w.map((g) => g.squares.length), [6, 4, 6]);
+  assert.deepEqual(w[0].box, { r0: 6, r1: 7, c0: 0, c1: 2 });
+  assert.deepEqual(w[1].box, { r0: 6, r1: 7, c0: 3, c1: 4 });
+  assert.deepEqual(w[2].box, { r0: 6, r1: 7, c0: 5, c1: 7 });
+});
+
+test('pieceGroups: Alapin structure gives eight chunks, the centre pawns split from the back rank', () => {
+  const groups = pieceGroups(boardFromFen('r1bqk1nr/pp2ppbp/2n3p1/3pP3/3P4/5N2/PP3PPP/RNBQKB1R w KQkq - 0 1'));
+  assert.equal(groups.length, 8);
+  const centreW = groups.filter((g) => g.color === 'w' && g.zone === 'centre').map((g) => g.squares.slice().sort());
+  assert.deepEqual(centreW.sort(), [['d1', 'e1'], ['d4', 'e5']]);
+  const centreB = groups.filter((g) => g.color === 'b' && g.zone === 'centre').map((g) => g.squares.slice().sort());
+  assert.deepEqual(centreB.sort(), [['d5'], ['d8', 'e7', 'e8']]);
 });
 
 test('pieceGroups: touching pieces of one side form a group, diagonal counts', () => {

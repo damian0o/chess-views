@@ -268,6 +268,22 @@
   .knightwrap .board .sq.d4 { background: #f3e2c2; } .knightwrap .board .sq.d5 { background: #f0cfa9; } .knightwrap .board .sq.d6 { background: #e9b98f; }
   .knightwrap .board .sq .imaginary { opacity: 0.55; }
   .toggle { display: flex; gap: 8px; align-items: center; color: var(--ink-soft); font-size: 0.95rem; }
+  /* Shapes view: pieces as squares, groups as boxes */
+  .shape { display: block; border-radius: 12%; position: relative; z-index: 1; }
+  .shape.w { background: #fff; box-shadow: inset 0 0 0 2px #333; }
+  .shape.b { background: #333; }
+  .board .sq .shape.small { width: 32%; height: 32%; }
+  .board .sq .shape.mid { width: 52%; height: 52%; }
+  .board .sq .shape.big { width: 72%; height: 72%; }
+  .groupwrap { position: relative; display: inline-block; }
+  .groupwrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; z-index: 5; }
+  .groupwrap rect.group { fill: none; stroke-width: 0.09; }
+  .groupwrap rect.g0, .sw .grpsw.g0 { stroke: #d33b3b; border-color: #d33b3b; } .groupwrap rect.g1 { stroke: #2456c8; } .groupwrap rect.g2 { stroke: #2a9d4b; }
+  .groupwrap rect.g3 { stroke: #8e44ad; } .groupwrap rect.g4 { stroke: #e07a10; } .groupwrap rect.g5 { stroke: #1aa3a3; }
+  .groupwrap .board .sq .dot { display: none; }
+  .levels button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .sw .shape.small { width: 9px; height: 9px; } .sw .shape.mid { width: 14px; height: 14px; } .sw .shape.big { width: 19px; height: 19px; }
+  .sw .grpsw { width: 18px; height: 14px; border: 3px solid #d33b3b; border-radius: 3px; }
 
   /* Visual legend */
   .vlegend { list-style: none; margin: 4px 0 0; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px 18px; max-width: 760px; width: 100%; font-size: 0.9rem; color: var(--ink-soft); border: 1px solid var(--pencil); border-radius: 8px; background: color-mix(in srgb, var(--paper) 85%, transparent); }
@@ -368,7 +384,7 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -1011,6 +1027,57 @@ const VIEWS = {
       container.append(el('p', { class: 'legend', text: 'Each row across is one colour. A bishop can never leave its rows. Rooks now move on the slants.' }));
     },
   },
+  shapes: {
+    title: 'Shapes',
+    render(container, board) {
+      const level = state.shapesLevel;
+      const reveal = state.shapesReveal;
+      const groups = level === 'groups' ? A.pieceGroups(board) : [];
+      const levels = [['sizes', 'Sizes'], ['same', 'Same size'], ['groups', 'Groups']];
+      container.append(el('div', { class: 'actions levels' }, [
+        ...levels.map(([k, t]) => el('button', { type: 'button', class: 'quiet', 'aria-pressed': String(level === k), text: t, onclick: () => { state.shapesLevel = k; render(); } })),
+        el('button', { type: 'button', class: 'quiet reveal', text: reveal ? 'Hide pieces' : 'Reveal pieces', onclick: () => { state.shapesReveal = !reveal; render(); } }),
+      ]));
+      const grid = boardGrid(board, (r, c, cell, name) => {
+        if (!cell) return null;
+        if (reveal) return pieceNode(cell, name);
+        const size = level === 'sizes' ? A.shapeSize(cell.type) : 'mid';
+        return el('span', { class: `shape ${cell.color} ${size}`, role: 'img', 'aria-label': `${cell.color === 'w' ? 'white' : 'black'} piece` });
+      });
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+      groups.forEach((g, i) => {
+        const [xa, ya] = cellXY(A.squareName(g.box.r0, g.box.c0));
+        const [xb, yb] = cellXY(A.squareName(g.box.r1, g.box.c1));
+        const pad = 0.07;
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        const attrs = { x: Math.min(xa, xb) - 0.5 + pad, y: Math.min(ya, yb) - 0.5 + pad, width: Math.abs(xb - xa) + 1 - 2 * pad, height: Math.abs(yb - ya) + 1 - 2 * pad, rx: 0.12, class: `group g${i % 6}` };
+        for (const [k, v] of Object.entries(attrs)) rect.setAttribute(k, v);
+        svg.append(rect);
+      });
+      container.append(el('div', { class: 'groupwrap' }, [grid, svg]));
+
+      const nW = groups.filter((g) => g.color === 'w').length, nB = groups.length - nW;
+      const exercise = reveal
+        ? 'These are the pieces. Press Hide pieces to go back to the shapes and try again.'
+        : 'Look for ten seconds without thinking about moves. Which piece is each square? Say them out loud, then press Reveal pieces.';
+      const lead = level === 'groups' ? `White has ${nW} group${nW === 1 ? '' : 's'} of touching pieces, Black ${nB}. A strong player remembers the groups, not the pieces. ` : '';
+      container.append(el('p', { class: 'summary', text: lead + exercise }));
+      const items = level === 'sizes'
+        ? [
+          { sw: 'shape', cls: 'w big', text: 'big: a king or queen (white)' },
+          { sw: 'shape', cls: 'b mid', text: 'medium: a knight, bishop or rook (black)' },
+          { sw: 'shape', cls: 'w small', text: 'small: a pawn (white)' },
+        ]
+        : [
+          { sw: 'shape', cls: 'w mid', text: 'a white piece, any kind' },
+          { sw: 'shape', cls: 'b mid', text: 'a black piece, any kind' },
+        ];
+      if (level === 'groups') items.push({ sw: 'group', text: 'a box = pieces that touch each other: one chunk to remember' });
+      items.push({ sw: 'none', cls: 'none', text: 'Paper: draw only the small squares (the pawns) and see if you still know the position.' });
+      container.append(legend(items));
+    },
+  },
   knight: {
     title: 'Knight',
     render(container, board, ctx) {
@@ -1103,6 +1170,8 @@ function legend(items) {
       case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
       case 'lock': sw.classList.add('none'); sw.append(lockNode(it.kind)); break;
       case 'star': sw.classList.add('none'); sw.append(el('span', { class: 'star', text: '★' })); break;
+      case 'shape': sw.classList.add('none'); sw.append(el('span', { class: `shape ${it.cls || ''}`.trim() })); break;
+      case 'group': sw.classList.add('none'); sw.append(el('span', { class: 'grpsw g0' })); break;
       case 'half': sw.classList.add('none'); sw.append(el('span', { class: 'half', text: '½' })); break;
       case 'num': sw.append(el('span', { class: 'num', text: it.text2 || '2/1' })); break;
       case 'mark': sw.append(el('span', { class: 'mark', text: it.text2 })); break;

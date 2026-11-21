@@ -386,10 +386,17 @@ export function shapeSize(type) {
   return 'mid';
 }
 
+/** Which third of the board a file belongs to: a-c queenside, d-e centre, f-h kingside. */
+export function zoneOf(col) {
+  return col < 3 ? 'queenside' : col < 5 ? 'centre' : 'kingside';
+}
+
 /**
- * Groups of touching same-side pieces (8-neighbour adjacency), the "chunks" a
- * strong player sees. Each group: { color, squares, box: { r0, r1, c0, c1 } }
- * in board coordinates (row 0 = rank 8). Scan order: rank 8 to 1, a to h.
+ * Groups of touching same-side pieces (8-neighbour adjacency) inside one zone
+ * (queenside, centre, kingside), the "chunks" a strong player sees. Without the
+ * zone split a normal middlegame is one giant group per side. Each group:
+ * { color, zone, squares, box: { r0, r1, c0, c1 } } in board coordinates
+ * (row 0 = rank 8). Scan order: rank 8 to 1, a to h.
  */
 export function pieceGroups(board) {
   const seen = Array.from({ length: 8 }, () => Array(8).fill(false));
@@ -412,13 +419,13 @@ export function pieceGroups(board) {
             const nr = r + dr, nc = c + dc;
             if ((dr === 0 && dc === 0) || nr < 0 || nr > 7 || nc < 0 || nc > 7 || seen[nr][nc]) continue;
             const p = board[nr][nc];
-            if (!p || p.color !== start.color) continue;
+            if (!p || p.color !== start.color || zoneOf(nc) !== zoneOf(col)) continue;
             seen[nr][nc] = true;
             stack.push([nr, nc]);
           }
         }
       }
-      groups.push({ color: start.color, squares, box });
+      groups.push({ color: start.color, zone: zoneOf(col), squares, box });
     }
   }
   return groups;

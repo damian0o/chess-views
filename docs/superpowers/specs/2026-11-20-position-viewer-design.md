@@ -340,8 +340,11 @@ square. Three levels, chosen with buttons above the board:
    remains.
 3. **Groups** — same-size squares plus a coloured box around each group of
    touching same-side pieces (8-neighbour adjacency, computed by
-   `pieceGroups(board)` in analysis.js). Each group gets the next colour
-   of a six-colour cycle. Single pieces get a box too.
+   `pieceGroups(board)` in analysis.js). Groups never cross the wing
+   boundaries (a–c queenside, d–e centre, f–h kingside): without that split
+   a normal middlegame is one giant box per side, with it the Alapin
+   example gives eight chunks, close to the post's own drawing. Each group
+   gets the next colour of a six-colour cycle. Single pieces get a box too.
 
 **Reveal** button swaps the squares for the real pieces (current piece
 style) and keeps the group boxes, so the exercise is: look, say the pieces
