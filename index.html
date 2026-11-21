@@ -226,6 +226,13 @@
   .board .sq .reach.low { background: #ffd6d6; color: #7a1414; } .board .sq .reach.mid { background: #f1e9c6; color: #5c4a05; } .board .sq .reach.high { background: #cdebd7; color: #0f5a2b; }
   .board .sq .reach.b { outline: 2px solid #111; outline-offset: -2px; }
 
+  /* Overlay for views that draw lines over the board (Territory) */
+  .overlaywrap { position: relative; display: inline-block; }
+  .overlaywrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
+  .overlaywrap line.hit { stroke-width: 0.07; opacity: 0.7; stroke-linecap: round; }
+  .overlaywrap line.hit.side-w { stroke: var(--side-w); } .overlaywrap line.hit.side-b { stroke: var(--side-b); }
+  .board .sq.pick { cursor: pointer; }
+  .board .sq.focused { box-shadow: inset 0 0 0 3px var(--focus); z-index: 2; }
   /* Roads */
   .roadwrap { position: relative; display: inline-block; }
   .roadwrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
@@ -512,14 +519,14 @@
 
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
-import * as A from './analysis.js?v=2ccbfae6';
+import * as A from './analysis.js?v=8f2c2a00';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -533,6 +540,7 @@ function setPosition(source) {
   state.knightSquare = null;
   state.showMoves = null;
   state.roadFocus = null;
+  state.territoryFocus = null;
   const chess = new Chess();
   if (source.kind === 'fen') {
     chess.load(source.fen, { skipValidation: true });
@@ -779,19 +787,57 @@ const VIEWS = {
         if (pinnedSquares.has(name)) nodes.push(lockNode('absolute'));
         return nodes;
       }), t);
-      for (const sq of tgrid.querySelectorAll('.sq')) if (pinnedSquares.has(sq.dataset.square)) sq.classList.add('frozen');
-      container.append(tgrid);
+      // A tapped square shows who attacks it: rings on the attackers, a line from each to the square.
+      const focus = state.territoryFocus;
+      const hits = focus ? A.attackersOf(board, focus) : null;
+      const hitters = new Map();
+      if (hits) for (const c of ['w', 'b']) for (const p of hits[c]) hitters.set(p.square, c);
+      for (const sq of tgrid.querySelectorAll('.sq')) {
+        const name = sq.dataset.square;
+        if (pinnedSquares.has(name)) sq.classList.add('frozen');
+        if (name === focus) sq.classList.add('focused');
+        if (hitters.has(name)) sq.classList.add('aim', `side-${hitters.get(name)}`);
+        sq.classList.add('pick');
+        sq.addEventListener('click', () => { state.territoryFocus = state.territoryFocus === name ? null : name; render(); });
+      }
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 8 8');
+      svg.setAttribute('aria-hidden', 'true');
+      if (hits) {
+        const [x2, y2] = cellXY(focus);
+        for (const [from, c] of hitters) {
+          const [x1, y1] = cellXY(from);
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: `hit side-${c}` })) line.setAttribute(k, v);
+          svg.append(line);
+        }
+      }
+      container.append(el('div', { class: 'overlaywrap' }, [tgrid, svg]));
       const s = t.summary;
-      container.append(el('p', { class: 'summary' }, [
-        el('strong', { text: `White controls ${s.w} squares` }), ` (centre: ${s.centerW}), `,
-        el('strong', { text: `Black controls ${s.b}` }), ` (centre: ${s.centerB}).`,
-      ]));
+      if (hits) {
+        const words = (list) => (list.length ? list.map((p) => `${PIECE_WORDS[p.type]} ${p.square}`).join(', ') : 'nobody');
+        const w = hits.w.length, b = hits.b.length;
+        const verdict = w > b ? 'White attacks it more.' : b > w ? 'Black attacks it more.' : w ? 'Both attack it the same.' : 'Nobody attacks it.';
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: `${focus}: White ${w} (${words(hits.w)}), Black ${b} (${words(hits.b)})` }),
+          `. ${verdict} Tap another square, or this one again to go back.`,
+        ]));
+      } else {
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: `White controls ${s.w} squares` }), ` (centre: ${s.centerW}), `,
+          el('strong', { text: `Black controls ${s.b}` }), ` (centre: ${s.centerB}). Tap a square to see which pieces attack it.`,
+        ]));
+      }
       container.append(legend([
         { sw: 'mark', cls: 't-w', text2: '+', text: 'White attacks it more (darker = bigger lead)' },
         { sw: 'mark', cls: 't-b', text2: '-', text: 'Black attacks it more' },
         { sw: 'mark', cls: 't-eq', text2: '=', text: 'both attack it the same' },
         { sw: 'sq', text: 'nobody attacks it' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to its king: only counts along the pin line' },
+        ...(hits ? [
+          { sw: 'ring', cls: 'aim-w', text: 'white piece attacking the chosen square' },
+          { sw: 'ring', cls: 'aim-b', text: 'black piece attacking it' },
+        ] : []),
       ]));
     },
   },
