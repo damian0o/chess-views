@@ -30,6 +30,21 @@ in a tiny paper square; the print sheet always uses them:
 Empty dark squares get a dot. The rule for the kid: capitals are pieces,
 `'` means black, `o` is a white pawn, `x` a black pawn, a1 is dark.
 
+## Positions library
+
+The book icon in the top bar (or the `p` key) opens the built-in library:
+twenty named positions with a note, tags and the view they are best seen in,
+from the start position and basic mates to pawn structures, the king-trap
+study and Morphy's Opera game. Pick one and the app loads it in that view.
+A link of the form `#pos=<id>` opens an entry directly, for example
+`#pos=lucena`.
+
+The library is the file `positions.json`. To add a position, append an
+entry with an `id`, `name`, `note`, `tags`, `view` and either a six-field
+`fen` or a `pgn` with a `ply`; `npm test` validates every entry (fields,
+FEN shape, one king per side). There is no saving in the browser by design:
+the collection is curated in the repo and published with the page.
+
 ## How to use
 
 Press **Load** in the top bar (or the `l` key), paste any of these and press
