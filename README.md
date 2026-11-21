@@ -1,7 +1,7 @@
 # Chess position viewer
 
 A single static page that reads a chess position exported from lichess and
-shows it in six learning views. Made for an 8-year-old learning strategy and
+shows it in eight learning views. Made for an 8-year-old learning strategy and
 a parent helping, with a board that is easy to copy onto squared paper.
 
 Live: enable GitHub Pages on this repo (see below) and open the URL it gives you.
