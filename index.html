@@ -556,25 +556,36 @@ function setPosition(source) {
 }
 
 // ---------- hash sync ----------
+/** Which piece of state holds the selected square in each view; it travels in the link as `sq`. */
+const FOCUS_KEY = { territory: 'territoryFocus', roads: 'roadFocus', knight: 'knightSquare' };
 function writeHash() {
   const p = new URLSearchParams();
   if (state.source.kind === 'fen') p.set('fen', state.source.fen);
   else { p.set('pgn', state.source.pgn); p.set('ply', String(state.ply)); }
   if (state.tab !== 'board') p.set('view', state.tab);
   if (state.flipped) p.set('flip', '1');
+  const key = FOCUS_KEY[state.tab];
+  if (key && state[key]) p.set('sq', state[key]);
   history.replaceState(null, '', '#' + p.toString());
 }
+/** Returns { source, sq }: the position in the link (or null) and the selected square, if any. */
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   if (p.get('view') && VIEWS[p.get('view')]) state.tab = p.get('view');
   state.flipped = p.get('flip') === '1';
+  const sq = /^[a-h][1-8]$/.test(p.get('sq') || '') ? p.get('sq') : null;
   if (p.get('fen')) {
     const parsed = A.parseInput(p.get('fen'));
     if (parsed.kind !== 'fen') throw new Error(parsed.reason || 'bad fen in link');
-    return parsed;
+    return { source: parsed, sq };
   }
-  if (p.get('pgn')) return { kind: 'pgn', pgn: p.get('pgn'), ply: p.has('ply') ? Number(p.get('ply')) : undefined };
-  return null;
+  if (p.get('pgn')) return { source: { kind: 'pgn', pgn: p.get('pgn'), ply: p.has('ply') ? Number(p.get('ply')) : undefined }, sq };
+  return { source: null, sq };
+}
+/** Apply a selected square from the link to the open view (after setPosition, which clears selections). */
+function applyFocus(sq) {
+  const key = FOCUS_KEY[state.tab];
+  if (sq && key) state[key] = sq;
 }
 
 // ---------- loading ----------
@@ -798,7 +809,7 @@ const VIEWS = {
         if (name === focus) sq.classList.add('focused');
         if (hitters.has(name)) sq.classList.add('aim', `side-${hitters.get(name)}`);
         sq.classList.add('pick');
-        sq.addEventListener('click', () => { state.territoryFocus = state.territoryFocus === name ? null : name; render(); });
+        sq.addEventListener('click', () => { state.territoryFocus = state.territoryFocus === name ? null : name; writeHash(); render(); });
       }
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 8 8');
@@ -932,6 +943,7 @@ const VIEWS = {
         if (name === focus) sq.classList.add('focused');
         sq.addEventListener('click', () => {
           state.roadFocus = p && 'rbqpn'.includes(p.type) && state.roadFocus !== name ? name : null;
+          writeHash();
           render();
         });
       }
@@ -1317,7 +1329,7 @@ const VIEWS = {
         const name = sq.dataset.square;
         if (name === origin) sq.classList.add('origin');
         if (dist && name !== origin) { const { row, col } = A.squareIndex(name); sq.classList.add(`d${dist[row][col]}`); }
-        sq.addEventListener('click', () => { state.knightSquare = name; render(); });
+        sq.addEventListener('click', () => { state.knightSquare = name; writeHash(); render(); });
       }
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
@@ -1404,7 +1416,7 @@ function pinWords(list) {
 
 function boardGridClickable(board, cellFn, cls) {
   const grid = boardGrid(board, (r, c, cell, name) => cell ? ghostNode(cell, name) : null);
-  for (const sq of grid.querySelectorAll('.sq')) sq.addEventListener('click', () => { state.knightSquare = sq.dataset.square; render(); });
+  for (const sq of grid.querySelectorAll('.sq')) sq.addEventListener('click', () => { state.knightSquare = sq.dataset.square; writeHash(); render(); });
   return el('div', { class: cls }, [grid]);
 }
 
@@ -1629,8 +1641,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 try {
-  const initial = readHash();
+  const { source: initial, sq } = readHash();
   setPosition(initial || { kind: 'fen', fen: A.START_FEN });
+  applyFocus(sq);
   if (initial) $('input').value = initial.kind === 'fen' ? initial.fen : initial.pgn;
   render();
 } catch (e) {
