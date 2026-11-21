@@ -323,3 +323,32 @@ many of the mover's would stalemate.
 its four straight tracks with numbered hops (own-piece hops grey, enemy
 pink) in its side colour, with a sentence explaining that a knight has no
 road but runs on tracks. Nothing is drawn for knights without a click.
+
+## Addendum 2026-11-21: Shapes view
+
+Source: FM Zig_Zag_Zug_Zwang, "How Masters See the Board" (lichess blog,
+2026-10-11). Masters see chunks (a pawn chain, a fianchetto, an open file)
+rather than pieces; the post's exercise strips the pieces to squares and
+asks the reader to say what stands where.
+
+New tab **Shapes**, after Diamond. Every piece becomes a filled square on
+its own board square: White a white square with a dark edge, Black a dark
+square. Three levels, chosen with buttons above the board:
+
+1. **Sizes** — pawn small, knight/bishop/rook medium, king/queen big.
+2. **Same size** — every piece the same medium square; only the layout
+   remains.
+3. **Groups** — same-size squares plus a coloured box around each group of
+   touching same-side pieces (8-neighbour adjacency, computed by
+   `pieceGroups(board)` in analysis.js). Each group gets the next colour
+   of a six-colour cycle. Single pieces get a box too.
+
+**Reveal** button swaps the squares for the real pieces (current piece
+style) and keeps the group boxes, so the exercise is: look, say the pieces
+out loud, reveal. Pressing it again hides them. Level and reveal state live
+in page state only, not in the hash. Flip applies. Right-click preview
+applies as on every view.
+
+Sentence under the board: how many groups each side has, then the exercise
+instruction. Not in the print sheet (it already fills one A4 page); left
+for later.

@@ -377,6 +377,53 @@ export function diamondRows(board) {
   return rows;
 }
 
+// ---------- shapes ----------
+
+/** Square size for the Shapes view: pawns small, minors and rooks medium, king and queen big. */
+export function shapeSize(type) {
+  if (type === 'p') return 'small';
+  if (type === 'k' || type === 'q') return 'big';
+  return 'mid';
+}
+
+/**
+ * Groups of touching same-side pieces (8-neighbour adjacency), the "chunks" a
+ * strong player sees. Each group: { color, squares, box: { r0, r1, c0, c1 } }
+ * in board coordinates (row 0 = rank 8). Scan order: rank 8 to 1, a to h.
+ */
+export function pieceGroups(board) {
+  const seen = Array.from({ length: 8 }, () => Array(8).fill(false));
+  const groups = [];
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const start = board[row][col];
+      if (!start || seen[row][col]) continue;
+      const squares = [];
+      const box = { r0: row, r1: row, c0: col, c1: col };
+      const stack = [[row, col]];
+      seen[row][col] = true;
+      while (stack.length) {
+        const [r, c] = stack.pop();
+        squares.push(squareName(r, c));
+        box.r0 = Math.min(box.r0, r); box.r1 = Math.max(box.r1, r);
+        box.c0 = Math.min(box.c0, c); box.c1 = Math.max(box.c1, c);
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr, nc = c + dc;
+            if ((dr === 0 && dc === 0) || nr < 0 || nr > 7 || nc < 0 || nc > 7 || seen[nr][nc]) continue;
+            const p = board[nr][nc];
+            if (!p || p.color !== start.color) continue;
+            seen[nr][nc] = true;
+            stack.push([nr, nc]);
+          }
+        }
+      }
+      groups.push({ color: start.color, squares, box });
+    }
+  }
+  return groups;
+}
+
 // ---------- knight ----------
 
 export const KNIGHT_DIRS = KNIGHT_OFFSETS;
