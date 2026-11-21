@@ -119,6 +119,12 @@ node --test
 Nothing to build: `index.html` loads chess.js from a CDN, plus `analysis.js`
 and `pieces.css` next to it.
 
+After changing `analysis.js` or `pieces.css`, run `npm run stamp` before
+committing. It rewrites the `?v=` query on their links in `index.html` to a
+hash of the file, so a browser that still has the old module cached (GitHub
+Pages allows ten minutes) never pairs it with a newer page. The test suite
+fails when a stamp is stale.
+
 ## Roadmap
 
 This is phase 1 (viewing). Phase 2 is playing against Stockfish in the browser.
