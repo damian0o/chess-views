@@ -2,5 +2,8 @@
   "name": "chess-position-viewer",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test" }
+  "scripts": {
+    "test": "node --test",
+    "stamp": "node scripts/stamp.js"
+  }
 }

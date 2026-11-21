@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="pieces.css">
+<link rel="stylesheet" href="pieces.css?v=f84ea76d">
 <style>
   :root {
     --paper: #ffffff;
@@ -173,6 +173,7 @@
   @media (max-width: 420px) { .brand .word { display: none; } }
 
   /* Toast */
+  .viewerror { text-align: center; color: var(--ink-soft); padding: 24px 12px; max-width: 40ch; } .viewerror p { margin: 0 0 12px; }
   .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(10px); z-index: 30; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 999px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; }
   .toast.show { opacity: 1; transform: translateX(-50%); }
 
@@ -511,7 +512,7 @@
 
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
-import * as A from './analysis.js';
+import * as A from './analysis.js?v=2ccbfae6';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
@@ -1516,7 +1517,16 @@ function render() {
 
   const container = $('view');
   container.replaceChildren();
-  VIEWS[state.tab].render(container, board, { chess, turn: chess.turn(), fen: chess.fen() });
+  try {
+    VIEWS[state.tab].render(container, board, { chess, turn: chess.turn(), fen: chess.fen() });
+  } catch (err) {
+    // Usually a page served fresh while an old module was still cached. Say so instead of showing nothing.
+    console.error(err);
+    container.replaceChildren(el('div', { class: 'viewerror' }, [
+      el('p', { text: 'This view could not be drawn. The page may be newer than the files your browser kept from last time.' }),
+      el('button', { type: 'button', class: 'primary', text: 'Reload the page', onclick: () => location.reload() }),
+    ]));
+  }
   if (state.showMoves) {
     const p = chess.get(state.showMoves);
     const n = legalMovesFor(chess, state.showMoves).length;
