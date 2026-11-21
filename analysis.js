@@ -125,6 +125,22 @@ export function attackMap(board, { respectPins = false } = {}) {
   return map;
 }
 
+const TYPE_ORDER = { k: 0, q: 1, r: 2, b: 3, n: 4, p: 5 };
+
+/** The pieces of each colour that attack `square` (a piece pinned to its king only along its pin line). */
+export function attackersOf(board, square, { respectPins = true } = {}) {
+  const pinMap = respectPins ? absolutePinMap(board) : null;
+  const target = squareIndex(square);
+  const out = { w: [], b: [] };
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const piece = board[row][col];
+    if (!piece) continue;
+    if (attacksFromPinned(board, row, col, pinMap).some(([r, c]) => r === target.row && c === target.col)) out[piece.color].push(piece);
+  }
+  for (const c of ['w', 'b']) out[c].sort((a, b) => (TYPE_ORDER[a.type] - TYPE_ORDER[b.type]) || a.square.localeCompare(b.square));
+  return out;
+}
+
 const CENTER = ['d4', 'e4', 'd5', 'e5'];
 
 export function territory(board) {

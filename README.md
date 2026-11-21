@@ -67,6 +67,7 @@ or share a link.
 - **Board**: the paper board, with "Copy as text" and "Print". Print gives you
   the position big on one page plus an empty grid to copy it into.
 - **Territory**: who attacks each square more. `+` white, `-` black, `=` equal.
+  Tap a square to see exactly which pieces attack it, with a line from each.
 - **Reach**: every piece shows how many squares it can move to right now
   (pawns: the squares they attack). A stalemate watch warns when the other
   side is out of moves and lists which moves would stalemate.

@@ -53,3 +53,20 @@ test('territory respects pins', () => {
   assert.equal(at(t.mark, 'a7'), '=');
   assert.deepEqual(t.pinned.map((p) => p.square), ['b8']);
 });
+
+import { attackersOf } from '../analysis.js';
+
+test('attackersOf: start position, f3 is hit by two white pawns and the knight, by nothing black', () => {
+  const r = attackersOf(boardFromFen(START_FEN), 'f3');
+  assert.deepEqual(r.w.map((p) => `${p.type}${p.square}`), ['ng1', 'pe2', 'pg2']);
+  assert.deepEqual(r.b, []);
+});
+
+test('attackersOf: a piece pinned to its king only counts along the pin line', () => {
+  // White bishop d2 is pinned by the black rook on d8 (king d1); it still covers d-file squares? No: a bishop cannot, so it attacks nothing.
+  // Knight c3 (unpinned) attacks e4; bishop d2 would attack e3 but is pinned, so e3 has no white attacker.
+  const board = boardFromFen('3rk3/8/8/8/8/2N5/3B4/3K4 w - - 0 1');
+  assert.deepEqual(attackersOf(board, 'e3').w, []);
+  assert.deepEqual(attackersOf(board, 'e4').w.map((p) => p.square), ['c3']);
+  assert.deepEqual(attackersOf(board, 'd2').b.map((p) => p.square), ['d8']);
+});
