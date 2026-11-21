@@ -212,7 +212,7 @@
   .board.plain .sq .p.w, .board.plain .sq .p.b { background: none; color: var(--ink); box-shadow: none; }
 
   /* Territory */
-  .board .sq .mark { font-weight: 700; font-size: 1.1em; }
+  .board .sq .mark { position: absolute; right: 1px; top: 1px; z-index: 2; font-weight: 700; font-size: 0.48em; line-height: 1.25; min-width: 1.1em; text-align: center; padding: 0 3px; border-radius: 3px; background: rgba(255,255,255,0.88); box-shadow: 0 0 0 1px rgba(0,0,0,0.12); }
   .board .sq .ghost { position: absolute; left: 3px; top: 1px; font-size: 0.42em; color: var(--ink-soft); opacity: 0.9; }
   .board .sq.t-w1 { background: #dce8ff; } .board .sq.t-w2 { background: #b9d0ff; } .board .sq.t-w3 { background: #8fb3ff; }
   .board .sq.t-b1 { background: #ffdede; } .board .sq.t-b2 { background: #ffbcbc; } .board .sq.t-b3 { background: #ff9494; }
@@ -793,7 +793,7 @@ const VIEWS = {
       const pinnedSquares = new Set(t.pinned.map((p) => p.square));
       const tgrid = tintTerritory(boardGrid(board, (r, c, cell, name) => {
         const nodes = [];
-        if (cell) nodes.push(ghostNode(cell, name));
+        if (cell) nodes.push(pieceNode(cell, name));
         const m = t.mark[r][c];
         if (m) nodes.push(el('span', { class: 'mark', text: m }));
         if (pinnedSquares.has(name)) nodes.push(lockNode('absolute'));
