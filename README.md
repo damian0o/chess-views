@@ -1,10 +1,15 @@
-# Chess position viewer
+# Chess Views
 
 A single static page that reads a chess position exported from lichess and
 shows it in eight learning views. Made for an 8-year-old learning strategy and
 a parent helping, with a board that is easy to copy onto squared paper.
 
-Live: enable GitHub Pages on this repo (see below) and open the URL it gives you.
+Live: https://damian0o.github.io/chess-views/ (GitHub Pages from `main`).
+
+The page is laid out like an app: the board comes first under a sticky bar
+(flip, letters, share link, Load), the views are a row of pills, and a loaded
+game gets player controls pinned to the bottom of the screen. It works on a
+phone as well as a desktop.
 
 ## Pieces
 
@@ -27,7 +32,8 @@ Empty dark squares get a dot. The rule for the kid: capitals are pieces,
 
 ## How to use
 
-Paste any of these into the box and press Load (or Ctrl/Cmd+Enter):
+Press **Load** in the top bar (or the `l` key), paste any of these and press
+Load again (or Ctrl/Cmd+Enter). The dialog also offers a few example positions.
 
 - a FEN, even just the piece placement part;
 - a PGN, including comments and variations (variations are ignored);
