@@ -452,6 +452,25 @@ export function knightTracks(board, origin) {
   });
 }
 
+/** Squares every knight on the board can jump to right now (free or enemy-occupied), with the colours that reach each. */
+export function knightJumps(board) {
+  const reach = new Map();
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = board[r][c];
+    if (!p || p.type !== 'n') continue;
+    for (const [dr, dc] of KNIGHT_DIRS) {
+      const nr = r + dr, nc = c + dc;
+      if (!onBoard(nr, nc)) continue;
+      const t = board[nr][nc];
+      if (t && t.color === p.color) continue;
+      const sq = squareName(nr, nc);
+      if (!reach.has(sq)) reach.set(sq, new Set());
+      reach.get(sq).add(p.color);
+    }
+  }
+  return [...reach].map(([square, colors]) => ({ square, colors: ['w', 'b'].filter((c) => colors.has(c)) }));
+}
+
 /** Minimum knight moves from `origin` to every square on an empty board. */
 export function knightDistances(origin) {
   const d = emptyGrid(-1);
