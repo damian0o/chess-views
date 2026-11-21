@@ -519,7 +519,7 @@
 
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
-import * as A from './analysis.js?v=8f2c2a00';
+import * as A from './analysis.js?v=dfad212e';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
@@ -739,6 +739,7 @@ function boardGrid(board, cellFn, extraClass = '') {
 }
 
 const PIECE_WORDS = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
+const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
 function pieceImage(cell, extra = '') {
   const label = `${cell.color === 'w' ? 'white' : 'black'} ${PIECE_WORDS[cell.type]}`;
   return el('span', { class: `piece ${cell.color}${cell.type.toUpperCase()} ${extra}`.trim(), role: 'img', 'aria-label': label, title: label });
@@ -828,7 +829,20 @@ const VIEWS = {
       if (hits) {
         const words = (list) => (list.length ? list.map((p) => `${PIECE_WORDS[p.type]} ${p.square}`).join(', ') : 'nobody');
         const w = hits.w.length, b = hits.b.length;
-        const verdict = w > b ? 'White attacks it more.' : b > w ? 'Black attacks it more.' : w ? 'Both attack it the same.' : 'Nobody attacks it.';
+        const { row: fr, col: fc } = A.squareIndex(focus);
+        const cw = t.cheapest.w[fr][fc], cb = t.cheapest.b[fr][fc];
+        const name = (c) => `${PIECE_WORDS[c.type]} ${c.square}`;
+        const mark = t.mark[fr][fc];
+        let verdict;
+        if (w && b) {
+          const vw = PIECE_VALUES[cw.type], vb = PIECE_VALUES[cb.type];
+          if (vw !== vb) {
+            const [winner, loser, cheap, dear] = vw < vb ? ['White', 'Black', cw, cb] : ['Black', 'White', cb, cw];
+            verdict = `${winner} owns it: its cheapest guard is the ${name(cheap)}. If ${loser}'s ${name(dear)} lands here, the ${PIECE_WORDS[cheap.type]} takes it.`;
+          } else {
+            verdict = `Cheapest guards are equal (${PIECE_WORDS[cw.type]} against ${PIECE_WORDS[cb.type]}), so the count decides: ${mark === '+' ? 'White attacks it more.' : mark === '-' ? 'Black attacks it more.' : 'both attack it the same.'}`;
+          }
+        } else verdict = w ? 'Only White attacks it.' : b ? 'Only Black attacks it.' : 'Nobody attacks it.';
         container.append(el('p', { class: 'summary' }, [
           el('strong', { text: `${focus}: White ${w} (${words(hits.w)}), Black ${b} (${words(hits.b)})` }),
           `. ${verdict} Tap another square, or this one again to go back.`,
@@ -840,9 +854,9 @@ const VIEWS = {
         ]));
       }
       container.append(legend([
-        { sw: 'mark', cls: 't-w', text2: '+', text: 'White attacks it more (darker = bigger lead)' },
-        { sw: 'mark', cls: 't-b', text2: '-', text: 'Black attacks it more' },
-        { sw: 'mark', cls: 't-eq', text2: '=', text: 'both attack it the same' },
+        { sw: 'mark', cls: 't-w', text2: '+', text: 'White owns it: its cheapest guard is worth less, or the guards are equal and White has more (darker = bigger lead)' },
+        { sw: 'mark', cls: 't-b', text2: '-', text: 'Black owns it the same way. A pawn guard beats any piece: whatever lands there gets taken by a pawn' },
+        { sw: 'mark', cls: 't-eq', text2: '=', text: 'equal guards and equal counts' },
         { sw: 'sq', text: 'nobody attacks it' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to its king: only counts along the pin line' },
         ...(hits ? [
@@ -1423,7 +1437,7 @@ function boardGridClickable(board, cellFn, cls) {
 function tintTerritory(grid, t) {
   for (const sq of grid.querySelectorAll('.sq')) {
     const { row, col } = A.squareIndex(sq.dataset.square);
-    const d = t.diff[row][col];
+    const d = t.lead[row][col];
     const mark = t.mark[row][col];
     if (mark === '=') sq.classList.add('t-eq');
     else if (d > 0) sq.classList.add(`t-w${Math.min(3, d)}`);

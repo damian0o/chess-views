@@ -67,8 +67,11 @@ can bookmark or share a link that lands on exactly what you see.
 
 - **Board**: the paper board, with "Copy as text" and "Print". Print gives you
   the position big on one page plus an empty grid to copy it into.
-- **Territory**: who attacks each square more. `+` white, `-` black, `=` equal.
-  Tap a square to see exactly which pieces attack it, with a line from each.
+- **Territory**: who owns each square. `+` white, `-` black, `=` equal. The
+  side with the cheapest guard owns a square (a pawn guard beats any piece,
+  since whatever lands there gets taken by a pawn); when the cheapest guards
+  are worth the same, the bigger attacker count wins. Tap a square to see
+  exactly which pieces attack it, with a line from each, and why it is owned.
 - **Reach**: every piece shows how many squares it can move to right now
   (pawns: the squares they attack). A stalemate watch warns when the other
   side is out of moves and lists which moves would stalemate.
