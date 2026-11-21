@@ -59,8 +59,9 @@ Load again (or Ctrl/Cmd+Enter). The dialog also offers a few example positions.
 With a PGN you get a move slider and the arrow keys step through the game.
 "Flip board" (or the `f` key) turns every view around to play from Black's side.
 Right-click any piece (press and hold on a phone) to see its legal moves; Esc hides them.
-The position and the current view are kept in the URL, so you can bookmark
-or share a link.
+The position, the current view and the selected square (a Territory square,
+a Roads piece or the Knight square, as `sq=e4`) are kept in the URL, so you
+can bookmark or share a link that lands on exactly what you see.
 
 ## The views
 
