@@ -37,7 +37,7 @@ Paste any of these into the box and press Load (or Ctrl/Cmd+Enter):
 
 With a PGN you get a move slider and the arrow keys step through the game.
 "Flip board" (or the `f` key) turns every view around to play from Black's side.
-Right-click any piece to see its legal moves; Esc hides them.
+Right-click any piece (press and hold on a phone) to see its legal moves; Esc hides them.
 The position and the current view are kept in the URL, so you can bookmark
 or share a link.
 
