@@ -50,7 +50,8 @@ test('attackMap can respect pins: a pinned bishop only counts along the pin line
 test('territory respects pins', () => {
   const t = territory(boardFromFen(STUDY));
   assert.equal(at(t.mark, 'c7'), '+');   // only the white b6 pawn once the bishop is discounted
-  assert.equal(at(t.mark, 'a7'), '=');
+  assert.equal(at(t.diff, 'a7'), 0);     // pawn b6 against the king a8 once the bishop is discounted
+  assert.equal(at(t.mark, 'a7'), '+');   // and the pawn is the cheaper guard, so White owns it
   assert.deepEqual(t.pinned.map((p) => p.square), ['b8']);
 });
 
@@ -69,4 +70,41 @@ test('attackersOf: a piece pinned to its king only counts along the pin line', (
   assert.deepEqual(attackersOf(board, 'e3').w, []);
   assert.deepEqual(attackersOf(board, 'e4').w.map((p) => p.square), ['c3']);
   assert.deepEqual(attackersOf(board, 'd2').b.map((p) => p.square), ['d8']);
+});
+
+const SCHOLAR = 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3';
+
+test('territory: the cheapest guard wins, so a pawn beats a bishop even at equal counts', () => {
+  const t = territory(boardFromFen(SCHOLAR));
+  assert.equal(at(t.mark, 'e6'), '-');
+  assert.equal(at(t.diff, 'e6'), 0);        // raw count stays 1:1
+  assert.equal(at(t.lead, 'e6'), -1);       // owned by Black, by the thinnest margin
+  assert.deepEqual(at(t.cheapest.w, 'e6'), { type: 'b', square: 'c4' });
+  assert.deepEqual(at(t.cheapest.b, 'e6'), { type: 'p', square: 'd7' });
+});
+
+test('territory: one pawn outranks a queen and a rook together', () => {
+  const t = territory(boardFromFen('6k1/3p4/R7/8/8/8/8/4Q2K w - - 0 1'));
+  assert.equal(at(t.diff, 'e6'), 1);        // White 2 (queen, rook), Black 1 (pawn)
+  assert.equal(at(t.mark, 'e6'), '-');
+  assert.equal(at(t.lead, 'e6'), -1);
+  assert.equal(at(t.mark, 'c6'), '-');
+  assert.equal(at(t.mark, 'e5'), '+');      // queen alone: no contest
+  assert.equal(at(t.cheapest.b, 'e5'), null);
+});
+
+test('territory: when the cheapest guards are the same kind, the count decides and the lead is the count gap', () => {
+  const t = territory(boardFromFen('4k3/8/8/4p3/8/2P1P3/8/4K3 w - - 0 1'));
+  assert.equal(at(t.mark, 'd4'), '+');      // pawns c3, e3 against pawn e5
+  assert.equal(at(t.lead, 'd4'), 1);
+  const t2 = territory(boardFromFen('4k3/8/8/4p3/8/4P3/8/4K3 w - - 0 1'));
+  assert.equal(at(t2.mark, 'd4'), '=');
+  assert.equal(at(t2.lead, 'd4'), 0);
+});
+
+test('territory: the summary counts owned squares under the cheapest-guard rule', () => {
+  const t = territory(boardFromFen(SCHOLAR));
+  let b = 0;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (t.mark[r][c] === '-') b++;
+  assert.equal(t.summary.b, b);
 });

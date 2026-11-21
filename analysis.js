@@ -143,25 +143,48 @@ export function attackersOf(board, square, { respectPins = true } = {}) {
 
 const CENTER = ['d4', 'e4', 'd5', 'e5'];
 
+/**
+ * Who owns each square. Counts respect pins. Ownership follows the cheapest guard: the side whose
+ * cheapest attacker is worth less owns the square (nothing dearer can land there safely); when the
+ * cheapest guards are worth the same, the bigger count wins. `lead` is the signed strength of that
+ * ownership (at least 1 for an owned square), `diff` the raw count difference.
+ */
 export function territory(board) {
-  const a = attackMap(board, { respectPins: true });
-  const pinned = [...absolutePinMap(board).values()].map((pn) => ({ square: pn.pinned.square, by: pn.pinner.square, to: pn.target.square }));
+  const pinMap = absolutePinMap(board);
+  const a = { w: emptyGrid(), b: emptyGrid() };
+  const cheapest = { w: emptyGrid(null), b: emptyGrid(null) };
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const piece = board[row][col];
+    if (!piece) continue;
+    for (const [r, c] of attacksFromPinned(board, row, col, pinMap)) {
+      a[piece.color][r][c] += 1;
+      const cur = cheapest[piece.color][r][c];
+      if (!cur || PIECE_VALUE[piece.type] < PIECE_VALUE[cur.type]) cheapest[piece.color][r][c] = { type: piece.type, square: piece.square };
+    }
+  }
+  const pinned = [...pinMap.values()].map((pn) => ({ square: pn.pinned.square, by: pn.pinner.square, to: pn.target.square }));
   const mark = emptyGrid('');
   const diff = emptyGrid();
+  const lead = emptyGrid();
   const summary = { w: 0, b: 0, centerW: 0, centerB: 0 };
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const w = a.w[row][col], b = a.b[row][col];
       diff[row][col] = w - b;
       let m = '';
-      if (w > b) m = '+'; else if (b > w) m = '-'; else if (w > 0) m = '=';
+      if (w && b) {
+        const vw = PIECE_VALUE[cheapest.w[row][col].type], vb = PIECE_VALUE[cheapest.b[row][col].type];
+        m = vw < vb ? '+' : vb < vw ? '-' : w > b ? '+' : b > w ? '-' : '=';
+      } else if (w) m = '+';
+      else if (b) m = '-';
       mark[row][col] = m;
+      lead[row][col] = m === '+' ? Math.max(1, w - b) : m === '-' ? -Math.max(1, b - w) : 0;
       const central = CENTER.includes(squareName(row, col));
       if (m === '+') { summary.w++; if (central) summary.centerW++; }
       if (m === '-') { summary.b++; if (central) summary.centerB++; }
     }
   }
-  return { mark, diff, summary, pinned };
+  return { mark, diff, lead, cheapest, summary, pinned };
 }
 
 // ---------- mobility ----------
