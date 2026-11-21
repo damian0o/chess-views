@@ -220,6 +220,14 @@
   .board .sq.t-w1 .mark, .board .sq.t-w2 .mark, .board .sq.t-w3 .mark { color: #1b3f9e; }
   .board .sq.t-b1 .mark, .board .sq.t-b2 .mark, .board .sq.t-b3 .mark { color: #9e1b1b; }
   .board .sq.t-eq .mark { color: #333; }
+  /* Pieces that can be taken (dashed, in the taker's colour) or are attacked but held (dotted) */
+  .board .sq.take-free, .board .sq.take-cheap { outline: 3px dashed var(--side-b); outline-offset: -3px; z-index: 1; }
+  .board .sq.take-held { outline: 2px dotted var(--side-b); outline-offset: -2px; z-index: 1; }
+  .board .sq.take.taker-w { outline-color: var(--side-w); }
+  .board .sq .taketag { position: absolute; left: 1px; bottom: 1px; z-index: 2; font-size: 0.55em; font-weight: 800; line-height: 1.1; padding: 0 4px; border-radius: 3px; color: #fff; background: var(--side-b); }
+  .board .sq.taker-w .taketag { background: var(--side-w); }
+  .sw.take { outline: 3px dashed var(--side-b); outline-offset: -3px; } .sw.take-held { outline: 2px dotted var(--side-b); outline-offset: -2px; }
+  .sw .taketag { position: absolute; left: 1px; bottom: 1px; font-size: 11px; font-weight: 800; line-height: 1.1; padding: 0 3px; border-radius: 3px; color: #fff; background: var(--side-b); }
   /* Reach */
   .board .sq .reach { display: grid; place-items: center; width: 92%; height: 92%; border-radius: 0.2em; font-size: 0.55em; line-height: 1.05; font-weight: 600; text-align: center; }
   .board .sq .reach b { font-size: 1.5em; }
@@ -519,7 +527,7 @@
 
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
-import * as A from './analysis.js?v=dfad212e';
+import * as A from './analysis.js?v=ebfd7f72';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
@@ -641,6 +649,15 @@ function legalMovesFor(chess, square) {
   f[1] = piece.color; f[3] = '-';
   const alt = new Chess();
   try { alt.load(f.join(' '), { skipValidation: true }); return alt.moves({ square, verbose: true }); } catch { return []; }
+}
+
+/** Legal captures onto `square` by `color`, as if it were that side's turn. */
+function capturesOnto(chess, square, color) {
+  try {
+    let c = chess;
+    if (chess.turn() !== color) { const f = chess.fen().split(' '); f[1] = color; f[3] = '-'; c = new Chess(); c.load(f.join(' '), { skipValidation: true }); }
+    return c.moves({ verbose: true }).filter((m) => m.to === square && m.flags.includes('c'));
+  } catch { return []; }
 }
 
 /** Stalemate watch: who is out of moves, and which moves by the side to move would stalemate. */
@@ -788,8 +805,9 @@ const VIEWS = {
   },
   territory: {
     title: 'Territory',
-    render(container, board) {
+    render(container, board, ctx) {
       const t = A.territory(board);
+      const safety = A.pieceSafety(board);
       const pinnedSquares = new Set(t.pinned.map((p) => p.square));
       const tgrid = tintTerritory(boardGrid(board, (r, c, cell, name) => {
         const nodes = [];
@@ -809,6 +827,11 @@ const VIEWS = {
         if (pinnedSquares.has(name)) sq.classList.add('frozen');
         if (name === focus) sq.classList.add('focused');
         if (hitters.has(name)) sq.classList.add('aim', `side-${hitters.get(name)}`);
+        const st = safety.get(name);
+        if (st && st.status !== 'quiet') {
+          sq.classList.add('take', `take-${st.status}`, `taker-${st.by.color}`);
+          if (st.status !== 'held') sq.append(el('span', { class: 'taketag', text: '×', title: 'can be taken' }));
+        }
         sq.classList.add('pick');
         sq.addEventListener('click', () => { state.territoryFocus = state.territoryFocus === name ? null : name; writeHash(); render(); });
       }
@@ -843,14 +866,38 @@ const VIEWS = {
             verdict = `Cheapest guards are equal (${PIECE_WORDS[cw.type]} against ${PIECE_WORDS[cb.type]}), so the count decides: ${mark === '+' ? 'White attacks it more.' : mark === '-' ? 'Black attacks it more.' : 'both attack it the same.'}`;
           }
         } else verdict = w ? 'Only White attacks it.' : b ? 'Only Black attacks it.' : 'Nobody attacks it.';
+        const st = safety.get(focus);
+        if (st) {
+          // A piece stands here: say whether it can be taken, and whether a capture gives check or mate.
+          const side = (c) => (c === 'w' ? 'White' : 'Black');
+          const enemy = st.piece.color === 'w' ? 'b' : 'w';
+          const list = (xs) => xs.map(name).join(', ');
+          const piece = `${side(st.piece.color)}'s ${PIECE_WORDS[st.piece.type]} on ${focus}`;
+          const story = {
+            free: `${piece} can be taken for free: ${list(st.attackers)} attack${st.attackers.length === 1 ? 's' : ''} it and nobody defends it.`,
+            cheap: `${piece} can be taken: the ${name(st.by)} is worth less than it, even though ${list(st.defenders)} defend${st.defenders.length === 1 ? 's' : ''} it.`,
+            held: `${piece} is attacked by ${list(st.attackers)} but defended by ${list(st.defenders)}. Every attacker is worth at least as much, so taking it loses material.`,
+            quiet: st.defenders.length ? `${piece} is not attacked; ${list(st.defenders)} defend${st.defenders.length === 1 ? 's' : ''} it.` : `${piece} is not attacked, but nobody defends it either: a loose piece.`,
+          }[st.status];
+          const caps = capturesOnto(ctx.chess, focus, enemy);
+          const mate = caps.find((m) => m.san.endsWith('#')), check = caps.find((m) => m.san.endsWith('+'));
+          const when = ctx.chess.turn() === enemy ? '' : ` if it were ${side(enemy)}'s turn`;
+          const hit = mate ? ` ${PIECE_WORDS[mate.piece][0].toUpperCase() + PIECE_WORDS[mate.piece].slice(1)} ${mate.from} takes ${focus}${when}: checkmate!`
+            : check ? ` ${PIECE_WORDS[check.piece][0].toUpperCase() + PIECE_WORDS[check.piece].slice(1)} ${check.from} takes ${focus}${when}: check.` : '';
+          verdict = `${story}${hit}`;
+        }
         container.append(el('p', { class: 'summary' }, [
           el('strong', { text: `${focus}: White ${w} (${words(hits.w)}), Black ${b} (${words(hits.b)})` }),
           `. ${verdict} Tap another square, or this one again to go back.`,
         ]));
       } else {
+        const takeable = (c) => [...safety.values()].filter((x) => x.piece.color === c && (x.status === 'free' || x.status === 'cheap')).map((x) => `${PIECE_WORDS[x.piece.type]} ${x.piece.square}`);
+        const tw = takeable('w'), tb = takeable('b');
         container.append(el('p', { class: 'summary' }, [
           el('strong', { text: `White controls ${s.w} squares` }), ` (centre: ${s.centerW}), `,
-          el('strong', { text: `Black controls ${s.b}` }), ` (centre: ${s.centerB}). Tap a square to see which pieces attack it.`,
+          el('strong', { text: `Black controls ${s.b}` }), ` (centre: ${s.centerB}). `,
+          el('strong', { text: tw.length || tb.length ? `Can be taken: ${[tw.length ? `White's ${tw.join(', ')}` : '', tb.length ? `Black's ${tb.join(', ')}` : ''].filter(Boolean).join('; ')}` : 'Nothing can be taken for free right now' }),
+          '. Tap a square to see which pieces attack it.',
         ]));
       }
       container.append(legend([
@@ -859,6 +906,8 @@ const VIEWS = {
         { sw: 'mark', cls: 't-eq', text2: '=', text: 'equal guards and equal counts' },
         { sw: 'sq', text: 'nobody attacks it' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to its king: only counts along the pin line' },
+        { sw: 'take', cls: 'taker-b', text: 'can be taken: nobody defends it, or a cheaper piece attacks it (dashed in the taker\'s colour)' },
+        { sw: 'take-held', text: 'attacked but defended: taking it would cost material' },
         ...(hits ? [
           { sw: 'ring', cls: 'aim-w', text: 'white piece attacking the chosen square' },
           { sw: 'ring', cls: 'aim-b', text: 'black piece attacking it' },
@@ -1398,6 +1447,8 @@ function legend(items) {
     case 'arrow-w': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#2456c8', false, true).replace('fill="#c93b3b"', 'fill="#2456c8"').replace(/lg-arrow/g, 'lg-arrow-w'); break;
       case 'road': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><line x1="4" y1="13" x2="40" y2="13" stroke="#1d2a44" stroke-width="${it.width || 5}" stroke-linecap="round" opacity="0.6"/></svg>`; break;
       case 'jump': sw.classList.add('wide', 'none'); sw.innerHTML = '<svg viewBox="0 0 44 26"><circle cx="12" cy="13" r="4" fill="#2456c8"/><circle cx="32" cy="13" r="4" fill="#c93b3b"/></svg>'; break;
+      case 'take': sw.classList.add('take', it.cls); sw.append(el('span', { class: 'taketag', text: '×' })); break;
+      case 'take-held': sw.classList.add('take-held'); break;
       case 'ring': sw.classList.add('none'); sw.append(el('span', { class: `ring ${it.cls || ''}` })); sw.className = 'sw none'; break;
       case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
       case 'lock': sw.classList.add('none'); sw.append(lockNode(it.kind)); break;
