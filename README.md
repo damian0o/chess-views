@@ -73,8 +73,9 @@ or share a link.
 - **Roads**: files and diagonals drawn thick when open (no pawns), thin when
   only one side's pawns are on them, coloured blue or red by which side has a
   rook, bishop or queen on them. Passed pawns get a star and their path to
-  promotion. Click a piece or pawn to see only its road, or a knight to see
-  its four tracks.
+  promotion. Small dots mark the squares a knight can jump to right now.
+  Click a piece or pawn to see only its road, or a knight to see its four
+  tracks.
 - **King houses**: the 3×3 zone around each king coloured by how well each
   square is held, with the shield pawns, open files next to the king, the
   pieces aiming at the house and the pieces defending it, a Strong / Shaky /

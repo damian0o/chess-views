@@ -246,6 +246,7 @@
   .roadwrap line.ktrack { stroke-width: 0.06; opacity: 0.7; }
   .roadwrap line.ktrack.by-w, .roadwrap circle.hop.by-w { stroke: var(--side-w); } .roadwrap line.ktrack.by-b, .roadwrap circle.hop.by-b { stroke: var(--side-b); }
   .roadwrap circle.hop { fill: var(--paper); stroke-width: 0.06; }
+  .roadwrap circle.jump { stroke: var(--paper); stroke-width: 0.05; opacity: 0.9; } .roadwrap circle.jump.by-w { fill: var(--side-w); } .roadwrap circle.jump.by-b { fill: var(--side-b); } .roadwrap circle.jump.by-both { fill: #7a3fb0; }
   .roadwrap circle.hop.own { fill: #bbb; } .roadwrap circle.hop.enemy { fill: #f3b0b0; }
   .roadwrap text.hop { font-size: 0.32px; font-weight: 700; fill: var(--ink); text-anchor: middle; dominant-baseline: central; font-family: inherit; }
   .roadwrap line.pawn.by-w { stroke: var(--side-w); } .roadwrap line.pawn.by-b { stroke: var(--side-b); }
@@ -962,6 +963,14 @@ const VIEWS = {
         }
       }
       const shown = focusKnight ? [] : focusPawn ? [focusPawn] : paths.filter((pp) => state.allPawnPaths || pp.passed);
+      // Knights have no road: without a focus, mark every square a knight can jump to right now.
+      if (!focus) for (const j of A.knightJumps(board)) {
+        const [cx, cy] = centre(j.square);
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        for (const [k, v] of Object.entries({ cx, cy, r: 0.15, class: `jump by-${j.colors.length === 2 ? 'both' : j.colors[0]}` })) c.setAttribute(k, v);
+        c.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${j.square}: a ${j.colors.map((x) => (x === 'w' ? 'white' : 'black')).join(' and a ')} knight can jump here` }));
+        svg.append(c);
+      }
       for (const pp of shown) pawnLine(pp, pp.passed ? '' : 'guarded');
       container.append(el('div', { class: 'roadwrap' }, [grid, svg]));
 
@@ -994,7 +1003,7 @@ const VIEWS = {
           el('strong', { text: `Open files: ${files.length ? files.join(' ') : 'none'}` }), '. ',
           el('strong', { text: `White uses ${usedBy('w')} road${usedBy('w') === 1 ? '' : 's'}, Black ${usedBy('b')}` }), '. ',
           el('strong', { text: `Passed pawns: ${['w', 'b'].map((c) => { const ps = paths.filter((pp) => pp.color === c && pp.passed).map((pp) => pp.square); return `${c === 'w' ? 'White' : 'Black'} ${ps.length ? ps.join(' ') : 'none'}`; }).join(', ')}` }),
-          '. Click a rook, bishop, queen or pawn to see only its road, or a knight to see its tracks.',
+          '. Dots are squares a knight can jump to now. Click a rook, bishop, queen or pawn to see only its road, or a knight to see its tracks.',
         ]));
         container.append(el('label', { class: 'toggle' }, [
           Object.assign(el('input', { type: 'checkbox' }), { checked: state.allPawnPaths, onchange: (e) => { state.allPawnPaths = e.target.checked; render(); } }),
@@ -1008,6 +1017,7 @@ const VIEWS = {
         { sw: 'road', width: 6, text: 'open road nobody uses yet' },
         { sw: 'road', width: 2, text: 'half open: pawns of one side only' },
         { sw: 'road', cls: 'road-dashed', width: 2, text: 'blocked by pawns of both sides (shown only for a clicked piece)' },
+        { sw: 'jump', text: 'square a knight can jump to now (blue white, red black, purple both)' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to the king: its roads are faded, it cannot use them' },
         { sw: 'star', text: 'passed pawn: no enemy pawn can stop it' },
         { sw: 'road', cls: 'road-w', width: 4, text: 'pawn path: the file ahead of a passed pawn, up to promotion or the first piece in the way (bar)' },
@@ -1314,6 +1324,7 @@ function legend(items) {
       case 'defend-line': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine(it.color === 'w' ? '#2456c8' : '#c93b3b', true, false); break;
     case 'arrow-w': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#2456c8', false, true).replace('fill="#c93b3b"', 'fill="#2456c8"').replace(/lg-arrow/g, 'lg-arrow-w'); break;
       case 'road': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><line x1="4" y1="13" x2="40" y2="13" stroke="#1d2a44" stroke-width="${it.width || 5}" stroke-linecap="round" opacity="0.6"/></svg>`; break;
+      case 'jump': sw.classList.add('wide', 'none'); sw.innerHTML = '<svg viewBox="0 0 44 26"><circle cx="12" cy="13" r="4" fill="#2456c8"/><circle cx="32" cy="13" r="4" fill="#c93b3b"/></svg>'; break;
       case 'ring': sw.classList.add('none'); sw.append(el('span', { class: `ring ${it.cls || ''}` })); sw.className = 'sw none'; break;
       case 'pinbadge': sw.classList.add('none'); sw.append(el('span', { class: 'pinbadge', text: 'pin' })); break;
       case 'lock': sw.classList.add('none'); sw.append(lockNode(it.kind)); break;
