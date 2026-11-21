@@ -176,6 +176,8 @@
   .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(10px); z-index: 30; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 999px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; }
   .toast.show { opacity: 1; transform: translateX(-50%); }
 
+  /* Touch: a long press on a square must not start text selection (Safari only honours the -webkit- form). */
+  main, .tabs, .status, .player, .appbar { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   main { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 14px; }
   main > * { max-width: 100%; min-width: 0; box-sizing: border-box; }
   .board, .roadwrap, .presswrap, .knightwrap, .groupwrap, .diamond { touch-action: manipulation; -webkit-touch-callout: none; }
@@ -185,7 +187,7 @@
   .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
   /* Board grid: 10x10 with coordinates around */
-  .board { display: grid; grid-template-columns: repeat(10, var(--cell)); grid-auto-rows: var(--cell); gap: 0; user-select: none; }
+  .board { display: grid; grid-template-columns: repeat(10, var(--cell)); grid-auto-rows: var(--cell); gap: 0; }
   .board .coord { display: grid; place-items: center; color: var(--ink-soft); font-size: calc(var(--cell) * 0.36); }
   .board .sq {
     display: grid; place-items: center; position: relative; font-size: calc(var(--cell) * 0.5); line-height: 1;
@@ -301,7 +303,7 @@
   .twocol p { margin: 0; }
 
   /* Diamond */
-  .diamond { --d: clamp(30px, calc((100vw - 32px) / 8), 60px); position: relative; padding: calc(var(--d) * 0.3) 0; user-select: none; }
+  .diamond { --d: clamp(30px, calc((100vw - 32px) / 8), 60px); position: relative; padding: calc(var(--d) * 0.3) 0; }
   .diamond::before, .diamond::after { content: ''; position: absolute; background: var(--pen-blue); opacity: 0.35; pointer-events: none; }
   .diamond::before { left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); }
   .diamond::after { top: 50%; left: 0; right: 0; height: 2px; transform: translateY(-1px); }
