@@ -33,7 +33,7 @@ Empty dark squares get a dot. The rule for the kid: capitals are pieces,
 ## Positions library
 
 The book icon in the top bar (or the `p` key) opens the built-in library:
-twenty named positions with a note, tags and the view they are best seen in,
+some twenty named positions with a note, tags and the view they are best seen in,
 from the start position and basic mates to pawn structures, the king-trap
 study and Morphy's Opera game. Pick one and the app loads it in that view.
 A link of the form `#pos=<id>` opens an entry directly, for example
