@@ -873,12 +873,12 @@ const VIEWS = {
           const enemy = st.piece.color === 'w' ? 'b' : 'w';
           const list = (xs) => xs.map(name).join(', ');
           const piece = `${side(st.piece.color)}'s ${PIECE_WORDS[st.piece.type]} on ${focus}`;
-          const story = {
-            free: `${piece} can be taken for free: ${list(st.attackers)} attack${st.attackers.length === 1 ? 's' : ''} it and nobody defends it.`,
-            cheap: `${piece} can be taken: the ${name(st.by)} is worth less than it, even though ${list(st.defenders)} defend${st.defenders.length === 1 ? 's' : ''} it.`,
-            held: `${piece} is attacked by ${list(st.attackers)} but defended by ${list(st.defenders)}. Every attacker is worth at least as much, so taking it loses material.`,
-            quiet: st.defenders.length ? `${piece} is not attacked; ${list(st.defenders)} defend${st.defenders.length === 1 ? 's' : ''} it.` : `${piece} is not attacked, but nobody defends it either: a loose piece.`,
-          }[st.status];
+          const plural = (xs) => (xs.length === 1 ? 's' : '');
+          let story;
+          if (st.status === 'free') story = `${piece} can be taken for free: ${list(st.attackers)} attack${plural(st.attackers)} it and nobody defends it.`;
+          else if (st.status === 'cheap') story = `${piece} can be taken: the ${name(st.by)} is worth less than it, even though ${list(st.defenders)} defend${plural(st.defenders)} it.`;
+          else if (st.status === 'held') story = `${piece} is attacked by ${list(st.attackers)} but defended by ${list(st.defenders)}. Every attacker is worth at least as much, so taking it loses material.`;
+          else story = st.defenders.length ? `${piece} is not attacked; ${list(st.defenders)} defend${plural(st.defenders)} it.` : `${piece} is not attacked, but nobody defends it either: a loose piece.`;
           const caps = capturesOnto(ctx.chess, focus, enemy);
           const mate = caps.find((m) => m.san.endsWith('#')), check = caps.find((m) => m.san.endsWith('+'));
           const when = ctx.chess.turn() === enemy ? '' : ` if it were ${side(enemy)}'s turn`;
