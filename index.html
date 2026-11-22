@@ -128,6 +128,8 @@
   dialog.loader::backdrop { background: rgba(10, 16, 30, 0.45); backdrop-filter: blur(2px); }
   dialog.loader h2 { margin: 0 0 4px; font-size: 1.2rem; }
   dialog.loader p.lead { margin: 0 0 12px; color: var(--ink-soft); max-width: 60ch; }
+  dialog.loader .inputhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 4px; }
+  dialog.loader .inputhead .hint { margin: 0; }
   dialog.loader .examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
   dialog.loader .examples button { background: var(--paper); border: 2px solid var(--pencil); color: var(--ink); padding: 5px 11px; border-radius: 999px; font-weight: 400; font-size: 0.88rem; }
   dialog.loader .examples button:hover { border-color: var(--pen-blue); color: var(--pen-blue); }
@@ -500,9 +502,13 @@
 <dialog class="loader" id="loader" aria-labelledby="loader-title">
   <h2 id="loader-title">Load a position</h2>
   <p class="lead">Paste a FEN, a PGN, or a lichess game link. On lichess: Analysis board → Share → FEN or PGN.</p>
-  <label for="input" class="hint" style="margin:0 0 4px;display:block">FEN, PGN, or a lichess link</label>
-  <textarea id="input" spellcheck="false" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
+  <div class="inputhead">
+    <label for="input" class="hint">FEN, PGN, or a lichess link</label>
+    <button type="button" id="paste" class="quiet">Paste</button>
+  </div>
+  <textarea id="input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
   <div class="examples" aria-label="Examples">
+    <button type="button" id="current-position">Current position</button>
     <button type="button" data-example="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Start position</button>
     <button type="button" data-example="r1bqk1nr/pp2ppbp/2n3p1/3pP3/3P4/5N2/PP3PPP/RNBQKB1R w KQkq - 0 1">Alapin structure</button>
     <button type="button" data-example="kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w - - 0 1">King trap study</button>
@@ -1605,9 +1611,21 @@ function openLibrary() {
 function openLoader() {
   const dlg = $('loader');
   $('error').textContent = '';
-  if (!$('input').value) $('input').value = state.source.kind === 'fen' ? state.source.fen : state.source.pgn;
   if (!dlg.open) dlg.showModal();
-  $('input').focus(); $('input').select();
+  if (!TOUCH) { $('input').focus(); $('input').select(); }
+}
+
+async function pasteAndLoad() {
+  let text = '';
+  try { text = (await navigator.clipboard.readText()).trim(); }
+  catch {
+    $('input').focus();
+    toast('Hold the box and choose Paste.');
+    return;
+  }
+  if (!text) { toast('Nothing to paste: copy a FEN or PGN first.'); return; }
+  $('input').value = text;
+  load(text);
 }
 
 function render() {
@@ -1684,6 +1702,8 @@ $('libsearch').addEventListener('input', (e) => { library.query = e.target.value
 $('close-load').addEventListener('click', () => $('loader').close());
 $('loader').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
 for (const b of document.querySelectorAll('[data-example]')) b.addEventListener('click', () => { $('input').value = b.dataset.example; load(b.dataset.example); });
+$('current-position').addEventListener('click', () => { $('input').value = state.source.kind === 'fen' ? state.source.fen : state.source.pgn; $('input').focus(); });
+$('paste').addEventListener('click', pasteAndLoad);
 $('copy-fen').addEventListener('click', () => copyText(currentChess().fen(), 'FEN copied'));
 $('share').addEventListener('click', async () => {
   const url = location.href;
@@ -1700,8 +1720,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') goTo(state.ply - 1);
   if (e.key === 'ArrowRight') goTo(state.ply + 1);
   if (e.key === 'f' || e.key === 'F') flipBoard();
-  if (e.key === 'l' || e.key === 'L') openLoader();
-  if (e.key === 'p' || e.key === 'P') openLibrary();
+  if (e.key === 'l' || e.key === 'L') { e.preventDefault(); openLoader(); }   // or the key lands in the freshly focused box
+  if (e.key === 'p' || e.key === 'P') { e.preventDefault(); openLibrary(); }
   if (e.key === 'Escape' && state.showMoves) { state.showMoves = null; render(); }
 });
 
