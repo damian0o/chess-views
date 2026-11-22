@@ -47,8 +47,11 @@ the collection is curated in the repo and published with the page.
 
 ## How to use
 
-Press **Load** in the top bar (or the `l` key), paste any of these and press
-Load again (or Ctrl/Cmd+Enter). The dialog also offers a few example positions.
+Press **Load** in the top bar (or the `l` key). On a phone, tap **Paste** and
+the position loads straight from the clipboard; otherwise paste into the box
+and press Load (or Ctrl/Cmd+Enter). The dialog also offers a few example
+positions and a "Current position" chip that puts the position you are
+looking at into the box for editing. It accepts:
 
 - a FEN, even just the piece placement part;
 - a PGN, including comments and variations (variations are ignored);
