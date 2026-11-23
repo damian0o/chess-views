@@ -86,3 +86,10 @@ test('uciOf and isSolverPly', () => {
   assert.equal(isSolverPly(fen, 'w'), true);
   assert.equal(isSolverPly(fen, 'b'), false);
 });
+
+test('grade: when a mate is involved the loss number is withheld (it would be ±90-odd pawns of nonsense)', () => {
+  assert.equal(grade({ mate: 2 }, { cp: 300 }).loss, null);
+  assert.equal(grade({ cp: 20 }, { mate: -3 }).loss, null);
+  assert.equal(grade({ mate: 2 }, { mate: 4 }).loss, null);
+  assert.equal(grade({ cp: 50 }, { cp: 10 }).loss, 0.4);
+});

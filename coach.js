@@ -67,9 +67,10 @@ export function grade(best, guess) {
   const bestMates = best.mate !== undefined && best.mate > 0;
   const guessMates = guess.mate !== undefined && guess.mate > 0;
   const guessGetsMated = guess.mate !== undefined && guess.mate < 0;
-  if (bestMates && guessMates) return { label: 'Best!', loss };
-  if (bestMates) return { label: `You missed a mate in ${best.mate}`, loss };
-  if (guessGetsMated) return { label: `Oops, that allows mate in ${Math.abs(guess.mate)}`, loss };
+  // With a mate on either side the pawn loss is a made-up number, so it is withheld (loss: null).
+  if (bestMates && guessMates) return { label: 'Best!', loss: null };
+  if (bestMates) return { label: `You missed a mate in ${best.mate}`, loss: null };
+  if (guessGetsMated) return { label: `Oops, that allows mate in ${Math.abs(guess.mate)}`, loss: null };
   if (loss <= 0) return { label: 'Best!', loss: 0 };
   if (loss <= 0.2) return { label: 'Just as good', loss };
   if (loss <= 0.5) return { label: 'Good', loss };

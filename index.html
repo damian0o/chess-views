@@ -550,7 +550,7 @@
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
 import * as A from './analysis.js?v=ebfd7f72';
 import { createEngine } from './engine.js?v=e80dc02d';
-import * as C from './coach.js?v=0d99ff62';
+import * as C from './coach.js?v=80b5db19';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
@@ -824,7 +824,12 @@ const CACHE_MAX = 200;
 
 /** The engine is only asked about positions chess.js accepts outright and that have a legal move. */
 function analysable(chess) {
-  try { new Chess(chess.fen()); } catch { return false; }
+  try {
+    new Chess(chess.fen());
+    const f = chess.fen().split(' '); f[1] = f[1] === 'w' ? 'b' : 'w'; f[3] = '-';
+    const other = new Chess(); other.load(f.join(' '), { skipValidation: true });
+    if (other.inCheck()) return false;   // the side not to move is in check: an impossible position
+  } catch { return false; }
   return chess.moves().length > 0;
 }
 
@@ -850,12 +855,13 @@ function requestAnalysis(fen, multipv) {
   coach.inflight = job;
   coachEngine().analyse(fen, { depth: COACH_DEPTH, multipv }).then((result) => {
     const prev = coach.cache.get(fen);
-    if (!prev || result.multipv >= prev.multipv) {
+    // A search stopped early (superseded by a newer request) resolves with a shallow result: never cache it.
+    if (result.depth >= COACH_DEPTH && (!prev || result.multipv >= prev.multipv)) {
       coach.cache.delete(fen); coach.cache.set(fen, result);
       if (coach.cache.size > CACHE_MAX) coach.cache.delete(coach.cache.keys().next().value);
     }
   }, (err) => {
-    if (coach.inflight === job && !String(err.message).includes('stopped')) coach.error = err.message;
+    if (coach.inflight === job) coach.error = err.message;
   }).finally(() => {
     if (coach.inflight === job) coach.inflight = null;
     if (currentChess().fen() === fen) render();
@@ -1395,7 +1401,7 @@ const VIEWS = {
       const ok = analysable(chess);
       const result = ok ? requestAnalysis(ctx.fen, chess.moves().length) : null;
       const guess = state.guess;
-      const san = (uci) => { const m = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }); chess.undo(); return m ? m.san : uci; };
+      const san = (uci) => { try { const m = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }); chess.undo(); return m.san; } catch { return uci; } };
       const played = state.ply < state.moves.length ? state.moves[state.ply] : null;   // the next move of a loaded game
       const solving = state.solve && played;
       const solverPly = solving && C.isSolverPly(state.startFen, ctx.turn);
@@ -1403,7 +1409,9 @@ const VIEWS = {
       const picking = ok && !guess && !opponentPly;   // taps choose a move only before a guess
       const grid = boardGrid(board, (r, c, cell, name) => pieceNode(cell, name));
       if (picking) {
-        const targets = state.showMoves ? new Map(legalMovesFor(chess, state.showMoves).map((m) => [m.to, m])) : new Map();
+        // Only the mover's pieces offer guess targets; the long-press overlay also shows the other side's moves.
+        const ownPick = state.showMoves && chess.get(state.showMoves)?.color === ctx.turn;
+        const targets = ownPick ? new Map(legalMovesFor(chess, state.showMoves).map((m) => [m.to, m])) : new Map();
         for (const sq of grid.querySelectorAll('.sq')) {
           const name = sq.dataset.square;
           sq.classList.add('pick');
@@ -1479,8 +1487,8 @@ const VIEWS = {
         const g = mine ? C.grade(result.moves[0], mine) : null;
         const best = arrows[0];
         const rest = arrows.filter((m) => m.uci !== uci);
-        const lossText = g && g.loss.toFixed(1) !== '0.0' ? `−${g.loss.toFixed(1)}` : '0.0';
-        const verdict = g ? `${g.label} (${lossText})` : 'not scored';
+        const lossText = g && typeof g.loss === 'number' ? ` (${g.loss.toFixed(1) !== '0.0' ? '−' + g.loss.toFixed(1) : '0.0'})` : '';
+        const verdict = g ? `${g.label}${lossText}` : 'not scored';
         const tail = best && best.uci === uci ? (rest.length ? ` Also good: ${list(rest)}.` : '') : ` Best: ${list(arrows)}.`;
         container.append(el('p', { class: 'summary' }, [el('strong', { text: `Your move ${san(uci)}: ${verdict}.` }), tail + gameLine() + ' ', again]));
       }
