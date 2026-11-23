@@ -28,3 +28,61 @@ test('pawns and toWhite', () => {
   assert.deepEqual(toWhite({ mate: 2 }, 'b'), { mate: -2 });
   assert.deepEqual(toWhite({ cp: 60 }, 'w'), { cp: 60 });
 });
+
+import { grade, evalWords, evalNumber, barPercent, arrowMoves, uciOf, isSolverPly } from '../coach.js';
+
+test('grade follows the loss table and names the best move', () => {
+  assert.deepEqual(grade({ cp: 50 }, { cp: 50 }), { label: 'Best!', loss: 0 });
+  assert.equal(grade({ cp: 50 }, { cp: 35 }).label, 'Just as good');     // 0.15
+  assert.equal(grade({ cp: 50 }, { cp: 30 }).label, 'Just as good');     // 0.20 inclusive
+  assert.equal(grade({ cp: 50 }, { cp: 10 }).label, 'Good');             // 0.40
+  assert.equal(grade({ cp: 50 }, { cp: -60 }).label, 'Okay, but there was better');   // 1.10
+  assert.deepEqual(grade({ cp: 50 }, { cp: -110 }), { label: 'Oops, that loses something', loss: 1.6 });
+});
+
+test('grade: mates override the table', () => {
+  assert.equal(grade({ mate: 2 }, { cp: 300 }).label, 'You missed a mate in 2');
+  assert.equal(grade({ cp: 20 }, { mate: -3 }).label, 'Oops, that allows mate in 3');
+  assert.equal(grade({ mate: 2 }, { mate: 4 }).label, 'Best!');
+});
+
+test('grade with Black to move uses the mover view, so a losing Black guess is Oops', () => {
+  // Scores as the engine gives them for Black to move: best keeps -20 (Black slightly worse), guess drops to -250.
+  assert.equal(grade({ cp: -20 }, { cp: -250 }).label, 'Oops, that loses something');
+});
+
+test('evalWords and evalNumber from White view', () => {
+  assert.equal(evalWords({ cp: 0 }), 'Equal');
+  assert.equal(evalWords({ cp: 39 }), 'Equal');
+  assert.equal(evalWords({ cp: 40 }), 'White is a little better');
+  assert.equal(evalWords({ cp: -120 }), 'Black is better');
+  assert.equal(evalWords({ cp: 300 }), 'White is winning');
+  assert.equal(evalWords({ mate: -2 }), 'Black mates in 2');
+  assert.equal(evalNumber({ cp: 64 }), '+0.6');
+  assert.equal(evalNumber({ cp: -120 }), '-1.2');
+  assert.equal(evalNumber({ cp: 0 }), '0.0');
+  assert.equal(evalNumber({ mate: 3 }), '#3');
+  assert.equal(evalNumber({ mate: -2 }), '-#2');
+});
+
+test('barPercent', () => {
+  assert.equal(barPercent({ cp: 0 }), 50);
+  assert.equal(barPercent({ cp: 400 }), 88.1);
+  assert.equal(barPercent({ mate: 1 }), 100);
+  assert.equal(barPercent({ mate: -1 }), 0);
+});
+
+test('arrowMoves keeps up to three moves within half a pawn of the best', () => {
+  const moves = [{ uci: 'a', cp: 50 }, { uci: 'b', cp: 10 }, { uci: 'c', cp: 0 }, { uci: 'd', cp: -5 }, { uci: 'e', cp: -100 }];
+  assert.deepEqual(arrowMoves(moves).map((m) => m.uci), ['a', 'b', 'c']);
+  assert.deepEqual(arrowMoves([{ uci: 'a', cp: 50 }, { uci: 'b', cp: -10 }]).map((m) => m.uci), ['a']);
+  assert.deepEqual(arrowMoves([{ uci: 'a', mate: 2 }, { uci: 'b', mate: 3 }]).map((m) => m.uci), ['a']);  // 98 vs 97: 1 pawn apart
+});
+
+test('uciOf and isSolverPly', () => {
+  assert.equal(uciOf({ from: 'a7', to: 'a8', promotion: 'q' }), 'a7a8q');
+  assert.equal(uciOf({ from: 'e2', to: 'e4' }), 'e2e4');
+  const fen = '8/1n4K1/qpB4p/3R3P/4kp1N/2p4P/2P1pP2/6R1 w - - 0 1';
+  assert.equal(isSolverPly(fen, 'w'), true);
+  assert.equal(isSolverPly(fen, 'b'), false);
+});

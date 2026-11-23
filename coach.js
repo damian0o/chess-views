@@ -52,3 +52,72 @@ export function toWhite(score, turn) {
   if (score.mate !== undefined) out.mate = -score.mate;
   return out;
 }
+
+// ---------- grading a guess ----------
+
+const round2 = (x) => Math.round(x * 100) / 100;
+const round1 = (x) => Math.round(x * 10) / 10;
+
+/**
+ * How a guessed move compares with the best move. Both scores are from the mover's point of view,
+ * from the same search. Returns { label, loss } with loss in pawns (best minus guess).
+ */
+export function grade(best, guess) {
+  const loss = round2(pawns(best) - pawns(guess));
+  const bestMates = best.mate !== undefined && best.mate > 0;
+  const guessMates = guess.mate !== undefined && guess.mate > 0;
+  const guessGetsMated = guess.mate !== undefined && guess.mate < 0;
+  if (bestMates && guessMates) return { label: 'Best!', loss };
+  if (bestMates) return { label: `You missed a mate in ${best.mate}`, loss };
+  if (guessGetsMated) return { label: `Oops, that allows mate in ${Math.abs(guess.mate)}`, loss };
+  if (loss <= 0) return { label: 'Best!', loss: 0 };
+  if (loss <= 0.2) return { label: 'Just as good', loss };
+  if (loss <= 0.5) return { label: 'Good', loss };
+  if (loss <= 1.5) return { label: 'Okay, but there was better', loss };
+  return { label: 'Oops, that loses something', loss };
+}
+
+// ---------- evaluation in words ----------
+
+/** One short sentence for a score seen from White's side. */
+export function evalWords(white) {
+  if (white.mate !== undefined && white.mate !== 0) {
+    return `${white.mate > 0 ? 'White' : 'Black'} mates in ${Math.abs(white.mate)}`;
+  }
+  const s = pawns(white);
+  const side = s > 0 ? 'White' : 'Black';
+  const a = Math.abs(s);
+  if (a >= 3) return `${side} is winning`;
+  if (a >= 1.2) return `${side} is better`;
+  if (a >= 0.4) return `${side} is a little better`;
+  return 'Equal';
+}
+
+/** The number for the parent: +0.6, -1.2, 0.0, #3, -#2. */
+export function evalNumber(white) {
+  if (white.mate !== undefined && white.mate !== 0) return `${white.mate < 0 ? '-' : ''}#${Math.abs(white.mate)}`;
+  const s = (white.cp || 0) / 100;
+  const r = round1(s);
+  if (r === 0) return '0.0';
+  return `${r > 0 ? '+' : '-'}${Math.abs(r).toFixed(1)}`;
+}
+
+/** White's share of the bar, 0..100. */
+export function barPercent(white) {
+  if (white.mate !== undefined && white.mate !== 0) return white.mate > 0 ? 100 : 0;
+  return round1(50 + 50 * Math.tanh(pawns(white) / 4));
+}
+
+/** Up to three moves within half a pawn of the best (the first move of a sorted analysis). */
+export function arrowMoves(moves) {
+  if (!moves.length) return [];
+  const top = pawns(moves[0]);
+  return moves.filter((m) => top - pawns(m) <= 0.5).slice(0, 3);
+}
+
+// ---------- small helpers for the view ----------
+
+export const uciOf = (m) => `${m.from}${m.to}${m.promotion || ''}`;
+
+/** In a problem the solver is the side to move at the start; only their plies are guessed against the stored key. */
+export const isSolverPly = (startFen, turn) => startFen.split(/\s+/)[1] === turn;
