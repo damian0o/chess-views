@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { boardFromFen, validatePlacement } from '../analysis.js';
 
-const VIEWS = ['board', 'territory', 'reach', 'roads', 'kings', 'diamond', 'shapes', 'knight'];
+const VIEWS = ['board', 'territory', 'reach', 'roads', 'kings', 'engine', 'diamond', 'shapes', 'knight'];
 const TAGS = ['start', 'opening', 'structure', 'endgame', 'mate', 'tactic', 'study', 'king safety', 'knight', 'exercise', 'game', 'problem'];
 const lib = JSON.parse(readFileSync(new URL('../positions.json', import.meta.url), 'utf8'));
 
@@ -55,4 +55,46 @@ test('library: the Opera game names its players in PGN headers', () => {
   const p = lib.positions.find((x) => x.id === 'opera-game');
   assert.match(p.pgn, /^\[White "Morphy"\]\n\[Black "Duke of Brunswick and Count Isouard"\]\n\n1\. e4/);
   assert.equal(p.ply, 23);
+});
+
+import { resolveSteps } from '../lessons.js';
+
+test('library: lessons are well formed', () => {
+  assert.ok(Array.isArray(lib.lessons) && lib.lessons.length >= 1);
+  const ids = new Set();
+  for (const L of lib.lessons) {
+    assert.match(L.id, /^[a-z0-9-]+$/); assert.ok(!ids.has(L.id)); ids.add(L.id);
+    assert.ok(L.name && L.about);
+    assert.ok(L.steps.length >= 3 && L.steps.length <= 30, `${L.id}: 3..30 steps`);
+    L.steps.forEach((s, i) => {
+      const sources = ['fen', 'pgn', 'pos', 'same'].filter((k) => k in s);
+      assert.equal(sources.length, 1, `${L.id} step ${i + 1}: one position source`);
+      if (i === 0) assert.ok(!s.same, `${L.id}: same is never first`);
+      assert.ok(VIEWS.includes(s.view), `${L.id} step ${i + 1}: view ${s.view}`);
+      if (s.sq) assert.match(s.sq, /^[a-h][1-8]$/);
+      assert.ok(typeof s.say === 'string' && s.say.length > 0 && s.say.length <= 220, `${L.id} step ${i + 1}: say`);
+      if (s.solve) assert.ok(s.task, `${L.id} step ${i + 1}: solve needs a task`);
+      if (s.shapes) assert.equal(s.view, 'shapes', `${L.id} step ${i + 1}: shapes options only on Shapes`);
+    });
+    const steps = resolveSteps(L, lib.positions);
+    for (const st of steps) {
+      if (!st.solve) continue;
+      assert.equal(st.source.kind, 'pgn', `${L.id} step ${st.index}: solve needs a pgn`);
+      const plies = st.source.pgn.replace(/\d+\.\s*/g, '').trim().split(/\s+/).length;
+      assert.ok(plies > st.source.ply, `${L.id} step ${st.index}: a move after ply ${st.source.ply}`);
+    }
+  }
+});
+
+test("library: the Scholar's mate lesson has its 17 steps", () => {
+  const L = lib.lessons.find((x) => x.id === 'scholars-mate');
+  const steps = resolveSteps(L, lib.positions);
+  assert.equal(steps.length, 17);
+  assert.deepEqual(steps.slice(0, 5).map((s) => s.view), ['board', 'kings', 'roads', 'shapes', 'territory']);
+  assert.equal(steps[4].sq, 'f7');
+  assert.deepEqual([steps[5].solve, steps[5].task, steps[5].source.ply], [true, "Find White's strike", 6]);
+  assert.equal(steps[6].source.ply, 7);
+  assert.equal(steps.filter((s) => s.shapesGate).length, 3);
+  assert.ok(steps.every((s) => s.flip === false));
+  assert.ok(steps[1].say.includes('**King houses**'));
 });

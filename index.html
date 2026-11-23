@@ -174,6 +174,14 @@
   .thumb i.dark { background-color: var(--square-dark); } .thumb i.light { background-color: var(--square-light); }
   .thumb i.piece { background-size: 100% 100%; }
   .libempty { color: var(--ink-soft); padding: 12px 4px; grid-column: 1 / -1; }
+  .lessons h3 { margin: 4px 0 8px; font-size: 1rem; }
+  .lessons:not(:empty) { margin: 0 0 14px; }
+  .lesson-card { display: grid; gap: 6px; padding: 12px; border-radius: 12px; border: 2px solid var(--pen-blue); background: var(--paper); }
+  .lesson-card .name { font-weight: 700; }
+  .lesson-card .about { color: var(--ink-soft); }
+  .lesson-card .chips { display: flex; gap: 8px; color: var(--ink-soft); font-size: 0.85rem; }
+  .lesson-card .progress { color: var(--pen-blue); font-weight: 600; }
+  .lesson-card .buttons { display: flex; gap: 8px; }
   @media (max-width: 420px) { .brand .word { display: none; } }
 
   /* Toast */
@@ -190,6 +198,18 @@
   .summary strong { color: var(--ink); }
   .legend { font-size: 0.9rem; color: var(--ink-soft); text-align: center; max-width: 60ch; margin: 0; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  .lesson { border-bottom: 2px solid var(--pencil); padding: 8px 16px; background: var(--paper); display: grid; gap: 6px; }
+  .lesson[hidden] { display: none; }
+  .lesson .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .lesson .title { color: var(--ink-soft); }
+  .lesson .title b { color: var(--ink); }
+  .lesson p.say { margin: 0; line-height: 1.35; }
+  .lesson button[disabled] { opacity: 0.6; cursor: default; }
+  .tabs button.locked { opacity: 0.45; }
+  .tabs button .lock { font-size: 0.7em; margin-left: 4px; }
+  .tabs button.wanted { animation: want 2s ease-in-out infinite; }
+  @keyframes want { 0%, 100% { box-shadow: 0 0 0 0 var(--focus); } 50% { box-shadow: 0 0 0 4px var(--focus); } }
+  @media (prefers-reduced-motion: reduce) { .tabs button.wanted { animation: none; outline: 3px solid var(--focus); } }
   .actions .evaltoggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.92rem; color: var(--ink-soft); margin-right: 6px; }
   .evalline { display: flex; align-items: center; gap: 10px; margin: 6px auto 4px; flex-wrap: wrap; justify-content: center; }
   .evalbar { width: 140px; height: 12px; border: 2px solid var(--pencil); border-radius: 6px; background: var(--side-b); overflow: hidden; flex: 0 0 auto; }
@@ -484,6 +504,7 @@
   </header>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Views"></nav>
+  <section class="lesson" id="lesson" aria-label="Lesson" hidden></section>
 
   <div class="status">
     <span id="turn" class="turn"></span>
@@ -542,6 +563,7 @@
   </div>
   <input type="search" id="libsearch" placeholder="Search names, notes and tags" aria-label="Search the library" autocomplete="off">
   <div class="libtags" id="libtags" aria-label="Filter by tag"></div>
+  <div class="lessons" id="liblessons" aria-label="Lessons"></div>
   <div class="liblist" id="liblist"></div>
 </dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -551,13 +573,14 @@ import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/ches
 import * as A from './analysis.js?v=ebfd7f72';
 import { createEngine } from './engine.js?v=e80dc02d';
 import * as C from './coach.js?v=80b5db19';
+import * as L from './lessons.js?v=14c9bf0b';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false, evalOn: false, guess: null };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false, evalOn: false, guess: null, lesson: null, task: null };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -567,7 +590,8 @@ function currentChess() {
   return c;
 }
 
-function setPosition(source) {
+function setPosition(source, { inLesson = false } = {}) {
+  if (!inLesson && state.lesson) { state.lesson = null; state.task = null; }
   state.knightSquare = null;
   state.showMoves = null;
   state.roadFocus = null;
@@ -593,6 +617,14 @@ function setPosition(source) {
 const FOCUS_KEY = { territory: 'territoryFocus', roads: 'roadFocus', knight: 'knightSquare' };
 function writeHash() {
   const p = new URLSearchParams();
+  if (state.lesson) {
+    // A lesson link carries the step; the step provides the position and the selected square.
+    p.set('lesson', state.lesson.id); p.set('step', String(state.lesson.index));
+    if (state.tab !== 'board') p.set('view', state.tab);
+    if (state.flipped) p.set('flip', '1');
+    history.replaceState(null, '', '#' + p.toString());
+    return;
+  }
   if (state.source.kind === 'fen') p.set('fen', state.source.fen);
   else { p.set('pgn', state.source.pgn); p.set('ply', String(state.ply)); }
   if (state.tab !== 'board') p.set('view', state.tab);
@@ -611,6 +643,7 @@ function readHash() {
   state.evalOn = p.get('eval') === '1';
   const sq = /^[a-h][1-8]$/.test(p.get('sq') || '') ? p.get('sq') : null;
   const solve = p.get('solve') === '1';
+  if (p.get('lesson')) return { source: null, sq: null, solve: false, lesson: { id: p.get('lesson'), step: Number(p.get('step') || 1), hasView: !!p.get('view') } };
   if (p.get('fen')) {
     const parsed = A.parseInput(p.get('fen'));
     if (parsed.kind !== 'fen') throw new Error(parsed.reason || 'bad fen in link');
@@ -623,6 +656,70 @@ function readHash() {
 function applyFocus(sq) {
   const key = FOCUS_KEY[state.tab];
   if (sq && key) state[key] = sq;
+}
+
+// ---------- lessons ----------
+const progress = L.progressStore((() => { try { return window.localStorage; } catch { return null; } })());   // even reading the property can throw
+
+/** Open a lesson at a step. Entering applies the step's view unless told not to (a reload keeps the kid's view). */
+function enterLesson(id, index = 1, { applyView = true } = {}) {
+  const raw = library.lessons.find((x) => x.id === id);
+  let steps = null;
+  try { steps = raw ? L.resolveSteps(raw, library.positions) : null; } catch (e) { console.error(e); }
+  if (!steps || !Number.isInteger(index) || index < 1 || index > steps.length) { toast('That lesson is not here'); return false; }
+  state.lesson = { id, name: raw.name, steps, index, done: !!(progress.get(id) || {}).done };
+  gotoStep(index, { applyView });
+  return true;
+}
+
+/** Apply a step: position (hidden moves and task), orientation, selected square; Next and Back never switch the view. */
+function gotoStep(index, { applyView = false } = {}) {
+  const lesson = state.lesson;
+  const step = lesson.steps[index - 1];
+  lesson.index = index;
+  setPosition(step.source, { inLesson: true });
+  state.solve = step.solve && state.moves.length > 0;
+  state.task = step.task;
+  state.flipped = step.flip;
+  state.shapesReveal = false;
+  if (applyView || step.shapesGate) state.tab = step.view;   // a blocks-first step must not be seen through the previous view
+  const key = FOCUS_KEY[step.view];
+  if (step.sq && key) state[key] = step.sq;
+  progress.set(lesson.id, { step: index, done: lesson.done });
+  writeHash(); render();
+}
+
+function leaveLesson() { state.lesson = null; state.task = null; writeHash(); render(); }
+
+function finishLesson() {
+  const lesson = state.lesson;
+  progress.set(lesson.id, { step: lesson.steps.length, done: true });
+  toast('Lesson finished');
+  leaveLesson();
+}
+
+/** The step bar between the tabs and the status line. */
+function renderLesson() {
+  const box = $('lesson');
+  const lesson = state.lesson;
+  box.hidden = !lesson;
+  if (!lesson) { box.replaceChildren(); return; }
+  const step = lesson.steps[lesson.index - 1];
+  const gate = L.nextGate(step, { tab: state.tab, ply: state.ply, shapesReveal: state.shapesReveal });
+  const last = lesson.index === lesson.steps.length;
+  const next = el('button', { type: 'button', class: 'primary', id: 'lesson-next', text: gate ? gate.text : last ? 'Finish ✓' : 'Next ▶',
+    onclick: () => { if (gate) return; if (last) finishLesson(); else gotoStep(lesson.index + 1); } });
+  if (gate) next.disabled = true;
+  const back = el('button', { type: 'button', class: 'quiet', id: 'lesson-back', text: '◀ Back', onclick: () => gotoStep(lesson.index - 1) });
+  if (lesson.index === 1) back.disabled = true;
+  box.replaceChildren(
+    el('div', { class: 'row' }, [
+      el('span', { class: 'title' }, [el('b', { text: lesson.name }), ' · ', el('span', { 'aria-live': 'polite', id: 'lesson-count', text: `${lesson.index} of ${lesson.steps.length}` })]),
+      el('button', { type: 'button', class: 'icon', id: 'lesson-exit', text: '✕', 'aria-label': 'Leave the lesson', title: 'Leave the lesson', onclick: leaveLesson }),
+    ]),
+    el('p', { class: 'say' }, L.sayParts(step.say).map((part) => (part.strong ? el('strong', { text: part.text }) : part.text))),
+    el('div', { class: 'row' }, [back, next]),
+  );
 }
 
 // ---------- loading ----------
@@ -1728,14 +1825,28 @@ let shownTab = null;
 function renderTabs() {
   const nav = $('tabs');
   nav.replaceChildren();
+  // In a lesson only the views it has introduced are open; the step's view pulses until the kid finds it.
+  const lesson = state.lesson;
+  const open = lesson ? L.openViews(lesson.steps, lesson.index, lesson.done) : null;
+  const step = lesson ? lesson.steps[lesson.index - 1] : null;
+  const wanted = step && state.tab !== step.view ? step.view : null;
   for (const [key, v] of Object.entries(VIEWS)) {
-    nav.append(el('button', { role: 'tab', 'aria-selected': String(key === state.tab), text: v.title, onclick: () => { state.tab = key; writeHash(); render(); } }));
+    const locked = open ? !open.has(key) : false;
+    const btn = el('button', { role: 'tab', 'aria-selected': String(key === state.tab), class: `${locked ? 'locked' : ''}${key === wanted ? ' wanted' : ''}`.trim(), text: v.title,
+      onclick: () => { if (locked) { toast('Finish the lesson to open this'); return; } state.tab = key; writeHash(); render(); } });
+    if (locked) { btn.setAttribute('aria-disabled', 'true'); btn.append(el('span', { class: 'lock', 'aria-hidden': 'true', text: '🔒' })); }
+    nav.append(btn);
   }
-  if (shownTab !== state.tab) {
+  if (wanted && wanted !== shownWanted) {
+    shownWanted = wanted;
+    const w = nav.querySelector('.wanted');
+    if (w) nav.scrollLeft = Math.max(0, w.offsetLeft - 16);   // the kid must see the tab the step asks for
+  } else if (shownTab !== state.tab) {
     shownTab = state.tab;
     const cur = nav.querySelector('[aria-selected="true"]');
     if (cur) nav.scrollLeft = Math.max(0, cur.offsetLeft - 16);
   }
+  if (!wanted) shownWanted = null;
 }
 
 let toastTimer = null;
@@ -1751,14 +1862,17 @@ async function copyText(text, done) {
 }
 
 // ---------- positions library ----------
-const library = { positions: [], tag: null, query: '' };
+let shownWanted = null;
+const library = { positions: [], lessons: [], tag: null, query: '' };
 async function loadLibrary() {
   try {
     const res = await fetch('positions.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error(String(res.status));
-    library.positions = (await res.json()).positions;
-  } catch { library.positions = []; }
+    const json = await res.json();
+    library.positions = json.positions; library.lessons = json.lessons || [];
+  } catch { library.positions = []; library.lessons = []; }
   const p = new URLSearchParams(location.hash.slice(1));
+  if (p.get('lesson')) { enterLesson(p.get('lesson'), Number(p.get('step') || 1), { applyView: !p.get('view') }); return; }
   if (p.get('pos') && !p.get('fen') && !p.get('pgn')) {
     const entry = library.positions.find((x) => x.id === p.get('pos'));
     if (entry) openEntry(entry);
@@ -1792,7 +1906,31 @@ function openEntry(entry) {
   if ($('library').open) $('library').close();
   toast(entry.name);
 }
+/** The Lessons shelf above the positions: name, about, step count, saved progress, Start / Continue, Start over. */
+function renderLessonsShelf(q) {
+  const box = $('liblessons');
+  const shown = library.lessons.filter((Lx) => !q || `${Lx.name} ${Lx.about}`.toLowerCase().includes(q));
+  box.replaceChildren();
+  if (!shown.length) return;
+  box.append(el('h3', { text: 'Lessons' }));
+  for (const Lx of shown) {
+    const n = Lx.steps.length;
+    const saved = progress.get(Lx.id);
+    const status = saved ? (saved.done ? '✓ finished' : `step ${Math.min(saved.step, n)} of ${n}`) : '';
+    const startAt = saved && !saved.done ? Math.min(saved.step, n) : 1;
+    const buttons = [el('button', { type: 'button', class: 'primary start', text: saved ? 'Continue' : 'Start', onclick: () => { if (enterLesson(Lx.id, startAt)) $('library').close(); } })];
+    if (saved) buttons.push(el('button', { type: 'button', class: 'quiet startover', text: 'Start over', onclick: () => { progress.reset(Lx.id); renderLibrary(); } }));
+    box.append(el('article', { class: 'lesson-card' }, [
+      el('span', { class: 'name', text: Lx.name }),
+      el('span', { class: 'about', text: Lx.about }),
+      el('span', { class: 'chips' }, [el('span', { class: 'steps', text: `${n} steps` }), ...(status ? [el('span', { class: 'progress', text: status })] : [])]),
+      el('span', { class: 'buttons' }, buttons),
+    ]));
+  }
+}
+
 function renderLibrary() {
+  renderLessonsShelf(library.query.trim().toLowerCase());
   const tags = [...new Set(library.positions.flatMap((p) => p.tags))];
   const tagBox = $('libtags');
   tagBox.replaceChildren(...tags.map((t) => el('button', { type: 'button', 'aria-pressed': String(library.tag === t), text: t, onclick: () => { library.tag = library.tag === t ? null : t; renderLibrary(); } })));
@@ -1840,6 +1978,7 @@ function render() {
   const chess = currentChess();
   const board = chess.board();
   renderTabs();
+  renderLesson();
   $('letters').checked = state.pieceStyle === 'letters';
   $('flip').setAttribute('aria-pressed', String(state.flipped));
   $('flip').title = state.flipped ? 'Board seen from Black. Turn it around (f)' : 'Turn the board around (f)';
@@ -1860,7 +1999,7 @@ function render() {
   movesEl.replaceChildren();
   if (state.solve) {
     // A problem: the moves are the answer, so show only what has been stepped through.
-    const task = (state.chess.getHeaders ? state.chess.getHeaders().Event : '') || 'Find the moves';
+    const task = state.task || (state.chess.getHeaders ? state.chess.getHeaders().Event : '') || 'Find the moves';
     movesEl.append(el('span', { class: 'task', text: state.ply ? task : `${task}. Think first, then ▶ to check.` }));
   }
   state.moves.forEach((m, i) => {
@@ -1956,7 +2095,7 @@ try {
 }
 window.addEventListener('beforeprint', () => buildPrintSheet(currentChess().board()));
 loadLibrary();
-window.__viewer = { state, render, VIEWS, A, buildPrintSheet, library, coach };
+window.__viewer = { state, render, VIEWS, A, buildPrintSheet, library, coach, enterLesson, gotoStep, progress };
 </script>
 </body>
 </html>
