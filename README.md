@@ -145,6 +145,17 @@ hash of the file, so a browser that still has the old module cached (GitHub
 Pages allows ten minutes) never pairs it with a newer page. The test suite
 fails when a stamp is stale.
 
+## Engine
+
+The `engine/` folder holds Stockfish 19 (lite net, single-threaded
+WebAssembly) from nmrugg/stockfish.js v19.0.1, under the GPL v3; see
+`engine/README.md` for the provenance and the pinned hashes, which the test
+suite checks. `engine.js` is a small wrapper: `createEngine()` starts the
+Worker and `bestMove(fen, { level })` resolves with the engine's move for
+the levels in `LEVELS`. It is the groundwork for phase 2 and is not wired
+into the page yet.
+
 ## Roadmap
 
-This is phase 1 (viewing). Phase 2 is playing against Stockfish in the browser.
+This is phase 1 (viewing). Phase 2 is playing against Stockfish in the browser,
+on the engine above.
