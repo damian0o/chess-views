@@ -84,6 +84,12 @@ queen returns), and spot the shape (three boards shown as blocks: the same
 shape by another road, the mirror against f2, and a near miss with the
 queen still at home).
 
+The second lesson, **Eyes on f7**, is a recognition drill: ten openings
+from the first three or four moves, each shown as blocks first. The kid
+says which two pieces aim at the square next to the king, f7 or f2, then
+reveals the pieces and reads the answer in Roads or Territory: mate, fork,
+nothing yet, or guarded. Yes and no boards alternate.
+
 Lessons live in `positions.json` under `lessons`. A step has a position
 (`fen`, `pgn` with `ply`, `pos` for a library entry, or `same` for the
 previous step's position with an optional `ply`), a `view`, an optional

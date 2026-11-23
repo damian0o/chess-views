@@ -98,3 +98,18 @@ test("library: the Scholar's mate lesson has its 17 steps", () => {
   assert.ok(steps.every((s) => s.flip === false));
   assert.ok(steps[1].say.includes('**King houses**'));
 });
+
+test('library: Eyes on f7 has an opener and ten blocks-first boards with answers', () => {
+  const L = lib.lessons.find((x) => x.id === 'eyes-on-f7');
+  const steps = resolveSteps(L, lib.positions);
+  assert.equal(steps.length, 21);
+  const gated = steps.filter((s) => s.shapesGate);
+  assert.equal(gated.length, 10);
+  for (const g of gated) {
+    const answer = steps[g.index];            // the step after each board
+    assert.ok(['roads', 'territory'].includes(answer.view), `board at step ${g.index}: answer view`);
+    assert.deepEqual(answer.source, g.source, `board at step ${g.index}: the answer shows the same position`);
+    if (answer.view === 'territory') assert.ok(['f7', 'f2'].includes(answer.sq));
+  }
+  assert.ok(steps.every((s) => s.flip === false && !s.solve));
+});
