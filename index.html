@@ -1439,7 +1439,8 @@ const VIEWS = {
       }
       container.append(el('div', { class: 'overlaywrap' }, [grid, svg]));
       if (!ok) { container.append(el('p', { class: 'summary', text: 'Nothing to guess here.' })); return; }
-      container.append(evalLine(result, ctx.turn));
+      container.append(evalLine(result, ctx.turn));   // also carries "did not answer" + Try again
+      if (coach.error) return;
       // The strip under the board.
       const again = el('button', { type: 'button', class: 'quiet', id: 'again', text: 'Try another', onclick: () => { state.guess = null; render(); } });
       const list = (ms) => ms.map((m) => san(m.uci)).join(', ');
