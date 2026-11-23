@@ -51,8 +51,45 @@ entry with an `id`, `name`, `note`, `tags`, `view` and either a six-field
 `fen` or a `pgn` with a `ply` (a `pgn` may start from its own position with
 `[FEN "..."]` and `[SetUp "1"]` headers; the `Event` header is shown as
 the task in solve mode); `npm test` validates every entry (fields,
-FEN shape, one king per side). There is no saving in the browser by design:
-the collection is curated in the repo and published with the page.
+FEN shape, one king per side). Positions are never saved in the browser:
+the collection is curated in the repo and published with the page. The one
+thing the page remembers on a device is lesson progress (below).
+
+## Lessons
+
+A lesson is a path through the views: one idea shown as a weak square, as
+roads, as a shape of blocks and as a count on one square, in a fixed order,
+with the kid moving themselves. Open the library and the Lessons shelf is
+at the top; Start opens step 1.
+
+- A **step bar** under the tabs shows the lesson name, "step 3 of 17", one
+  or two sentences, Back and Next. Each step names the view to open, in
+  bold; the tab pulses, and Next waits ("Open Roads first") until the kid
+  taps it. Steps that say "find it, then press ▶" hide the moves like a
+  library problem, and Next waits for the reveal; steps in Shapes may wait
+  for "Reveal pieces".
+- **Locked tabs**: while a lesson is open, only the views it has introduced
+  so far can be opened; the others show a lock and say "Finish the lesson
+  to open this". Finishing, or leaving with ✕, unlocks everything.
+- **Progress on the device**: the highest step reached and whether the
+  lesson was finished are kept in the browser's local storage, per lesson,
+  so the shelf offers "Continue from step 7", shows a tick, and "Start
+  over". With storage blocked the lesson still works for the session.
+- A step's link is `#lesson=scholars-mate&step=3`.
+
+The first lesson, **Scholar's mate**, has 17 steps in three parts: make the
+mate (watch the setup through King houses, Roads, Shapes and Territory,
+then find the strike), stop it (defend f7 twice, then again after the
+queen returns), and spot the shape (three boards shown as blocks: the same
+shape by another road, the mirror against f2, and a near miss with the
+queen still at home).
+
+Lessons live in `positions.json` under `lessons`. A step has a position
+(`fen`, `pgn` with `ply`, `pos` for a library entry, or `same` for the
+previous step's position with an optional `ply`), a `view`, an optional
+`sq`, `solve` with a `task` for a hidden move, `shapes: { gate: true }` to
+wait for the reveal, `flip`, and `say` (at most two sentences, `**bold**`
+for the view name). `npm test` validates every lesson.
 
 ## How to use
 
@@ -73,7 +110,8 @@ With a PGN you get a move slider and the arrow keys step through the game.
 Right-click any piece (press and hold on a phone) to see its legal moves; Esc hides them.
 The position, the current view and the selected square (a Territory square,
 a Roads piece or the Knight square, as `sq=e4`) are kept in the URL, so you
-can bookmark or share a link that lands on exactly what you see. On the
+can bookmark or share a link that lands on exactly what you see; a lesson
+step is `lesson=scholars-mate&step=3`. On the
 Board view, "Engine evaluation" adds a bar and a sentence ("White is a
 little better (+0.6)") under the board; it is off by default and travels in
 the link as `eval=1`.
@@ -134,10 +172,19 @@ then open http://localhost:8080/.
 
 ## Tests
 
-The analysis functions in `analysis.js` have unit tests that need only Node 20+:
+The analysis functions in `analysis.js` and the pure modules `coach.js`,
+`engine.js` and `lessons.js` have unit tests that need only Node 20+:
 
 ```
 node --test
+```
+
+The browser checks under `tests/browser/` drive the served page with
+Playwright on a throttled phone-sized viewport; see `tests/browser/README.md`:
+
+```
+python3 -m http.server 8080
+python3 tests/browser/run.py http://localhost:8080/
 ```
 
 ## Deploy on GitHub Pages
@@ -150,8 +197,8 @@ node --test
 Nothing to build: `index.html` loads chess.js from a CDN, plus `analysis.js`
 and `pieces.css` next to it.
 
-After changing `analysis.js`, `pieces.css`, `engine.js` or `coach.js`, run
-`npm run stamp` before committing. It rewrites the `?v=` query on their links in `index.html` to a
+After changing `analysis.js`, `pieces.css`, `engine.js`, `coach.js` or
+`lessons.js`, run `npm run stamp` before committing. It rewrites the `?v=` query on their links in `index.html` to a
 hash of the file, so a browser that still has the old module cached (GitHub
 Pages allows ten minutes) never pairs it with a newer page. The test suite
 fails when a stamp is stale.
