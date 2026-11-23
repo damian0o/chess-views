@@ -112,6 +112,8 @@
   .moves .num { color: var(--ink-soft); margin-left: 6px; flex: 0 0 auto; }
   .moves button { background: none; border: 0; color: var(--ink); padding: 1px 5px; font-weight: 400; border-radius: 4px; flex: 0 0 auto; }
   .moves button.cur { background: var(--pen-blue); color: #fff; }
+  .moves button.hid { color: var(--ink-soft); border: 1px dashed var(--pencil); padding: 0 7px; }
+  .moves .task { flex: 0 0 auto; font-weight: 600; color: var(--pen-blue); margin-right: 6px; }
   .nav { display: flex; align-items: center; gap: 6px; }
   .nav button.icon { width: 40px; height: 36px; border-color: var(--pencil); border-radius: 8px; }
   .nav input[type=range] { flex: 1 1 120px; min-width: 60px; accent-color: var(--pen-blue); margin: 0 6px; }
@@ -540,7 +542,7 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -555,6 +557,7 @@ function setPosition(source) {
   state.showMoves = null;
   state.roadFocus = null;
   state.territoryFocus = null;
+  state.solve = false;
   const chess = new Chess();
   if (source.kind === 'fen') {
     chess.load(source.fen, { skipValidation: true });
@@ -580,21 +583,23 @@ function writeHash() {
   if (state.flipped) p.set('flip', '1');
   const key = FOCUS_KEY[state.tab];
   if (key && state[key]) p.set('sq', state[key]);
+  if (state.solve) p.set('solve', '1');
   history.replaceState(null, '', '#' + p.toString());
 }
-/** Returns { source, sq }: the position in the link (or null) and the selected square, if any. */
+/** Returns { source, sq, solve }: the position in the link (or null), the selected square, and whether the moves are a hidden solution. */
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   if (p.get('view') && VIEWS[p.get('view')]) state.tab = p.get('view');
   state.flipped = p.get('flip') === '1';
   const sq = /^[a-h][1-8]$/.test(p.get('sq') || '') ? p.get('sq') : null;
+  const solve = p.get('solve') === '1';
   if (p.get('fen')) {
     const parsed = A.parseInput(p.get('fen'));
     if (parsed.kind !== 'fen') throw new Error(parsed.reason || 'bad fen in link');
-    return { source: parsed, sq };
+    return { source: parsed, sq, solve };
   }
-  if (p.get('pgn')) return { source: { kind: 'pgn', pgn: p.get('pgn'), ply: p.has('ply') ? Number(p.get('ply')) : undefined }, sq };
-  return { source: null, sq };
+  if (p.get('pgn')) return { source: { kind: 'pgn', pgn: p.get('pgn'), ply: p.has('ply') ? Number(p.get('ply')) : undefined }, sq, solve };
+  return { source: null, sq, solve };
 }
 /** Apply a selected square from the link to the open view (after setPosition, which clears selections). */
 function applyFocus(sq) {
@@ -1577,6 +1582,7 @@ function thumb(fen) {
 }
 function openEntry(entry) {
   setPosition(entry.fen ? { kind: 'fen', fen: entry.fen } : { kind: 'pgn', pgn: entry.pgn, ply: entry.ply });
+  state.solve = entry.tags.includes('problem') && state.moves.length > 0;
   state.tab = entry.view;
   $('input').value = entry.fen || entry.pgn;
   writeHash();
@@ -1637,7 +1643,8 @@ function render() {
   $('flip').title = state.flipped ? 'Board seen from Black. Turn it around (f)' : 'Turn the board around (f)';
   const turn = chess.turn() === 'w' ? 'White to move' : 'Black to move';
   const check = chess.inCheck();
-  $('turn').textContent = check ? `${turn} (in check)` : turn;
+  $('turn').textContent = chess.isCheckmate() ? `Checkmate. ${chess.turn() === 'w' ? 'Black' : 'White'} wins.`
+    : chess.isStalemate() ? 'Stalemate: a draw.' : check ? `${turn} (in check)` : turn;
   $('turn').classList.toggle('check', check);
 
   $('fen').textContent = chess.fen();
@@ -1649,9 +1656,15 @@ function render() {
   $('plyLabel').textContent = hasMoves ? `${state.ply} / ${state.moves.length}` : '';
   const movesEl = $('moves');
   movesEl.replaceChildren();
+  if (state.solve) {
+    // A problem: the moves are the answer, so show only what has been stepped through.
+    const task = (state.chess.getHeaders ? state.chess.getHeaders().Event : '') || 'Find the moves';
+    movesEl.append(el('span', { class: 'task', text: state.ply ? task : `${task}. Think first, then ▶ to check.` }));
+  }
   state.moves.forEach((m, i) => {
+    const hidden = state.solve && i >= state.ply;
     if (i % 2 === 0) movesEl.append(el('span', { class: 'num', text: `${i / 2 + 1}.` }));
-    movesEl.append(el('button', { type: 'button', class: i + 1 === state.ply ? 'cur' : '', text: m.san, onclick: () => goTo(i + 1) }));
+    movesEl.append(el('button', { type: 'button', class: `${i + 1 === state.ply ? 'cur' : ''}${hidden ? ' hid' : ''}`.trim(), text: hidden ? '?' : m.san, title: hidden ? 'Hidden until you step to it' : '', onclick: () => goTo(i + 1) }));
   });
   const cur = movesEl.querySelector('.cur');
   if (cur) movesEl.scrollLeft = Math.max(0, cur.offsetLeft - movesEl.clientWidth / 2);
@@ -1726,9 +1739,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 try {
-  const { source: initial, sq } = readHash();
+  const { source: initial, sq, solve } = readHash();
   setPosition(initial || { kind: 'fen', fen: A.START_FEN });
   applyFocus(sq);
+  state.solve = solve && state.moves.length > 0;
   if (initial) $('input').value = initial.kind === 'fen' ? initial.fen : initial.pgn;
   render();
 } catch (e) {

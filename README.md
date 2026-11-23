@@ -39,9 +39,18 @@ study and Morphy's Opera game. Pick one and the app loads it in that view.
 A link of the form `#pos=<id>` opens an entry directly, for example
 `#pos=lucena`.
 
+Entries tagged `problem` are composed chess problems (the first one is the
+mate in three from NM ZugAddict's post "Are you rated 1600? Good."). They
+open in solve mode: the move list shows the task and a row of `?` instead
+of the moves, so the answer stays hidden until you step forward with ▶.
+The idea follows the post's advice: set the position up on a real board,
+think, and only then check. Solve mode travels in the link as `solve=1`.
+
 The library is the file `positions.json`. To add a position, append an
 entry with an `id`, `name`, `note`, `tags`, `view` and either a six-field
-`fen` or a `pgn` with a `ply`; `npm test` validates every entry (fields,
+`fen` or a `pgn` with a `ply` (a `pgn` may start from its own position with
+`[FEN "..."]` and `[SetUp "1"]` headers; the `Event` header is shown as
+the task in solve mode); `npm test` validates every entry (fields,
 FEN shape, one king per side). There is no saving in the browser by design:
 the collection is curated in the repo and published with the page.
 

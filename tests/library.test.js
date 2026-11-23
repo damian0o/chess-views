@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { boardFromFen, validatePlacement } from '../analysis.js';
 
 const VIEWS = ['board', 'territory', 'reach', 'roads', 'kings', 'diamond', 'shapes', 'knight'];
-const TAGS = ['start', 'opening', 'structure', 'endgame', 'mate', 'tactic', 'study', 'king safety', 'knight', 'exercise', 'game'];
+const TAGS = ['start', 'opening', 'structure', 'endgame', 'mate', 'tactic', 'study', 'king safety', 'knight', 'exercise', 'game', 'problem'];
 const lib = JSON.parse(readFileSync(new URL('../positions.json', import.meta.url), 'utf8'));
 
 test('library: has entries with the required fields and unique ids', () => {
@@ -40,4 +40,13 @@ test('library: the article position and the study are in it', () => {
   assert.equal(byId['alapin-structure'].fen, 'r1bqk1nr/pp2ppbp/2n3p1/3pP3/3P4/5N2/PP3PPP/RNBQKB1R w KQkq - 0 1');
   assert.equal(byId['king-trap-study'].fen, 'kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w - - 0 1');
   assert.equal(byId['king-trap-study'].view, 'kings');
+});
+
+test('library: the blog problem starts from its own FEN with the solution hidden behind the moves', () => {
+  const p = lib.positions.find((x) => x.id === 'mate-in-three');
+  assert.ok(p.tags.includes('problem'));
+  assert.equal(p.ply, 0);
+  assert.match(p.pgn, /\[FEN "8\/1n4K1\/qpB4p\/3R3P\/4kp1N\/2p4P\/2P1pP2\/6R1 w - - 0 1"\]/);
+  assert.match(p.pgn, /\[SetUp "1"\]/);
+  assert.match(p.pgn, /1\. Rf1 .* 3\. Rd3#$/);
 });
