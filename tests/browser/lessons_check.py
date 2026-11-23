@@ -54,12 +54,12 @@ def main(pw):
     pg.locator("#open-load").tap(); pg.locator("[data-example]").nth(0).tap(); pg.wait_for_timeout(300)
     check("loading another position leaves the lesson", pg.locator("#lesson").is_hidden() and "lesson=" not in pg.url)
     # --- Task 5: locked tabs
-    s.goto(BASE, "lesson=scholars-mate&step=2", settle=600)
+    s.goto(BASE, "lesson=scholars-mate&step=1", settle=600); pg.locator(NEXT).tap(); pg.wait_for_timeout(200)   # reach step 2 as a kid does: still in Board
     locked = pg.evaluate("[...document.querySelectorAll('.tabs [role=tab].locked')].map(b => b.textContent.replace('🔒','').trim())")
     check("step 2: every view the lesson has not opened is locked", sorted(locked) == sorted(["Territory", "Reach", "Roads", "Engine", "Diamond", "Shapes", "Knight"]), str(locked))
     check("locked tabs are aria-disabled", pg.evaluate("[...document.querySelectorAll('.tabs [role=tab].locked')].every(b => b.getAttribute('aria-disabled') === 'true')"))
     check("King houses is the wanted tab", pg.locator(".tabs [role=tab].wanted").count() == 1 and "King houses" in pg.locator(".tabs [role=tab].wanted").inner_text())
-    s.tab("Shapes")
+    s.tab("Shapes", force=True)
     check("tapping a locked tab: stays in Board and toasts", pg.evaluate("__viewer.state.tab") == "board" and "Finish the lesson to open this" in s.text("#toast"), s.text("#toast"))
     s.tab("King houses"); pg.locator(NEXT).tap(); s.tab("Roads"); pg.locator(NEXT).tap(); s.tab("Shapes"); pg.locator(NEXT).tap(); pg.wait_for_timeout(200)
     opened = pg.evaluate("[...document.querySelectorAll('.tabs [role=tab]:not(.locked)')].map(b => b.textContent.trim())")

@@ -38,8 +38,9 @@ class Session:
         self.page.wait_for_timeout(settle)
     def tap(self, square):
         self.page.locator(f'.board .sq[data-square="{square}"]').tap()
-    def tab(self, title):
-        self.page.locator(".tabs [role=tab]", has_text=title).first.tap()
+    def tab(self, title, force=False):
+        # force: Playwright refuses to tap an aria-disabled button, a finger does not
+        self.page.locator(".tabs [role=tab]", has_text=title).first.tap(force=force)
         self.page.wait_for_timeout(150)
     def summary(self):
         loc = self.page.locator("#view .summary")
