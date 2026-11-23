@@ -1396,7 +1396,11 @@ const VIEWS = {
       const result = ok ? requestAnalysis(ctx.fen, chess.moves().length) : null;
       const guess = state.guess;
       const san = (uci) => { const m = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }); chess.undo(); return m ? m.san : uci; };
-      const picking = ok && !guess;   // taps choose a move only before a guess
+      const played = state.ply < state.moves.length ? state.moves[state.ply] : null;   // the next move of a loaded game
+      const solving = state.solve && played;
+      const solverPly = solving && C.isSolverPly(state.startFen, ctx.turn);
+      const opponentPly = solving && !solverPly;   // a defence is one of many: nothing to guess
+      const picking = ok && !guess && !opponentPly;   // taps choose a move only before a guess
       const grid = boardGrid(board, (r, c, cell, name) => pieceNode(cell, name));
       if (picking) {
         const targets = state.showMoves ? new Map(legalMovesFor(chess, state.showMoves).map((m) => [m.to, m])) : new Map();
@@ -1440,7 +1444,18 @@ const VIEWS = {
       const again = el('button', { type: 'button', class: 'quiet', id: 'again', text: 'Try another', onclick: () => { state.guess = null; render(); } });
       const list = (ms) => ms.map((m) => san(m.uci)).join(', ');
       if (coach.failed) { container.append(el('p', { class: 'summary', text: 'The engine could not start in this browser.' })); return; }
-      if (!guess) {
+      const headers = state.chess.getHeaders ? state.chess.getHeaders() : {};
+      const playerName = headers[ctx.turn === 'w' ? 'White' : 'Black'] || side(ctx.turn);
+      // With a loaded game: what was actually played, graded from the same analysis.
+      const gameLine = () => {
+        if (!played || solving) return '';
+        const pm = result.moves.find((m) => m.uci === C.uciOf(played));
+        const label = pm ? C.grade(result.moves[0], pm).label.replace('!', '') : 'not scored';
+        return ` In the game ${playerName} played ${played.san} (${label}).`;
+      };
+      if (opponentPly) {
+        container.append(el('p', { class: 'summary', text: `Press ▶ for ${side(ctx.turn)}'s reply.` }));
+      } else if (!guess) {
         container.append(el('p', { class: 'summary' }, [
           'Tap a piece, then a square, to guess the best move. ',
           el('button', { type: 'button', class: 'quiet', id: 'showme', text: 'Show me', onclick: () => { state.guess = { shown: true }; state.showMoves = null; render(); } }),
@@ -1448,7 +1463,15 @@ const VIEWS = {
       } else if (!result) {
         container.append(el('p', { class: 'summary', text: guess.shown ? 'Thinking…' : `Your move ${san(C.uciOf(guess))}: thinking…` }));
       } else if (guess.shown) {
-        container.append(el('p', { class: 'summary' }, [el('strong', { text: `Here is what the engine likes: ${list(arrows)}.` }), ' ', again]));
+        const head = solverPly ? `The answer is ${played.san}. Engine: ${list(arrows)}.` : `Here is what the engine likes: ${list(arrows)}.`;
+        container.append(el('p', { class: 'summary' }, [el('strong', { text: head }), gameLine() + ' ', again]));
+      } else if (solverPly) {
+        const uci = C.uciOf(guess);
+        const hit = uci === C.uciOf(played);
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: hit ? `That's it! ${san(uci)} is the key.` : `Not the key. The answer is ${played.san}.` }),
+          ` Engine: ${list(arrows)}. `, again,
+        ]));
       } else {
         const uci = C.uciOf(guess);
         const mine = result.moves.find((m) => m.uci === uci);
@@ -1458,7 +1481,7 @@ const VIEWS = {
         const lossText = g && g.loss.toFixed(1) !== '0.0' ? `−${g.loss.toFixed(1)}` : '0.0';
         const verdict = g ? `${g.label} (${lossText})` : 'not scored';
         const tail = best && best.uci === uci ? (rest.length ? ` Also good: ${list(rest)}.` : '') : ` Best: ${list(arrows)}.`;
-        container.append(el('p', { class: 'summary' }, [el('strong', { text: `Your move ${san(uci)}: ${verdict}.` }), tail + ' ', again]));
+        container.append(el('p', { class: 'summary' }, [el('strong', { text: `Your move ${san(uci)}: ${verdict}.` }), tail + gameLine() + ' ', again]));
       }
       container.append(legend([
         { sw: ctx.turn === 'w' ? 'arrow-w' : 'arrow', text: 'the best move (thickest), then the other good ones' },
