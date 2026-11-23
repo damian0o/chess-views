@@ -5,7 +5,7 @@ import { expectedStamps, stampedHtml, ASSETS } from '../scripts/stamp.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-test('index.html links analysis.js and pieces.css with a ?v= stamp matching their current content (run: node scripts/stamp.js)', () => {
+test('index.html links every stamped asset (analysis.js, pieces.css, engine.js, coach.js) with a ?v= matching its current content (run: node scripts/stamp.js)', () => {
   const stamps = expectedStamps();
   for (const file of ASSETS) {
     const m = html.match(new RegExp(`${file.replace('.', '\\.')}\\?v=([0-9a-f]+)`));

@@ -189,7 +189,14 @@
   .summary { max-width: 70ch; text-align: center; color: var(--ink-soft); margin: 0; white-space: pre-line; }
   .summary strong { color: var(--ink); }
   .legend { font-size: 0.9rem; color: var(--ink-soft); text-align: center; max-width: 60ch; margin: 0; }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  .actions .evaltoggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.92rem; color: var(--ink-soft); margin-right: 6px; }
+  .evalline { display: flex; align-items: center; gap: 10px; margin: 6px auto 4px; flex-wrap: wrap; justify-content: center; }
+  .evalbar { width: 140px; height: 12px; border: 2px solid var(--pencil); border-radius: 6px; background: var(--side-b); overflow: hidden; flex: 0 0 auto; }
+  .evalbar .w { display: block; height: 100%; background: #fff; }
+  .evalbar.thinking { background: var(--pencil); opacity: 0.5; }
+  .evalline .words { font-weight: 600; }
+  .evalline .num { color: var(--ink-soft); font-size: 0.85em; }
 
   /* Board grid: 10x10 with coordinates around */
   .board { display: grid; grid-template-columns: repeat(10, var(--cell)); grid-auto-rows: var(--cell); gap: 0; }
@@ -536,13 +543,15 @@
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
 import * as A from './analysis.js?v=ebfd7f72';
+import { createEngine } from './engine.js?v=e80dc02d';
+import * as C from './coach.js?v=0d99ff62';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false, evalOn: false, guess: null };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -558,6 +567,7 @@ function setPosition(source) {
   state.roadFocus = null;
   state.territoryFocus = null;
   state.solve = false;
+  state.guess = null;
   const chess = new Chess();
   if (source.kind === 'fen') {
     chess.load(source.fen, { skipValidation: true });
@@ -581,6 +591,7 @@ function writeHash() {
   else { p.set('pgn', state.source.pgn); p.set('ply', String(state.ply)); }
   if (state.tab !== 'board') p.set('view', state.tab);
   if (state.flipped) p.set('flip', '1');
+  if (state.evalOn) p.set('eval', '1');
   const key = FOCUS_KEY[state.tab];
   if (key && state[key]) p.set('sq', state[key]);
   if (state.solve) p.set('solve', '1');
@@ -591,6 +602,7 @@ function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   if (p.get('view') && VIEWS[p.get('view')]) state.tab = p.get('view');
   state.flipped = p.get('flip') === '1';
+  state.evalOn = p.get('eval') === '1';
   const sq = /^[a-h][1-8]$/.test(p.get('sq') || '') ? p.get('sq') : null;
   const solve = p.get('solve') === '1';
   if (p.get('fen')) {
@@ -798,14 +810,86 @@ function pieceList(board) {
 }
 
 // ---------- views ----------
+// ---------- engine (coach) ----------
+const COACH_DEPTH = 10;
+/** One lazy engine per page, a FEN-keyed cache that keeps the richest result, and the current search. */
+const coach = { engine: null, cache: new Map(), failed: false, error: null, inflight: null };
+const CACHE_MAX = 200;
+
+/** The engine is only asked about positions chess.js accepts outright and that have a legal move. */
+function analysable(chess) {
+  try { new Chess(chess.fen()); } catch { return false; }
+  return chess.moves().length > 0;
+}
+
+function coachEngine() {
+  if (!coach.engine) {
+    coach.engine = createEngine();
+    coach.engine.ready.catch(() => { coach.failed = true; render(); });
+  }
+  return coach.engine;
+}
+
+/**
+ * The analysis for `fen` with at least `multipv` scored moves, or null while it is being computed.
+ * When the answer lands and the position on screen is still `fen`, the page re-renders.
+ */
+function requestAnalysis(fen, multipv) {
+  const hit = coach.cache.get(fen);
+  if (hit && hit.multipv >= multipv) return hit;
+  if (coach.failed || coach.error) return null;
+  if (coach.inflight && coach.inflight.fen === fen && coach.inflight.multipv >= multipv) return null;
+  if (coach.inflight) coach.engine.stop();   // a newer request supersedes the running search
+  const job = { fen, multipv };
+  coach.inflight = job;
+  coachEngine().analyse(fen, { depth: COACH_DEPTH, multipv }).then((result) => {
+    const prev = coach.cache.get(fen);
+    if (!prev || result.multipv >= prev.multipv) {
+      coach.cache.delete(fen); coach.cache.set(fen, result);
+      if (coach.cache.size > CACHE_MAX) coach.cache.delete(coach.cache.keys().next().value);
+    }
+  }, (err) => {
+    if (coach.inflight === job && !String(err.message).includes('stopped')) coach.error = err.message;
+  }).finally(() => {
+    if (coach.inflight === job) coach.inflight = null;
+    if (currentChess().fen() === fen) render();
+  });
+  return null;
+}
+
+/** The evaluation line: a bar (White's share from the left), the words, and the number for the parent. */
+function evalLine(result, turn) {
+  const best = result && result.moves[0];
+  const white = best ? C.toWhite(best, turn) : null;
+  const words = coach.failed ? 'The engine could not start in this browser.'
+    : coach.error ? 'The engine did not answer.'
+    : result === false ? 'No evaluation here'
+    : white ? C.evalWords(white) : 'Thinking…';
+  const bar = el('div', { class: `evalbar${white ? '' : ' thinking'}`, role: 'img', 'aria-label': words }, white ? [el('span', { class: 'w', style: `width:${C.barPercent(white)}%` })] : []);
+  const kids = [bar, el('span', { class: 'words', text: words })];
+  if (white) kids.push(el('span', { class: 'num', text: `(${C.evalNumber(white)})` }));
+  if (coach.error) kids.push(el('button', { type: 'button', class: 'quiet', id: 'retry', text: 'Try again', onclick: retryEngine }));
+  return el('div', { class: 'evalline' }, kids);
+}
+
+function retryEngine() {
+  if (coach.engine) coach.engine.terminate();
+  coach.engine = null; coach.error = null; coach.failed = false; coach.inflight = null;
+  render();
+}
+
 const VIEWS = {
   board: {
     title: 'Board',
-    render(container, board) {
+    render(container, board, ctx) {
       container.append(boardGrid(board, (r, c, cell, name) => pieceNode(cell, name)));
+      if (state.evalOn) container.append(evalLine(analysable(ctx.chess) ? requestAnalysis(ctx.fen, 1) : false, ctx.turn));
       container.append(el('p', { class: 'summary mono', text: pieceList(board) }));
       if (state.pieceStyle === 'letters') container.append(el('p', { class: 'legend', text: LEGEND }));
+      const evalBox = el('input', { type: 'checkbox', id: 'evaltoggle', onchange: (e) => { state.evalOn = e.target.checked; writeHash(); render(); } });
+      evalBox.checked = state.evalOn;
       container.append(el('div', { class: 'actions' }, [
+        el('label', { class: 'evaltoggle' }, [evalBox, ' Engine evaluation']),
         el('button', { class: 'quiet', type: 'button', text: 'Copy as text', onclick: async (e) => {
           await navigator.clipboard.writeText(A.boardText(board));
           e.target.textContent = 'Copied'; setTimeout(() => { e.target.textContent = 'Copy as text'; }, 1200);
@@ -1693,6 +1777,8 @@ function render() {
 
 function goTo(ply) {
   state.ply = Math.max(0, Math.min(state.moves.length, ply));
+  state.guess = null;
+  state.showMoves = null;
   writeHash();
   render();
 }
@@ -1752,7 +1838,7 @@ try {
 }
 window.addEventListener('beforeprint', () => buildPrintSheet(currentChess().board()));
 loadLibrary();
-window.__viewer = { state, render, VIEWS, A, buildPrintSheet, library };
+window.__viewer = { state, render, VIEWS, A, buildPrintSheet, library, coach };
 </script>
 </body>
 </html>
