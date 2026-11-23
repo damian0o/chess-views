@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
 export const stampOf = (text) => createHash('sha1').update(text).digest('hex').slice(0, 8);
-export const ASSETS = ['analysis.js', 'pieces.css', 'engine.js', 'coach.js'];
+export const ASSETS = ['analysis.js', 'pieces.css', 'engine.js', 'coach.js', 'lessons.js'];
 
 export function expectedStamps(root = new URL('../', import.meta.url)) {
   return Object.fromEntries(ASSETS.map((f) => [f, stampOf(readFileSync(new URL(f, root), 'utf8'))]));
