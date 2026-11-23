@@ -174,6 +174,14 @@
   .thumb i.dark { background-color: var(--square-dark); } .thumb i.light { background-color: var(--square-light); }
   .thumb i.piece { background-size: 100% 100%; }
   .libempty { color: var(--ink-soft); padding: 12px 4px; grid-column: 1 / -1; }
+  .lessons h3 { margin: 4px 0 8px; font-size: 1rem; }
+  .lessons:not(:empty) { margin: 0 0 14px; }
+  .lesson-card { display: grid; gap: 6px; padding: 12px; border-radius: 12px; border: 2px solid var(--pen-blue); background: var(--paper); }
+  .lesson-card .name { font-weight: 700; }
+  .lesson-card .about { color: var(--ink-soft); }
+  .lesson-card .chips { display: flex; gap: 8px; color: var(--ink-soft); font-size: 0.85rem; }
+  .lesson-card .progress { color: var(--pen-blue); font-weight: 600; }
+  .lesson-card .buttons { display: flex; gap: 8px; }
   @media (max-width: 420px) { .brand .word { display: none; } }
 
   /* Toast */
@@ -555,6 +563,7 @@
   </div>
   <input type="search" id="libsearch" placeholder="Search names, notes and tags" aria-label="Search the library" autocomplete="off">
   <div class="libtags" id="libtags" aria-label="Filter by tag"></div>
+  <div class="lessons" id="liblessons" aria-label="Lessons"></div>
   <div class="liblist" id="liblist"></div>
 </dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -650,7 +659,7 @@ function applyFocus(sq) {
 }
 
 // ---------- lessons ----------
-const progress = L.progressStore(typeof localStorage !== 'undefined' ? localStorage : null);
+const progress = L.progressStore((() => { try { return window.localStorage; } catch { return null; } })());   // even reading the property can throw
 
 /** Open a lesson at a step. Entering applies the step's view unless told not to (a reload keeps the kid's view). */
 function enterLesson(id, index = 1, { applyView = true } = {}) {
@@ -1891,7 +1900,31 @@ function openEntry(entry) {
   if ($('library').open) $('library').close();
   toast(entry.name);
 }
+/** The Lessons shelf above the positions: name, about, step count, saved progress, Start / Continue, Start over. */
+function renderLessonsShelf(q) {
+  const box = $('liblessons');
+  const shown = library.lessons.filter((Lx) => !q || `${Lx.name} ${Lx.about}`.toLowerCase().includes(q));
+  box.replaceChildren();
+  if (!shown.length) return;
+  box.append(el('h3', { text: 'Lessons' }));
+  for (const Lx of shown) {
+    const n = Lx.steps.length;
+    const saved = progress.get(Lx.id);
+    const status = saved ? (saved.done ? '✓ finished' : `step ${Math.min(saved.step, n)} of ${n}`) : '';
+    const startAt = saved && !saved.done ? Math.min(saved.step, n) : 1;
+    const buttons = [el('button', { type: 'button', class: 'primary start', text: saved ? 'Continue' : 'Start', onclick: () => { if (enterLesson(Lx.id, startAt)) $('library').close(); } })];
+    if (saved) buttons.push(el('button', { type: 'button', class: 'quiet startover', text: 'Start over', onclick: () => { progress.reset(Lx.id); renderLibrary(); } }));
+    box.append(el('article', { class: 'lesson-card' }, [
+      el('span', { class: 'name', text: Lx.name }),
+      el('span', { class: 'about', text: Lx.about }),
+      el('span', { class: 'chips' }, [el('span', { class: 'steps', text: `${n} steps` }), ...(status ? [el('span', { class: 'progress', text: status })] : [])]),
+      el('span', { class: 'buttons' }, buttons),
+    ]));
+  }
+}
+
 function renderLibrary() {
+  renderLessonsShelf(library.query.trim().toLowerCase());
   const tags = [...new Set(library.positions.flatMap((p) => p.tags))];
   const tagBox = $('libtags');
   tagBox.replaceChildren(...tags.map((t) => el('button', { type: 'button', 'aria-pressed': String(library.tag === t), text: t, onclick: () => { library.tag = library.tag === t ? null : t; renderLibrary(); } })));
