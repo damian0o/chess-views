@@ -189,7 +189,14 @@
   .summary { max-width: 70ch; text-align: center; color: var(--ink-soft); margin: 0; white-space: pre-line; }
   .summary strong { color: var(--ink); }
   .legend { font-size: 0.9rem; color: var(--ink-soft); text-align: center; max-width: 60ch; margin: 0; }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  .actions .evaltoggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.92rem; color: var(--ink-soft); margin-right: 6px; }
+  .evalline { display: flex; align-items: center; gap: 10px; margin: 6px auto 4px; flex-wrap: wrap; justify-content: center; }
+  .evalbar { width: 140px; height: 12px; border: 2px solid var(--pencil); border-radius: 6px; background: var(--side-b); overflow: hidden; flex: 0 0 auto; }
+  .evalbar .w { display: block; height: 100%; background: #fff; }
+  .evalbar.thinking { background: var(--pencil); opacity: 0.5; }
+  .evalline .words { font-weight: 600; }
+  .evalline .num { color: var(--ink-soft); font-size: 0.85em; }
 
   /* Board grid: 10x10 with coordinates around */
   .board { display: grid; grid-template-columns: repeat(10, var(--cell)); grid-auto-rows: var(--cell); gap: 0; }
@@ -243,6 +250,12 @@
   .overlaywrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
   .overlaywrap line.hit { stroke-width: 0.07; opacity: 0.7; stroke-linecap: round; }
   .overlaywrap line.hit.side-w { stroke: var(--side-w); } .overlaywrap line.hit.side-b { stroke: var(--side-b); }
+  .overlaywrap line.arrow { stroke-linecap: round; opacity: 0.85; }
+  .overlaywrap line.arrow.rank-1 { stroke-width: 0.22; } .overlaywrap line.arrow.rank-2 { stroke-width: 0.15; } .overlaywrap line.arrow.rank-3 { stroke-width: 0.10; }
+  .overlaywrap line.arrow.side-w { stroke: var(--side-w); } .overlaywrap line.arrow.side-b { stroke: var(--side-b); }
+  .overlaywrap line.arrow.guess { stroke: var(--focus); stroke-width: 0.15; stroke-dasharray: 0.25 0.15; }
+  .overlaywrap .ah-w { fill: var(--side-w); } .overlaywrap .ah-b { fill: var(--side-b); } .overlaywrap .ah-g { fill: var(--focus); }
+  .board .sq.pick { cursor: pointer; }
   .board .sq.pick { cursor: pointer; }
   .board .sq.focused { box-shadow: inset 0 0 0 3px var(--focus); z-index: 2; }
   /* Roads */
@@ -536,13 +549,15 @@
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
 import * as A from './analysis.js?v=ebfd7f72';
+import { createEngine } from './engine.js?v=e80dc02d';
+import * as C from './coach.js?v=80b5db19';
 
 const $ = (id) => document.getElementById(id);
 const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. a1 is dark.";
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false, evalOn: false, guess: null };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -558,6 +573,7 @@ function setPosition(source) {
   state.roadFocus = null;
   state.territoryFocus = null;
   state.solve = false;
+  state.guess = null;
   const chess = new Chess();
   if (source.kind === 'fen') {
     chess.load(source.fen, { skipValidation: true });
@@ -581,6 +597,7 @@ function writeHash() {
   else { p.set('pgn', state.source.pgn); p.set('ply', String(state.ply)); }
   if (state.tab !== 'board') p.set('view', state.tab);
   if (state.flipped) p.set('flip', '1');
+  if (state.evalOn) p.set('eval', '1');
   const key = FOCUS_KEY[state.tab];
   if (key && state[key]) p.set('sq', state[key]);
   if (state.solve) p.set('solve', '1');
@@ -591,6 +608,7 @@ function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   if (p.get('view') && VIEWS[p.get('view')]) state.tab = p.get('view');
   state.flipped = p.get('flip') === '1';
+  state.evalOn = p.get('eval') === '1';
   const sq = /^[a-h][1-8]$/.test(p.get('sq') || '') ? p.get('sq') : null;
   const solve = p.get('solve') === '1';
   if (p.get('fen')) {
@@ -798,14 +816,92 @@ function pieceList(board) {
 }
 
 // ---------- views ----------
+// ---------- engine (coach) ----------
+const COACH_DEPTH = 10;
+/** One lazy engine per page, a FEN-keyed cache that keeps the richest result, and the current search. */
+const coach = { engine: null, cache: new Map(), failed: false, error: null, inflight: null };
+const CACHE_MAX = 200;
+
+/** The engine is only asked about positions chess.js accepts outright and that have a legal move. */
+function analysable(chess) {
+  try {
+    new Chess(chess.fen());
+    const f = chess.fen().split(' '); f[1] = f[1] === 'w' ? 'b' : 'w'; f[3] = '-';
+    const other = new Chess(); other.load(f.join(' '), { skipValidation: true });
+    if (other.inCheck()) return false;   // the side not to move is in check: an impossible position
+  } catch { return false; }
+  return chess.moves().length > 0;
+}
+
+function coachEngine() {
+  if (!coach.engine) {
+    coach.engine = createEngine();
+    coach.engine.ready.catch(() => { coach.failed = true; render(); });
+  }
+  return coach.engine;
+}
+
+/**
+ * The analysis for `fen` with at least `multipv` scored moves, or null while it is being computed.
+ * When the answer lands and the position on screen is still `fen`, the page re-renders.
+ */
+function requestAnalysis(fen, multipv) {
+  const hit = coach.cache.get(fen);
+  if (hit && hit.multipv >= multipv) return hit;
+  if (coach.failed || coach.error) return null;
+  if (coach.inflight && coach.inflight.fen === fen && coach.inflight.multipv >= multipv) return null;
+  if (coach.inflight) coach.engine.stop();   // a newer request supersedes the running search
+  const job = { fen, multipv };
+  coach.inflight = job;
+  coachEngine().analyse(fen, { depth: COACH_DEPTH, multipv }).then((result) => {
+    const prev = coach.cache.get(fen);
+    // A search stopped early (superseded by a newer request) resolves with a shallow result: never cache it.
+    if (result.depth >= COACH_DEPTH && (!prev || result.multipv >= prev.multipv)) {
+      coach.cache.delete(fen); coach.cache.set(fen, result);
+      if (coach.cache.size > CACHE_MAX) coach.cache.delete(coach.cache.keys().next().value);
+    }
+  }, (err) => {
+    if (coach.inflight === job) coach.error = err.message;
+  }).finally(() => {
+    if (coach.inflight === job) coach.inflight = null;
+    if (currentChess().fen() === fen) render();
+  });
+  return null;
+}
+
+/** The evaluation line: a bar (White's share from the left), the words, and the number for the parent. */
+function evalLine(result, turn) {
+  const best = result && result.moves[0];
+  const white = best ? C.toWhite(best, turn) : null;
+  const words = coach.failed ? 'The engine could not start in this browser.'
+    : coach.error ? 'The engine did not answer.'
+    : result === false ? 'No evaluation here'
+    : white ? C.evalWords(white) : 'Thinking…';
+  const bar = el('div', { class: `evalbar${white ? '' : ' thinking'}`, role: 'img', 'aria-label': words }, white ? [el('span', { class: 'w', style: `width:${C.barPercent(white)}%` })] : []);
+  const kids = [bar, el('span', { class: 'words', text: words })];
+  if (white) kids.push(el('span', { class: 'num', text: `(${C.evalNumber(white)})` }));
+  if (coach.error) kids.push(el('button', { type: 'button', class: 'quiet', id: 'retry', text: 'Try again', onclick: retryEngine }));
+  return el('div', { class: 'evalline' }, kids);
+}
+
+function retryEngine() {
+  if (coach.engine) coach.engine.terminate();
+  coach.engine = null; coach.error = null; coach.failed = false; coach.inflight = null;
+  render();
+}
+
 const VIEWS = {
   board: {
     title: 'Board',
-    render(container, board) {
+    render(container, board, ctx) {
       container.append(boardGrid(board, (r, c, cell, name) => pieceNode(cell, name)));
+      if (state.evalOn) container.append(evalLine(analysable(ctx.chess) ? requestAnalysis(ctx.fen, 1) : false, ctx.turn));
       container.append(el('p', { class: 'summary mono', text: pieceList(board) }));
       if (state.pieceStyle === 'letters') container.append(el('p', { class: 'legend', text: LEGEND }));
+      const evalBox = el('input', { type: 'checkbox', id: 'evaltoggle', onchange: (e) => { state.evalOn = e.target.checked; writeHash(); render(); } });
+      evalBox.checked = state.evalOn;
       container.append(el('div', { class: 'actions' }, [
+        el('label', { class: 'evaltoggle' }, [evalBox, ' Engine evaluation']),
         el('button', { class: 'quiet', type: 'button', text: 'Copy as text', onclick: async (e) => {
           await navigator.clipboard.writeText(A.boardText(board));
           e.target.textContent = 'Copied'; setTimeout(() => { e.target.textContent = 'Copy as text'; }, 1200);
@@ -1297,6 +1393,111 @@ const VIEWS = {
       ]));
     },
   },
+  engine: {
+    title: 'Engine',
+    render(container, board, ctx) {
+      const chess = ctx.chess;
+      const side = (c) => (c === 'w' ? 'White' : 'Black');
+      const ok = analysable(chess);
+      const result = ok ? requestAnalysis(ctx.fen, chess.moves().length) : null;
+      const guess = state.guess;
+      const san = (uci) => { try { const m = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }); chess.undo(); return m.san; } catch { return uci; } };
+      const played = state.ply < state.moves.length ? state.moves[state.ply] : null;   // the next move of a loaded game
+      const solving = state.solve && played;
+      const solverPly = solving && C.isSolverPly(state.startFen, ctx.turn);
+      const opponentPly = solving && !solverPly;   // a defence is one of many: nothing to guess
+      const picking = ok && !guess && !opponentPly;   // taps choose a move only before a guess
+      const grid = boardGrid(board, (r, c, cell, name) => pieceNode(cell, name));
+      if (picking) {
+        // Only the mover's pieces offer guess targets; the long-press overlay also shows the other side's moves.
+        const ownPick = state.showMoves && chess.get(state.showMoves)?.color === ctx.turn;
+        const targets = ownPick ? new Map(legalMovesFor(chess, state.showMoves).map((m) => [m.to, m])) : new Map();
+        for (const sq of grid.querySelectorAll('.sq')) {
+          const name = sq.dataset.square;
+          sq.classList.add('pick');
+          sq.addEventListener('click', () => {
+            const cell = chess.get(name);
+            if (targets.has(name)) {
+              const m = targets.get(name);
+              state.guess = { from: m.from, to: m.to, promotion: m.promotion ? 'q' : undefined };
+              state.showMoves = null; render(); return;
+            }
+            if (cell && cell.color === ctx.turn) { state.showMoves = state.showMoves === name ? null : name; render(); return; }
+            if (cell && cell.color !== ctx.turn) toast(`It is ${side(ctx.turn)}'s move`);
+            if (state.showMoves) { state.showMoves = null; render(); }
+          });
+        }
+      }
+      // The reveal: arrows for the good moves (and the guess, if it is not one of them).
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+      const revealed = guess && result;
+      const arrows = revealed ? C.arrowMoves(result.moves) : [];
+      if (revealed) {
+        svg.innerHTML = ['w', 'b', 'g'].map((k) => `<marker id="ah-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" class="ah ah-${k}"/></marker>`).join('');
+        const draw = (uci, cls, title) => {
+          const [x1, y1] = cellXY(uci.slice(0, 2)), [x2, y2] = cellXY(uci.slice(2, 4));
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: `arrow ${cls}`, 'marker-end': `url(#ah-${cls.includes('guess') ? 'g' : ctx.turn})` })) line.setAttribute(k, v);
+          const t = document.createElementNS('http://www.w3.org/2000/svg', 'title'); t.textContent = title; line.append(t);
+          svg.append(line);
+        };
+        arrows.forEach((m, i) => draw(m.uci, `rank-${i + 1} side-${ctx.turn}`, san(m.uci)));
+        if (!guess.shown && !arrows.some((m) => m.uci === C.uciOf(guess))) draw(C.uciOf(guess), 'guess', `your move ${san(C.uciOf(guess))}`);
+      }
+      container.append(el('div', { class: 'overlaywrap' }, [grid, svg]));
+      if (!ok) { container.append(el('p', { class: 'summary', text: 'Nothing to guess here.' })); return; }
+      container.append(evalLine(result, ctx.turn));   // also carries "did not answer" + Try again
+      if (coach.error) return;
+      // The strip under the board.
+      const again = el('button', { type: 'button', class: 'quiet', id: 'again', text: 'Try another', onclick: () => { state.guess = null; render(); } });
+      const list = (ms) => ms.map((m) => san(m.uci)).join(', ');
+      if (coach.failed) { container.append(el('p', { class: 'summary', text: 'The engine could not start in this browser.' })); return; }
+      const headers = state.chess.getHeaders ? state.chess.getHeaders() : {};
+      const playerName = headers[ctx.turn === 'w' ? 'White' : 'Black'] || side(ctx.turn);
+      // With a loaded game: what was actually played, graded from the same analysis.
+      const gameLine = () => {
+        if (!played || solving) return '';
+        const pm = result.moves.find((m) => m.uci === C.uciOf(played));
+        const label = pm ? C.grade(result.moves[0], pm).label.replace('!', '') : 'not scored';
+        return ` In the game ${playerName} played ${played.san} (${label}).`;
+      };
+      if (opponentPly) {
+        container.append(el('p', { class: 'summary', text: `Press ▶ for ${side(ctx.turn)}'s reply.` }));
+      } else if (!guess) {
+        container.append(el('p', { class: 'summary' }, [
+          'Tap a piece, then a square, to guess the best move. ',
+          el('button', { type: 'button', class: 'quiet', id: 'showme', text: 'Show me', onclick: () => { state.guess = { shown: true }; state.showMoves = null; render(); } }),
+        ]));
+      } else if (!result) {
+        container.append(el('p', { class: 'summary', text: guess.shown ? 'Thinking…' : `Your move ${san(C.uciOf(guess))}: thinking…` }));
+      } else if (guess.shown) {
+        const head = solverPly ? `The answer is ${played.san}. Engine: ${list(arrows)}.` : `Here is what the engine likes: ${list(arrows)}.`;
+        container.append(el('p', { class: 'summary' }, [el('strong', { text: head }), gameLine() + ' ', again]));
+      } else if (solverPly) {
+        const uci = C.uciOf(guess);
+        const hit = uci === C.uciOf(played);
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: hit ? `That's it! ${san(uci)} is the key.` : `Not the key. The answer is ${played.san}.` }),
+          ` Engine: ${list(arrows)}. `, again,
+        ]));
+      } else {
+        const uci = C.uciOf(guess);
+        const mine = result.moves.find((m) => m.uci === uci);
+        const g = mine ? C.grade(result.moves[0], mine) : null;
+        const best = arrows[0];
+        const rest = arrows.filter((m) => m.uci !== uci);
+        const lossText = g && typeof g.loss === 'number' ? ` (${g.loss.toFixed(1) !== '0.0' ? '−' + g.loss.toFixed(1) : '0.0'})` : '';
+        const verdict = g ? `${g.label}${lossText}` : 'not scored';
+        const tail = best && best.uci === uci ? (rest.length ? ` Also good: ${list(rest)}.` : '') : ` Best: ${list(arrows)}.`;
+        container.append(el('p', { class: 'summary' }, [el('strong', { text: `Your move ${san(uci)}: ${verdict}.` }), tail + gameLine() + ' ', again]));
+      }
+      container.append(legend([
+        { sw: ctx.turn === 'w' ? 'arrow-w' : 'arrow', text: 'the best move (thickest), then the other good ones' },
+        { sw: 'guess', text: 'your move, when it is not one of them' },
+      ]));
+    },
+  },
   diamond: {
     title: 'Diamond',
     render(container, board) {
@@ -1454,6 +1655,7 @@ function legend(items) {
       case 'arrow': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#c93b3b', false, true); break;
       case 'pin': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#e07a10', false, false); break;
       case 'pin-dashed': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#e07a10', true, false); break;
+      case 'guess': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#ffb703', true, true).replace('fill="#c93b3b"', 'fill="#ffb703"').replace(/lg-arrow/g, 'lg-arrow-g'); break;
       case 'defend-line': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine(it.color === 'w' ? '#2456c8' : '#c93b3b', true, false); break;
     case 'arrow-w': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#2456c8', false, true).replace('fill="#c93b3b"', 'fill="#2456c8"').replace(/lg-arrow/g, 'lg-arrow-w'); break;
       case 'road': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><line x1="4" y1="13" x2="40" y2="13" stroke="#1d2a44" stroke-width="${it.width || 5}" stroke-linecap="round" opacity="0.6"/></svg>`; break;
@@ -1693,6 +1895,8 @@ function render() {
 
 function goTo(ply) {
   state.ply = Math.max(0, Math.min(state.moves.length, ply));
+  state.guess = null;
+  state.showMoves = null;
   writeHash();
   render();
 }
@@ -1752,7 +1956,7 @@ try {
 }
 window.addEventListener('beforeprint', () => buildPrintSheet(currentChess().board()));
 loadLibrary();
-window.__viewer = { state, render, VIEWS, A, buildPrintSheet, library };
+window.__viewer = { state, render, VIEWS, A, buildPrintSheet, library, coach };
 </script>
 </body>
 </html>

@@ -73,7 +73,10 @@ With a PGN you get a move slider and the arrow keys step through the game.
 Right-click any piece (press and hold on a phone) to see its legal moves; Esc hides them.
 The position, the current view and the selected square (a Territory square,
 a Roads piece or the Knight square, as `sq=e4`) are kept in the URL, so you
-can bookmark or share a link that lands on exactly what you see.
+can bookmark or share a link that lands on exactly what you see. On the
+Board view, "Engine evaluation" adds a bar and a sentence ("White is a
+little better (+0.6)") under the board; it is off by default and travels in
+the link as `eval=1`.
 
 ## The views
 
@@ -102,6 +105,14 @@ can bookmark or share a link that lands on exactly what you see.
   In danger label with its score explained, and the weakest square with how
   many more attackers the opponent needs to break in. Red arrows show the
   pressure, orange lines show pins, dashed circles the king's escape squares.
+- **Engine**: guess the best move. Tap a piece, then a square; only then
+  does Stockfish say how good it was ("Best!", "Just as good", "Good",
+  "Okay, but there was better", "Oops, that loses something", or the mate
+  you missed or allowed) and draw the two or three good moves as arrows,
+  thickest first. With a loaded game it also says what was actually played
+  and grades that. Library problems are checked against their stored key
+  instead. "Show me" reveals without a grade. Nothing engine-chosen is shown
+  before you commit to a move.
 - **Diamond**: the board turned 45°, so diagonals are straight lines and each
   row is one colour.
 - **Shapes**: the chunking exercise from "How Masters See the Board": pieces
@@ -139,8 +150,8 @@ node --test
 Nothing to build: `index.html` loads chess.js from a CDN, plus `analysis.js`
 and `pieces.css` next to it.
 
-After changing `analysis.js` or `pieces.css`, run `npm run stamp` before
-committing. It rewrites the `?v=` query on their links in `index.html` to a
+After changing `analysis.js`, `pieces.css`, `engine.js` or `coach.js`, run
+`npm run stamp` before committing. It rewrites the `?v=` query on their links in `index.html` to a
 hash of the file, so a browser that still has the old module cached (GitHub
 Pages allows ten minutes) never pairs it with a newer page. The test suite
 fails when a stamp is stale.
@@ -151,11 +162,15 @@ The `engine/` folder holds Stockfish 19 (lite net, single-threaded
 WebAssembly) from nmrugg/stockfish.js v19.0.1, under the GPL v3; see
 `engine/README.md` for the provenance and the pinned hashes, which the test
 suite checks. `engine.js` is a small wrapper: `createEngine()` starts the
-Worker and `bestMove(fen, { level })` resolves with the engine's move for
-the levels in `LEVELS`. It is the groundwork for phase 2 and is not wired
-into the page yet.
+Worker, `analyse(fen, { depth, multipv })` scores moves, and
+`bestMove(fen, { level })` picks one at a given strength. `coach.js` holds
+the pure rules (reading engine output, grading, words, bar) with unit
+tests. The page starts the engine only when the Engine view or the Board
+evaluation is used, and analyses at depth 10, scoring every legal move of
+the position at once.
 
 ## Roadmap
 
-This is phase 1 (viewing). Phase 2 is playing against Stockfish in the browser,
-on the engine above.
+Phase 1 is viewing; the Engine view and the evaluation line are the first
+engine features. Still to come: grades in the move list of a loaded game,
+and later playing against the engine.

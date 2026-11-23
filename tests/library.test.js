@@ -50,3 +50,9 @@ test('library: the blog problem starts from its own FEN with the solution hidden
   assert.match(p.pgn, /\[SetUp "1"\]/);
   assert.match(p.pgn, /1\. Rf1 .* 3\. Rd3#$/);
 });
+
+test('library: the Opera game names its players in PGN headers', () => {
+  const p = lib.positions.find((x) => x.id === 'opera-game');
+  assert.match(p.pgn, /^\[White "Morphy"\]\n\[Black "Duke of Brunswick and Count Isouard"\]\n\n1\. e4/);
+  assert.equal(p.ply, 23);
+});
