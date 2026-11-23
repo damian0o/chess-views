@@ -197,6 +197,11 @@
   .lesson .title b { color: var(--ink); }
   .lesson p.say { margin: 0; line-height: 1.35; }
   .lesson button[disabled] { opacity: 0.6; cursor: default; }
+  .tabs button.locked { opacity: 0.45; }
+  .tabs button .lock { font-size: 0.7em; margin-left: 4px; }
+  .tabs button.wanted { animation: want 2s ease-in-out infinite; }
+  @keyframes want { 0%, 100% { box-shadow: 0 0 0 0 var(--focus); } 50% { box-shadow: 0 0 0 4px var(--focus); } }
+  @media (prefers-reduced-motion: reduce) { .tabs button.wanted { animation: none; outline: 3px solid var(--focus); } }
   .actions .evaltoggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.92rem; color: var(--ink-soft); margin-right: 6px; }
   .evalline { display: flex; align-items: center; gap: 10px; margin: 6px auto 4px; flex-wrap: wrap; justify-content: center; }
   .evalbar { width: 140px; height: 12px; border: 2px solid var(--pencil); border-radius: 6px; background: var(--side-b); overflow: hidden; flex: 0 0 auto; }
@@ -1811,8 +1816,17 @@ let shownTab = null;
 function renderTabs() {
   const nav = $('tabs');
   nav.replaceChildren();
+  // In a lesson only the views it has introduced are open; the step's view pulses until the kid finds it.
+  const lesson = state.lesson;
+  const open = lesson ? L.openViews(lesson.steps, lesson.index, lesson.done) : null;
+  const step = lesson ? lesson.steps[lesson.index - 1] : null;
+  const wanted = step && state.tab !== step.view ? step.view : null;
   for (const [key, v] of Object.entries(VIEWS)) {
-    nav.append(el('button', { role: 'tab', 'aria-selected': String(key === state.tab), text: v.title, onclick: () => { state.tab = key; writeHash(); render(); } }));
+    const locked = open ? !open.has(key) : false;
+    const btn = el('button', { role: 'tab', 'aria-selected': String(key === state.tab), class: `${locked ? 'locked' : ''}${key === wanted ? ' wanted' : ''}`.trim(), text: v.title,
+      onclick: () => { if (locked) { toast('Finish the lesson to open this'); return; } state.tab = key; writeHash(); render(); } });
+    if (locked) { btn.setAttribute('aria-disabled', 'true'); btn.append(el('span', { class: 'lock', 'aria-hidden': 'true', text: '🔒' })); }
+    nav.append(btn);
   }
   if (shownTab !== state.tab) {
     shownTab = state.tab;
