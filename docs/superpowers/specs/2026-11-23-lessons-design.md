@@ -203,9 +203,12 @@ lesson is open:
   tabs unlock, the link loses `lesson`/`step`. Progress is kept.
 - Moving to a step (Next, Back, a link) applies, in this order: position
   (and `solve`, hidden moves, `task`), `flip`, `sq`, Shapes reveal reset.
-  Next and Back never switch the view: the kid does it. Entering a lesson
-  (Start from the library, or a link without `view`) does switch to the
-  step's view, so step 1 opens in Board.
+  Next and Back never switch the view: the kid does it. Two exceptions:
+  entering a lesson (Start from the library, or a link without `view`)
+  switches to the step's view, so step 1 opens in Board; and a gated
+  Shapes step (`shapes: { gate: true }`) opens in Shapes itself, because
+  its point is to see the blocks before the pieces, which the previous
+  view would spoil.
 - Changing position by any other means (Load, library, a `#pos=` link)
   leaves the lesson.
 

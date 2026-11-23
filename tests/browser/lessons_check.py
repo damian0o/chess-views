@@ -43,7 +43,7 @@ def main(pw):
     s.goto(BASE, "lesson=scholars-mate&step=5", settle=600)
     check("reload without a view lands in the step's view", pg.evaluate("__viewer.state.tab") == "territory" and pg.locator('.board .sq.focused[data-square="f7"]').count() == 1)
     # --- bad links (Review Focus 5)
-    for h in ("lesson=nope&step=3", "lesson=scholars-mate&step=99"):
+    for h in ("lesson=nope&step=3", "lesson=scholars-mate&step=99", "lesson=scholars-mate&step=2.5", "lesson=scholars-mate&step=abc"):
         s.goto(BASE, h, settle=600)
         check(f"bad link {h}: toast, no bar, start position", "That lesson is not here" in s.text("#toast") and pg.locator("#lesson").is_hidden() and pg.evaluate("__viewer.state.chess.fen()").startswith("rnbqkbnr/pppppppp"), s.text("#toast"))
     # --- leaving
@@ -59,6 +59,8 @@ def main(pw):
     check("step 2: every view the lesson has not opened is locked", sorted(locked) == sorted(["Territory", "Reach", "Roads", "Engine", "Diamond", "Shapes", "Knight"]), str(locked))
     check("locked tabs are aria-disabled", pg.evaluate("[...document.querySelectorAll('.tabs [role=tab].locked')].every(b => b.getAttribute('aria-disabled') === 'true')"))
     check("King houses is the wanted tab", pg.locator(".tabs [role=tab].wanted").count() == 1 and "King houses" in pg.locator(".tabs [role=tab].wanted").inner_text())
+    rect = pg.evaluate("(() => { const r = document.querySelector('.tabs [role=tab].wanted').getBoundingClientRect(); return [r.left, r.right]; })()")
+    check("the wanted tab is scrolled into view on a phone", 0 <= rect[0] and rect[1] <= 390, str(rect))
     s.tab("Shapes", force=True)
     check("tapping a locked tab: stays in Board and toasts", pg.evaluate("__viewer.state.tab") == "board" and "Finish the lesson to open this" in s.text("#toast"), s.text("#toast"))
     s.tab("King houses"); pg.locator(NEXT).tap(); s.tab("Roads"); pg.locator(NEXT).tap(); s.tab("Shapes"); pg.locator(NEXT).tap(); pg.wait_for_timeout(200)
@@ -83,6 +85,10 @@ def main(pw):
     check("a tag chip leaves the card alone", pg.locator("#liblessons .lesson-card").count() == 1)
     pg.locator("#libtags button", has_text="endgame").tap(); pg.locator("#liblessons button.start").tap(); pg.wait_for_timeout(400)
     check("Start opens step 1 in Board and closes the dialog", "1 of 17" in s.text("#lesson-count") and pg.evaluate("__viewer.state.tab") == "board" and not pg.evaluate("document.getElementById('library').open"))
+    pg.evaluate("__viewer.gotoStep(11)"); pg.wait_for_timeout(200); s.tab("Board"); pg.locator("#next").tap(); pg.wait_for_timeout(200); pg.locator(NEXT).tap(); pg.wait_for_timeout(300)
+    check("a gated Shapes step opens in Shapes with the pieces hidden", "12 of 17" in s.text("#lesson-count") and pg.evaluate("__viewer.state.tab") == "shapes" and pg.evaluate("__viewer.state.shapesReveal") is False and pg.locator("#view .shape").count() > 0 and pg.locator("#view .piece").count() == 0, f"tab={pg.evaluate('__viewer.state.tab')} shapes={pg.locator('#view .shape').count()} pieces={pg.locator('#view .piece').count()}")
+    check("its gate waits for Reveal pieces", pg.locator(NEXT).inner_text() == "Press Reveal pieces first")
+    check("no horizontal overflow with the long gate label", pg.evaluate("document.documentElement.scrollWidth") == 390)
     pg.evaluate("__viewer.gotoStep(17)"); pg.wait_for_timeout(200)
     check("step 17: Next asks for Roads first", pg.locator(NEXT).inner_text() == "Open Roads first")
     s.tab("Roads")

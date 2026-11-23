@@ -666,7 +666,7 @@ function enterLesson(id, index = 1, { applyView = true } = {}) {
   const raw = library.lessons.find((x) => x.id === id);
   let steps = null;
   try { steps = raw ? L.resolveSteps(raw, library.positions) : null; } catch (e) { console.error(e); }
-  if (!steps || !(index >= 1 && index <= steps.length)) { toast('That lesson is not here'); return false; }
+  if (!steps || !Number.isInteger(index) || index < 1 || index > steps.length) { toast('That lesson is not here'); return false; }
   state.lesson = { id, name: raw.name, steps, index, done: !!(progress.get(id) || {}).done };
   gotoStep(index, { applyView });
   return true;
@@ -682,7 +682,7 @@ function gotoStep(index, { applyView = false } = {}) {
   state.task = step.task;
   state.flipped = step.flip;
   state.shapesReveal = false;
-  if (applyView) state.tab = step.view;
+  if (applyView || step.shapesGate) state.tab = step.view;   // a blocks-first step must not be seen through the previous view
   const key = FOCUS_KEY[step.view];
   if (step.sq && key) state[key] = step.sq;
   progress.set(lesson.id, { step: index, done: lesson.done });
@@ -1837,11 +1837,16 @@ function renderTabs() {
     if (locked) { btn.setAttribute('aria-disabled', 'true'); btn.append(el('span', { class: 'lock', 'aria-hidden': 'true', text: '🔒' })); }
     nav.append(btn);
   }
-  if (shownTab !== state.tab) {
+  if (wanted && wanted !== shownWanted) {
+    shownWanted = wanted;
+    const w = nav.querySelector('.wanted');
+    if (w) nav.scrollLeft = Math.max(0, w.offsetLeft - 16);   // the kid must see the tab the step asks for
+  } else if (shownTab !== state.tab) {
     shownTab = state.tab;
     const cur = nav.querySelector('[aria-selected="true"]');
     if (cur) nav.scrollLeft = Math.max(0, cur.offsetLeft - 16);
   }
+  if (!wanted) shownWanted = null;
 }
 
 let toastTimer = null;
@@ -1857,6 +1862,7 @@ async function copyText(text, done) {
 }
 
 // ---------- positions library ----------
+let shownWanted = null;
 const library = { positions: [], lessons: [], tag: null, query: '' };
 async function loadLibrary() {
   try {
