@@ -4,7 +4,7 @@ group:
   kind: game
   id: opera-game
 title: Partia w operze
-about: "Morphy, Paryż 1858: szybki start, ofiara skoczka i mat wieżą na d8."
+about: "Morphy, Paryż 1858: szybki start, poświęcenie skoczka i mat wieżą na d8."
 game: Partia w operze
 experience: basic
 moments:
@@ -13,7 +13,7 @@ moments:
     pos: opera-game
     ply: 16
   sacrifice:
-    name: ofiara skoczka
+    name: poświęcenie skoczka
     pos: opera-game
     ply: 19
   mate:
@@ -59,7 +59,7 @@ Inna plansza.
 ? Czy to szybki start? {recall: "start", answer: "no"}
 ! Dobrze: to dopiero dwa ruchy, wyszedł tylko jeden skoczek.
 
-## s05-board {scene: "board", pos: "opera-game", ply: 18, moment: "sacrifice", solve: "Znajdź ofiarę Morphy'ego"}
+## s05-board {scene: "board", pos: "opera-game", ply: 18, moment: "sacrifice", solve: "Znajdź poświęcenie Morphy'ego"}
 
 ::: kids
 Czarny pionek b5 atakuje gońca. Morphy się nie cofa. Znajdź jego ruch, potem naciśnij ▶.
@@ -83,7 +83,7 @@ Skoczek zbił na b5 i zostanie zbity. W zamian otwierają się drogi do czarnego
 Tylko bloki. Ta sama pozycja?
 :::
 
-? Czy to ofiara skoczka? {recall: "sacrifice", answer: "yes"}
+? Czy to poświęcenie skoczka? {recall: "sacrifice", answer: "yes"}
 ! Tak: skoczek wskoczył na b5.
 
 ## s08-blocks {scene: "blocks", pos: "opera-game", ply: 25, moment: "sacrifice"}
@@ -92,10 +92,10 @@ Tylko bloki. Ta sama pozycja?
 Inna plansza.
 :::
 
-? Czy to ofiara skoczka? {recall: "sacrifice", answer: "no"}
+? Czy to poświęcenie skoczka? {recall: "sacrifice", answer: "no"}
 ! Dobrze: to później, wieża zbiła już na d7.
 
-## s09-board {scene: "board", pos: "opera-game", ply: 30, moment: "mate", solve: "Znajdź ofiarę hetmana"}
+## s09-board {scene: "board", pos: "opera-game", ply: 30, moment: "mate", solve: "Znajdź poświęcenie hetmana"}
 
 ::: kids
 Morphy oddaje hetmana i w następnym ruchu daje mata. Znajdź ruch hetmanem, potem naciśnij ▶.
@@ -134,5 +134,5 @@ Inna plansza.
 ## s13-board {scene: "board", pos: "opera-game", ply: 33}
 
 ::: kids
-Partia w operze zaliczona: szybki start, ofiara skoczka i mat wieżą na d8.
+Partia w operze zaliczona: szybki start, poświęcenie skoczka i mat wieżą na d8.
 :::
