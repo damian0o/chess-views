@@ -46,7 +46,7 @@ Białe i tak ruszają związanym skoczkiem. Znajdź ten ruch, potem naciśnij �
 ## s04-blocks {scene: "blocks", moment: "gift"}
 
 ::: kids
-Tylko bloki. Ten sam moment?
+Tylko bloki. Ta sama pozycja?
 :::
 
 ? Czy to dar hetmana? {recall: "gift", answer: "yes"}
@@ -82,7 +82,7 @@ Bxf7+, Ke7, Nd5: mat. Trzy lekkie figury pilnują wszystkich pól, a resztę pó
 ## s08-blocks {scene: "blocks", moment: "mate"}
 
 ::: kids
-Tylko bloki. Ten sam moment?
+Tylko bloki. Ta sama pozycja?
 :::
 
 ? Czy to mat? {recall: "mate", answer: "yes"}

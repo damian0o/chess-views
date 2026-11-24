@@ -91,7 +91,7 @@ describe('recognition', () => {
     const plL = [mk('ga', 'Partia A', ['start', 'trick', 'mate']), mk('gc', 'Partia C', ['hunt', 'mate'])];
     const r = buildRound(plL, done('ga', 'gc'), 3, { locale: 'pl' });
     const q = r && choiceQ(r.steps[0]!);
-    expect(q?.prompt.kids).toBe('Która partia, który moment?');
+    expect(q?.prompt.kids).toBe('Która partia, która pozycja?');
     expect(q?.choices.every((c) => c.startsWith('Partia '))).toBe(true);
     expect(r?.steps[0]?.explain.kids).toMatch(/^Plansza 1 z /);
   });
