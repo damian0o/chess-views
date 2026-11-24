@@ -1,0 +1,104 @@
+start:
+  name: Pozycja początkowa
+  note: "Tu zaczyna się każda partia. Sprawdź na niej każdy widok: kto rządzi
+    centrum, zanim ktokolwiek zrobi ruch?"
+italian-opening:
+  name: Partia włoska
+  note: "Oba gońce celują w najsłabsze pola na planszy, f7 i f2, których bronią
+    tylko króle. Drogi pokazują obie przekątne."
+london-system:
+  name: System londyński
+  note: "Goniec wychodzi na f4, zanim e3 go zamknie; potem c3 i e3 budują
+    piramidę pionków wokół d4. Białe grają tak prawie przeciw wszystkiemu.
+    Cofnij ruchy: goniec przez cały czas ma swoją przekątną."
+scholars-mate-threat:
+  name: Groźba mata szkolnego
+  note: "Białe grożą Qxf7 i mat. Terytorium pokazuje, że f7 jest atakowane dwa
+    razy, a broni go tylko król. Ruch czarnych: jak to zatrzymasz?"
+alapin-structure:
+  name: Struktura Alapina
+  note: "Z wpisu na blogu 'How Masters See the Board': łańcuch pionków d4-e5
+    przeciw fianchetto. Bloki zamieniają to w ćwiczenie z zapamiętywania kształtów."
+isolated-queen-pawn:
+  name: Izolowany pionek hetmański
+  note: "Pionek d białych nie ma sąsiadów. Teraz daje miejsce i otwarte drogi, a w
+    końcówce staje się słabością. Ruch czarnych."
+french-chain:
+  name: Łańcuchy pionków we francuskiej
+  note: "Wariant zaawansowany obrony francuskiej. Łańcuchy d4-e5 i d5-e6 zamykają
+    centrum. Czarne atakują podstawę ruchem ...c5, a ich jasnopolowy goniec jest
+    zamknięty."
+carlsbad:
+  name: Struktura karlowarska
+  note: "Plan białych to atak mniejszości: b4 i b5, żeby osłabić c6. Czarne grają
+    na ...Ne4 i atak na skrzydle królewskim."
+double-fianchetto:
+  name: Dwa domki z fianchetto
+  note: "Oba króle mieszkają za fianchetto. Domki królów pokazują, jak goniec z g
+    trzyma domek w całości i czego brakuje, gdy zostanie wymieniony."
+king-trap-study:
+  name: Pułapka na króla
+  note: "Ruch białych. Czarny król jest zamknięty przez własne bierki, ale
+    nieuważne ruchy białych dają pata. Które ruchy dalej wygrywają?"
+back-rank:
+  name: Mat na ostatniej linii
+  note: "Mat w jednym ruchu. Pionki, które chronią króla, też go zamykają, a
+    ostatnia linia jest otwarta. Zajrzyj do Domków królów, potem znajdź to w Zasięgu."
+queen-mate:
+  name: Mat hetmanem
+  note: "Król i hetman przeciw królowi. Zmniejszaj pudełko hetmanem, podchodź
+    swoim królem i nigdy nie zabieraj ostatniego pola: to byłby pat."
+rook-mate:
+  name: Mat wieżą
+  note: "Król i wieża przeciw królowi. Odetnij króla wieżą, potem zepchnij go
+    do brzegu swoim królem."
+king-in-front:
+  name: Król przed swoim pionkiem
+  note: "Biały król stoi dwa pola przed swoim pionkiem, więc białe wygrywają,
+    obojętnie czyj jest ruch. Zasięg pokazuje, jak mało pól ma czarny król."
+stalemate-corner:
+  name: Pat, nie ma ruchu
+  note: "Ruch białych, nie ma szacha i nie ma żadnego ruchu: pat, czyli remis.
+    Czarnym brakowało pionka do wygranej. Zasięg maluje uwięzionego króla na szaro."
+stalemate-trap:
+  name: Mat czy pat?
+  note: "Ruch białych. Niektóre ruchy hetmanem dają mata, jeden z nich (Qf7) daje
+    pata. Zasięg zaznacza pola ½: znajdź je, zanim ruszysz."
+lucena:
+  name: Most Luceny
+  note: "Końcówka wieżowa. Rd1+ odpycha czarnego króla, potem Rd4 buduje most,
+    żeby twoja wieża mogła zasłonić szachy na 4. linii."
+knight-fork:
+  name: Widełki skoczkiem
+  note: "Znajdź ruch skoczkiem, który daje szacha i jednocześnie atakuje wieżę.
+    Kliknij skoczka, żeby zobaczyć jego ślady."
+bishop-pin:
+  name: Goniec wiąże skoczka
+  note: "Czarny goniec na g4 wiąże skoczka z hetmanem. Zasięg pokazuje otwartą
+    kłódkę: skoczek może się ruszyć, ale kosztowałoby to hetmana."
+knight-corner:
+  name: Skoczek w rogu
+  note: "Włącz liczenie skoków. Ile skoków z rogu do drugiego rogu? Które pola są
+    najdalej od skoczka?"
+mate-in-three:
+  name: Mat w trzech (prawdziwe zadanie)
+  note: "Z bloga NM ZugAddicta: rozwiąż prawdziwe ułożone zadanie, nie takie z
+    trenażera taktyki. Ustaw je na prawdziwej szachownicy. Ruchy są ukryte;
+    znajdź pierwszy ruch białych, potem naciśnij ▶, żeby sprawdzić. Podpowiedź:
+    to cichy ruch."
+opera-game:
+  name: Partia w operze Morphy'ego
+  note: "Paryż 1858. Każdy ruch białych wyprowadza bierkę z groźbą. Przejdź
+    przez partię; po 12.O-O-O policz drogi, które celują w czarnego króla."
+legal-1750:
+  name: Mat Légala
+  note: "Paryż 1750. Białe oddają hetmana, a trzy małe figury matują króla.
+    Cofnij się do 5.Nxe5 i zastanów się, czemu czarne nie powinny brać hetmana."
+reti-1910:
+  name: Réti kontra Tartakower
+  note: "Wiedeń 1910. Białe robią długą roszadę, oddają hetmana na d8, potem
+    podwójny szach i mat gońcem. Patrz na kolumnę d."
+lasker-1912:
+  name: "Lasker kontra Thomas: polowanie na króla"
+  note: "Londyn 1912. Ofiara hetmana na h7 wyciąga czarnego króla z domku i
+    prowadzi go przez całą planszę aż na g1."
