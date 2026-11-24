@@ -348,6 +348,48 @@ export function activeOnRoads(roadList) {
   return active;
 }
 
+/**
+ * Each rook, bishop and queen's roads: for every direction, the squares it reaches up to the first
+ * piece, keeping an enemy piece it hits (`end: 'enemy'`, `hit`) and stopping before a friend (`'own'`)
+ * or at the edge (`'edge'`). Directions with no square at all are left out.
+ */
+export function rays(board) {
+  const DIRS = { r: [[1, 0], [-1, 0], [0, 1], [0, -1]], b: [[1, 1], [1, -1], [-1, 1], [-1, -1]] };
+  DIRS.q = [...DIRS.r, ...DIRS.b];
+  const out = [];
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const p = board[row][col];
+    if (!p || !DIRS[p.type]) continue;
+    for (const [dr, dc] of DIRS[p.type]) {
+      const squares = [];
+      let end = 'edge', hit = null;
+      for (let r = row + dr, c = col + dc; onBoard(r, c); r += dr, c += dc) {
+        const q = board[r][c];
+        if (q && q.color === p.color) { end = 'own'; break; }
+        squares.push(squareName(r, c));
+        if (q) { end = 'enemy'; hit = squareName(r, c); break; }
+      }
+      if (squares.length) out.push({ from: p.square, piece: p, dir: [dr, dc], squares, end, hit });
+    }
+  }
+  return out;
+}
+
+/** Squares where two or more roads of one side meet: [{ square, color, from, count, hit }], enemy squares first. */
+export function crossings(rayList) {
+  const seen = new Map();   // `${color}:${square}` -> { square, color, from: Set, hit }
+  for (const ray of rayList) for (const sq of ray.squares) {
+    const key = `${ray.piece.color}:${sq}`;
+    const e = seen.get(key) || { square: sq, color: ray.piece.color, from: new Set(), hit: false };
+    e.from.add(ray.from);
+    if (ray.hit === sq) e.hit = true;
+    seen.set(key, e);
+  }
+  return [...seen.values()].filter((e) => e.from.size >= 2)
+    .map((e) => ({ square: e.square, color: e.color, from: [...e.from].sort(), count: e.from.size, hit: e.hit }))
+    .sort((a, b) => (b.hit - a.hit) || (b.count - a.count) || a.square.localeCompare(b.square));
+}
+
 // ---------- king houses ----------
 
 export function kingHouses(board, { respectPins = false } = {}) {
