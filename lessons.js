@@ -227,3 +227,93 @@ export function validateLesson(lesson, positions, Chess) {
   });
   return out;
 }
+
+// ---------- recognition rounds ----------
+
+export const ROUND_ID = 'recognise';
+export const ROUND_SIZE = 8;
+export const MIN_USABLE = 4;
+
+/** A small seeded random source (mulberry32): the same seed always gives the same sequence. */
+function seeded(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const shuffle = (list, rand) => {
+  const out = list.slice();
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+};
+
+/** Every moment of a finished lesson that has moments: { key, lessonId, momentId, label, source, looksLike }. */
+function finishedMoments(lessons, positions, doneIds) {
+  const out = [];
+  for (const lesson of lessons) {
+    if (!doneIds.has(lesson.id) || !Array.isArray(lesson.moments) || !lesson.moments.length) continue;
+    for (const m of resolveMoments(lesson, positions)) {
+      out.push({ key: `${lesson.id}/${m.id}`, lessonId: lesson.id, momentId: m.id, label: `${lesson.game}: ${m.name}`, source: m.source, looksLike: m.looksLike });
+    }
+  }
+  return out;
+}
+
+/** May `a` and `b` stand side by side as answers? Not the same moment, and neither lists the other in looksLike. */
+const allowedPair = (a, b) => a.key !== b.key && !a.looksLike.includes(b.key) && !b.looksLike.includes(a.key);
+
+/**
+ * Up to 3 wrong answers for `m`, taken in `order`, each allowed beside `m` and beside every other one taken.
+ * When that greedy pass finds fewer than 2, any allowed pair is used; [] when there is none.
+ */
+function pickWrong(m, order) {
+  const cands = order.filter((o) => allowedPair(m, o));
+  const taken = [];
+  for (const o of cands) if (taken.length < 3 && taken.every((t) => allowedPair(t, o))) taken.push(o);
+  if (taken.length >= 2) return taken;
+  for (let i = 0; i < cands.length; i++) for (let j = i + 1; j < cands.length; j++) if (allowedPair(cands[i], cands[j])) return [cands[i], cands[j]];
+  return [];
+}
+
+/** Finished moments that can be asked: each has at least 2 wrong answers that are allowed beside it and beside each other. */
+export function usableMoments(lessons, positions, doneIds) {
+  const all = finishedMoments(lessons, positions, doneIds);
+  return all.filter((m) => pickWrong(m, all).length >= 2);
+}
+
+/** A round can start once two lessons with moments are finished and at least MIN_USABLE moments can be asked. */
+export function roundUnlocked(lessons, positions, doneIds) {
+  const finished = lessons.filter((l) => doneIds.has(l.id) && Array.isArray(l.moments) && l.moments.length);
+  return finished.length >= 2 && usableMoments(lessons, positions, doneIds).length >= MIN_USABLE;
+}
+
+/**
+ * A seeded "Recognise" round: up to ROUND_SIZE boards, each a blocks question "Which game, which moment?"
+ * with the right label and 2-3 allowed wrong ones (other moments of the same game first). Null when locked.
+ * Steps have the same shape as resolveSteps output.
+ */
+export function buildRound(lessons, positions, doneIds, seed) {
+  if (!roundUnlocked(lessons, positions, doneIds)) return null;
+  const rand = seeded(seed);
+  const all = finishedMoments(lessons, positions, doneIds);
+  const usable = usableMoments(lessons, positions, doneIds);
+  const picked = shuffle(usable, rand).slice(0, ROUND_SIZE);
+  const n = picked.length;
+  const steps = picked.map((m, i) => {
+    const same = shuffle(all.filter((o) => o.lessonId === m.lessonId), rand);
+    const other = shuffle(all.filter((o) => o.lessonId !== m.lessonId), rand);
+    const wrong = pickWrong(m, [...same, ...other]);
+    const choices = shuffle([m.label, ...wrong.map((o) => o.label)], rand);
+    return {
+      index: i + 1, source: { ...m.source }, view: 'shapes', sq: null, solve: false, task: null, flip: false, shapesGate: false,
+      say: `Open **Shapes**. Board ${i + 1} of ${n}. Which game, which moment? Answer, then press Reveal pieces if you want to check.`,
+      moment: null, blocks: true,
+      ask: { q: 'Which game, which moment?', choices, answer: choices.indexOf(m.label), tap: null, right: 'Right!' },
+    };
+  });
+  return { id: ROUND_ID, name: 'Recognise', steps };
+}

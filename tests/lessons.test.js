@@ -201,3 +201,94 @@ test('checkAnswer: choice index and tap square', () => {
   assert.equal(checkAnswer({ tap: ['d8', 'e8'] }, 'd7'), false);
   assert.equal(checkAnswer({ tap: ['d8'] }, 0), false);
 });
+
+// ---------- Task 4: recognition rounds ----------
+import { usableMoments, roundUnlocked, buildRound, ROUND_ID, ROUND_SIZE, MIN_USABLE } from '../lessons.js';
+
+const fenN = (n) => `8/8/8/8/8/8/${n}P${7 - n}/K6k w - - 0 1`.replace(/0P/, 'P').replace(/P0/, 'P');
+const mk = (id, game, ids, extra = {}) => ({ id, name: game, about: 'x', game, steps: [{ fen: fenN(0), view: 'board', say: 'x' }],
+  moments: ids.map((m, i) => ({ id: m, name: `the ${m}`, fen: fenN(i % 7), ...(extra[m] || {}) })) });
+const RL = [
+  mk('ga', 'Game A', ['start', 'trick', 'mate']),
+  mk('gb', 'Game B', ['start', 'mate'], { mate: { looksLike: ['ga/mate'] } }),
+  mk('gc', 'Game C', ['hunt', 'mate']),
+  { id: 'plain', name: 'Plain', about: 'x', steps: [{ fen: fenN(0), view: 'board', say: 'x' }] },
+];
+const keys = (list) => list.map((m) => m.key).sort();
+
+test('round constants', () => {
+  assert.equal(ROUND_ID, 'recognise'); assert.equal(ROUND_SIZE, 8); assert.equal(MIN_USABLE, 4);
+});
+
+test('usableMoments: unfinished lessons never count', () => {
+  const u = usableMoments(RL, [], new Set(['ga', 'gc']));
+  assert.ok(u.every((m) => ['ga', 'gc'].includes(m.lessonId)));
+  assert.deepEqual(keys(u), ['ga/mate', 'ga/start', 'ga/trick', 'gc/hunt', 'gc/mate']);
+  assert.equal(u.find((m) => m.key === 'ga/trick').label, 'Game A: the trick');
+});
+
+test('usableMoments: lessons without moments never count', () => {
+  assert.ok(usableMoments(RL, [], new Set(['ga', 'gc', 'plain'])).every((m) => m.lessonId !== 'plain'));
+});
+
+test('usableMoments: a moment whose only others are looksLike is not usable', () => {
+  // x/a looks like y/a and y/b; y/b looks like x/b. The rule applies in both directions,
+  // and the two wrong answers must not look like each other either.
+  const two = [mk('x', 'X', ['a', 'b'], { a: { looksLike: ['y/a', 'y/b'] } }), mk('y', 'Y', ['a', 'b'], { b: { looksLike: ['x/b'] } })];
+  const u = keys(usableMoments(two, [], new Set(['x', 'y'])));
+  assert.ok(!u.includes('x/a'), 'x/a: only x/b is allowed beside it');
+  assert.ok(!u.includes('y/b'), 'y/b: x/a lists it and it lists x/b, only y/a is left');
+  assert.ok(!u.includes('x/b'), 'x/b: x/a and y/a are allowed beside it, but they look like each other');
+  assert.ok(!u.includes('y/a'), 'y/a: x/b and y/b are allowed beside it, but they look like each other');
+  const three = [...two, mk('z', 'Z', ['a', 'b'])];
+  const u3 = keys(usableMoments(three, [], new Set(['x', 'y', 'z'])));
+  assert.ok(u3.includes('x/a') && u3.includes('x/b'), 'a third lesson gives enough different answers');
+});
+
+test('roundUnlocked: needs two finished lessons and four usable moments', () => {
+  assert.equal(roundUnlocked(RL, [], new Set(['ga'])), false);
+  assert.equal(roundUnlocked(RL, [], new Set(['ga', 'plain'])), false);
+  assert.equal(roundUnlocked(RL, [], new Set(['ga', 'gc'])), true);
+  const tiny = [mk('p', 'P', ['a', 'b']), mk('q', 'Q', ['a', 'b'], { a: { looksLike: ['p/a', 'p/b'] }, b: { looksLike: ['p/a', 'p/b'] } })];
+  assert.equal(roundUnlocked(tiny, [], new Set(['p', 'q'])), false, 'two lessons but too few usable moments');
+});
+
+test('buildRound: the same seed gives the same round, another seed another order', () => {
+  const done = new Set(['ga', 'gb', 'gc']);
+  const a = buildRound(RL, [], done, 42), b = buildRound(RL, [], done, 42);
+  assert.deepEqual(a, b);
+  assert.equal(a.id, 'recognise'); assert.equal(a.name, 'Recognise');
+  const orders = new Set([1, 2, 3, 4, 5, 6].map((seed) => JSON.stringify(buildRound(RL, [], done, seed).steps.map((s) => s.ask.choices[s.ask.answer]))));
+  assert.ok(orders.size > 1);
+});
+
+test('buildRound: every question has 3 or 4 distinct choices, the right one included, no looksLike pair together', () => {
+  const done = new Set(['ga', 'gb', 'gc']);
+  for (let seed = 0; seed < 30; seed++) {
+    const r = buildRound(RL, [], done, seed);
+    assert.equal(r.steps.length, Math.min(ROUND_SIZE, usableMoments(RL, [], done).length));
+    const rights = r.steps.map((s) => s.ask.choices[s.ask.answer]);
+    assert.equal(new Set(rights).size, rights.length, 'each moment once');
+    r.steps.forEach((s, i) => {
+      assert.ok(s.ask.choices.length >= 3 && s.ask.choices.length <= 4);
+      assert.equal(new Set(s.ask.choices).size, s.ask.choices.length);
+      const has = (l) => s.ask.choices.includes(l);
+      assert.ok(!(has('Game A: the mate') && has('Game B: the mate')), 'looks-alike pair');
+      assert.equal(s.view, 'shapes'); assert.equal(s.blocks, true); assert.equal(s.index, i + 1);
+      assert.equal(s.ask.q, 'Which game, which moment?');
+      assert.match(s.say, new RegExp(`Board ${i + 1} of ${r.steps.length}`));
+      assert.ok(s.say.length <= 220);
+    });
+  }
+});
+
+test('buildRound: same-lesson moments are offered first as wrong answers', () => {
+  const done = new Set(['ga', 'gb', 'gc']);
+  const r = buildRound(RL, [], done, 7);
+  const step = r.steps.find((s) => s.ask.choices[s.ask.answer] === 'Game A: the start');
+  assert.ok(step.ask.choices.includes('Game A: the trick') && step.ask.choices.includes('Game A: the mate'));
+});
+
+test('buildRound: returns null when locked', () => {
+  assert.equal(buildRound(RL, [], new Set(['ga']), 1), null);
+});
