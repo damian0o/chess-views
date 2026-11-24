@@ -116,3 +116,48 @@ test('library: Eyes on f7 has an opener and ten blocks boards, each asking where
   }
   assert.ok(steps.every((s) => s.flip === false && !s.solve && !s.shapesGate));
 });
+
+import { buildRound, usableMoments } from '../lessons.js';
+
+const GAME_LESSONS = ['opera-game-lesson', 'legal-mate', 'reti-tartakower', 'lasker-thomas'];
+
+test('library: four game lessons with moments, a Yes and a No board for each moment', () => {
+  for (const id of GAME_LESSONS) {
+    const L = lib.lessons.find((x) => x.id === id);
+    assert.ok(L, id);
+    assert.ok(L.game && L.moments.length >= 2 && L.moments.length <= 4, `${id}: game and 2-4 moments`);
+    const steps = resolveSteps(L, lib.positions);
+    for (const m of L.moments) {
+      assert.ok(`${L.game}: ${m.name}`.length <= 32, `${id}/${m.id}: the round answer fits 32 characters`);
+      assert.ok(steps.some((s) => s.blocks && s.moment && s.moment.id === m.id && s.ask.answer === 0), `${id}/${m.id}: a Yes board`);
+      assert.ok(steps.some((s) => s.blocks && s.moment && s.moment.id === m.id && s.ask.answer === 1), `${id}/${m.id}: a No board`);
+    }
+    assert.ok(steps.filter((s) => s.ask && !s.blocks).length >= L.moments.length, `${id}: at least one quick question per moment`);
+    assert.equal(steps[0].view, 'board', `${id}: starts in Board`);
+  }
+});
+
+test('library: the three new games are library entries with their players', () => {
+  const byId = Object.fromEntries(lib.positions.map((p) => [p.id, p]));
+  assert.match(byId['legal-1750'].pgn, /\[White "Légal"\]/);
+  assert.match(byId['reti-1910'].pgn, /\[White "Réti"\]\n\[Black "Tartakower"\]/);
+  assert.match(byId['lasker-1912'].pgn, /\[White "Edward Lasker"\]\n\[Black "Thomas"\]/);
+  for (const id of ['legal-1750', 'reti-1910', 'lasker-1912']) {
+    const c = new Chess(); c.loadPgn(byId[id].pgn);
+    assert.ok(c.isCheckmate(), `${id} ends in mate`);
+    assert.ok(byId[id].tags.includes('game'));
+  }
+});
+
+test('library: with every lesson finished a round has 8 boards of 3-4 short answers', () => {
+  const done = new Set(lib.lessons.map((l) => l.id));
+  assert.ok(usableMoments(lib.lessons, lib.positions, done).length >= 8);
+  for (const seed of [1, 2, 3, 99]) {
+    const r = buildRound(lib.lessons, lib.positions, done, seed);
+    assert.equal(r.steps.length, 8);
+    for (const s of r.steps) {
+      assert.ok(s.ask.choices.length >= 3 && s.ask.choices.length <= 4);
+      assert.ok(s.ask.choices.every((c) => c.length <= 32), s.ask.choices.join(' | '));
+    }
+  }
+});

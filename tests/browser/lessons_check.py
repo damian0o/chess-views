@@ -89,7 +89,7 @@ def main(pw):
     s.goto(BASE, "", settle=400)
     pg.keyboard.press("p"); pg.wait_for_timeout(300)
     card = pg.locator("#liblessons .lesson-card", has_text="Scholar's mate")
-    check("library: lessons shelf with the card", card.count() == 1 and pg.locator("#liblessons .lesson-card:not(.round)").count() == 2 and "Scholar's mate" in card.inner_text() and "25 steps" in card.inner_text() and card.locator("button.start").inner_text() == "Start", card.inner_text()[:120] if card.count() else "no card")
+    check("library: lessons shelf with the card", card.count() == 1 and pg.locator("#liblessons .lesson-card:not(.round)").count() == 6 and "Scholar's mate" in card.inner_text() and "25 steps" in card.inner_text() and card.locator("button.start").inner_text() == "Start", card.inner_text()[:120] if card.count() else "no card")
     pg.fill("#libsearch", "scholar"); pg.wait_for_timeout(200)
     check("search keeps the card", pg.locator("#liblessons .lesson-card", has_text="Scholar's mate").count() == 1 and pg.locator(".libitem").count() >= 1)
     pg.fill("#libsearch", "lucena"); pg.wait_for_timeout(200)
@@ -158,6 +158,28 @@ def main(pw):
     pg.evaluate("__viewer.enterLesson('scholars-mate', 1)"); pg.wait_for_timeout(200)
     check("starting a lesson empties the Load box", stale != "" and pg.locator("#input").input_value() == "", repr(pg.locator("#input").input_value()[:40]))
     check("no page errors (flip, load box)", not s.errs, " | ".join(s.errs)[:200])
+    s.close()
+    # --- Task 7: the four game lessons, walked the way a kid does, then a round from all of them
+    s = Session(pw); pg = s.page
+    TITLES = {"board": "Board", "territory": "Territory", "reach": "Reach", "roads": "Roads", "kings": "King houses", "engine": "Engine", "diamond": "Diamond", "shapes": "Shapes", "knight": "Knight"}
+    for lid in ("opera-game-lesson", "legal-mate", "reti-tartakower", "lasker-thomas"):
+        s.goto(BASE, f"lesson={lid}&step=1", settle=600)
+        n = pg.evaluate("__viewer.state.lesson.steps.length")
+        stuck = []
+        for i in range(n):
+            st = pg.evaluate("(() => { const s = __viewer.state.lesson.steps[__viewer.state.lesson.index - 1]; return { view: s.view, solve: s.solve, ask: s.ask }; })()")
+            if pg.evaluate("__viewer.state.tab") != st["view"]: s.tab(TITLES[st["view"]])
+            if st["solve"]: pg.locator("#next").tap(); pg.wait_for_timeout(200)
+            if st["ask"] and st["ask"]["choices"]: pg.locator("#lesson button.choice").nth(st["ask"]["answer"]).tap(); pg.wait_for_timeout(120)
+            elif st["ask"]: s.tap(st["ask"]["tap"][0]); pg.wait_for_timeout(120)
+            if not pg.locator(NEXT).is_enabled(): stuck.append((i + 1, pg.locator(NEXT).inner_text())); break
+            pg.locator(NEXT).tap(); pg.wait_for_timeout(250)
+        check(f"{lid}: every step answered and finished", not stuck and "Lesson finished" in s.text("#toast"), str(stuck))
+    pg.evaluate("localStorage.setItem('chess-views:lessons', JSON.stringify(Object.fromEntries(__viewer.library.lessons.map(l => [l.id, { step: l.steps.length, done: true }]))))")
+    s.goto(BASE, "lesson=recognise&seed=12345&step=1", settle=600)
+    check("a round from every lesson has 8 boards", "1 of 8" in s.text("#lesson-count"), s.text("#lesson")[:80])
+    check("round answers name games and moments", 3 <= pg.locator("#lesson button.choice").count() <= 4 and all(":" in t for t in pg.evaluate("[...document.querySelectorAll('#lesson button.choice')].map(b => b.textContent)")))
+    check("no page errors (game lessons)", not s.errs, " | ".join(s.errs)[:300])
     s.close()
     # --- the second lesson, data only: walk all ten boards the way a kid does
     s = Session(pw); pg = s.page
