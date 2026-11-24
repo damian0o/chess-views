@@ -30,5 +30,9 @@ export const en = {
   evalBlackMates: 'Black mates in {count}',
   yes: 'Yes',
   no: 'No',
+  showPieces: 'Reveal pieces',
+  hidePieces: 'Hide pieces',
+  next: 'Next',
+  back: 'Back',
   lessonNotHere: 'That lesson is not here',
 } satisfies Record<string, Message>;

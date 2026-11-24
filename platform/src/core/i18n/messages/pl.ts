@@ -12,7 +12,7 @@ export const pl: Record<keyof typeof en, Message> = {
   roundFinished: 'Runda skończona',
   lessonFinished: 'Lekcja skończona',
   whichGameWhichMoment: 'Która partia, która pozycja?',
-  roundBoard: 'Plansza {n} z {total}. Która partia, która pozycja? Odpowiedz, potem odkryj bierki, żeby sprawdzić.',
+  roundBoard: 'Plansza {n} z {total}. Która partia, która pozycja? Odpowiedz, potem pokaż bierki, żeby sprawdzić.',
   gradeBest: 'Najlepszy!',
   gradeJustAsGood: 'Równie dobry',
   gradeGood: 'Dobry',
@@ -31,5 +31,9 @@ export const pl: Record<keyof typeof en, Message> = {
   evalBlackMates: { one: 'Czarne dają mata w {count} ruchu', few: 'Czarne dają mata w {count} ruchach', many: 'Czarne dają mata w {count} ruchach', other: 'Czarne dają mata w {count} ruchu' },
   yes: 'Tak',
   no: 'Nie',
+  showPieces: 'Pokaż bierki',
+  hidePieces: 'Ukryj bierki',
+  next: 'Dalej',
+  back: 'Wstecz',
   lessonNotHere: 'Nie ma tej lekcji',
 };

@@ -173,7 +173,7 @@ Jeszcze jedna plansza.
 ## s20-shapes {scene: "blocks", pgn: "1. e4 e5 2. Qh5 Nc6 3. Bc4", ply: 5}
 
 ::: kids
-Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Odkryj bierki, potem Dalej.
+Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Pokaż bierki, potem Dalej.
 :::
 
 ## s21-territory {scene: "board+territory", same: true, focus: "f7"}
@@ -185,7 +185,7 @@ Tak: ten sam kształt, tylko inną drogą. Znowu f7.
 ## s22-shapes {scene: "blocks", pgn: "1. e4 e5 2. Nf3 Bc5 3. Nxe5 Qh4", ply: 6}
 
 ::: kids
-Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Odkryj bierki, potem Dalej.
+Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Pokaż bierki, potem Dalej.
 :::
 
 ## s23-roads {scene: "board+roads", same: true}
@@ -197,7 +197,7 @@ Tak, i to na ciebie: hetman h4 i goniec c5 celują w f2, a Qxf2 byłoby szach-ma
 ## s24-shapes {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Nf3", ply: 5}
 
 ::: kids
-Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Odkryj bierki, potem Dalej.
+Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Pokaż bierki, potem Dalej.
 :::
 
 ## s25-roads {scene: "board+roads", same: true}
