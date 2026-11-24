@@ -118,6 +118,22 @@ def main(pw):
     pg.locator("#lesson-exit").tap(); pg.keyboard.press("p"); pg.wait_for_timeout(300)
     check("blocked storage: the shelf offers Start", pg.locator("#liblessons button.start").first.inner_text() == "Start")
     s.close()
+    # --- the kid's own flip survives a reload; the Load box never shows a stale position in a lesson
+    s = Session(pw); pg = s.page
+    s.goto(BASE, "lesson=scholars-mate&step=1", settle=600)
+    pg.locator("#flip").tap(); pg.wait_for_timeout(150)
+    check("flipping in a lesson goes into the link", "flip=1" in pg.url, pg.url)
+    pg.reload(wait_until="networkidle"); pg.wait_for_timeout(500)
+    check("reloading keeps the board turned", pg.evaluate("__viewer.state.flipped") is True and "1 of 17" in s.text("#lesson-count"))
+    pg.locator(NEXT).tap(); pg.wait_for_timeout(150)
+    check("Next goes back to the step's own orientation", pg.evaluate("__viewer.state.flipped") is False and "flip=" not in pg.url, pg.url)
+    s.goto(BASE, "", settle=400)
+    pg.locator("#open-load").tap(); pg.locator("[data-example]").nth(0).tap(); pg.wait_for_timeout(300)
+    stale = pg.locator("#input").input_value()
+    pg.evaluate("__viewer.enterLesson('scholars-mate', 1)"); pg.wait_for_timeout(200)
+    check("starting a lesson empties the Load box", stale != "" and pg.locator("#input").input_value() == "", repr(pg.locator("#input").input_value()[:40]))
+    check("no page errors (flip, load box)", not s.errs, " | ".join(s.errs)[:200])
+    s.close()
     # --- the second lesson, data only: walk all ten boards the way a kid does
     s = Session(pw); pg = s.page
     s.goto(BASE, "lesson=eyes-on-f7&step=1", settle=600)

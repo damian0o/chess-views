@@ -637,7 +637,8 @@ function writeHash() {
     // A lesson link carries the step; the step provides the position and the selected square.
     p.set('lesson', state.lesson.id); p.set('step', String(state.lesson.index));
     if (state.tab !== 'board') p.set('view', state.tab);
-    if (state.flipped) p.set('flip', '1');
+    // The step sets the orientation; the link carries it only when the kid turned the board.
+    if (state.flipped !== state.lesson.steps[state.lesson.index - 1].flip) p.set('flip', state.flipped ? '1' : '0');
     history.replaceState(null, '', '#' + p.toString());
     return;
   }
@@ -678,26 +679,27 @@ function applyFocus(sq) {
 const progress = L.progressStore((() => { try { return window.localStorage; } catch { return null; } })());   // even reading the property can throw
 
 /** Open a lesson at a step. Entering applies the step's view unless told not to (a reload keeps the kid's view). */
-function enterLesson(id, index = 1, { applyView = true } = {}) {
+function enterLesson(id, index = 1, { applyView = true, flip } = {}) {
   const raw = library.lessons.find((x) => x.id === id);
   let steps = null;
   try { steps = raw ? L.resolveSteps(raw, library.positions) : null; } catch (e) { console.error(e); }
   if (!steps || !Number.isInteger(index) || index < 1 || index > steps.length) { toast('That lesson is not here'); return false; }
   state.lesson = { id, name: raw.name, steps, index, done: !!(progress.get(id) || {}).done };
-  gotoStep(index, { applyView });
+  gotoStep(index, { applyView, flip });
   return true;
 }
 
 /** Apply a step: position (hidden moves and task), orientation, selected square; Next and Back never switch the view. */
-function gotoStep(index, { applyView = false } = {}) {
+function gotoStep(index, { applyView = false, flip } = {}) {
   const lesson = state.lesson;
   const step = lesson.steps[index - 1];
   lesson.index = index;
   setPosition(step.source, { inLesson: true });
   state.solve = step.solve && state.moves.length > 0;
   state.task = step.task;
-  state.flipped = step.flip;
+  state.flipped = typeof flip === 'boolean' ? flip : step.flip;   // a reloaded link keeps the kid's own turn of the board
   state.shapesReveal = false;
+  $('input').value = '';   // the Load box must not offer the position from before the lesson
   if (applyView || step.shapesGate) state.tab = step.view;   // a blocks-first step must not be seen through the previous view
   const key = FOCUS_KEY[step.view];
   if (step.sq && key) state[key] = step.sq;
@@ -1612,12 +1614,12 @@ const VIEWS = {
       }
       container.append(el('div', { class: 'overlaywrap' }, [grid, svg]));
       if (!ok) { container.append(el('p', { class: 'summary', text: 'Nothing to guess here.' })); return; }
+      if (coach.failed) { container.append(el('p', { class: 'summary', text: 'The engine could not start in this browser.' })); return; }
       container.append(evalLine(result, ctx.turn));   // also carries "did not answer" + Try again
       if (coach.error) return;
       // The strip under the board.
       const again = el('button', { type: 'button', class: 'quiet', id: 'again', text: 'Try another', onclick: () => { state.guess = null; render(); } });
       const list = (ms) => ms.map((m) => san(m.uci)).join(', ');
-      if (coach.failed) { container.append(el('p', { class: 'summary', text: 'The engine could not start in this browser.' })); return; }
       const headers = state.chess.getHeaders ? state.chess.getHeaders() : {};
       const playerName = headers[ctx.turn === 'w' ? 'White' : 'Black'] || side(ctx.turn);
       // With a loaded game: what was actually played, graded from the same analysis.
@@ -1942,7 +1944,7 @@ async function loadLibrary() {
     library.positions = json.positions; library.lessons = json.lessons || [];
   } catch { library.positions = []; library.lessons = []; }
   const p = new URLSearchParams(location.hash.slice(1));
-  if (p.get('lesson')) { enterLesson(p.get('lesson'), Number(p.get('step') || 1), { applyView: !p.get('view') }); return; }
+  if (p.get('lesson')) { enterLesson(p.get('lesson'), Number(p.get('step') || 1), { applyView: !p.get('view'), flip: p.has('flip') ? p.get('flip') === '1' : undefined }); return; }
   if (p.get('pos') && !p.get('fen') && !p.get('pgn')) {
     const entry = library.positions.find((x) => x.id === p.get('pos'));
     if (entry) openEntry(entry);
