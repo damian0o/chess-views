@@ -1240,8 +1240,8 @@ const VIEWS = {
         line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${PIECE_WORDS[ray.piece.type]} ${ray.from}: ${ray.squares.join(' ')}${ray.hit ? ` (hits ${ray.hit})` : ''}` }));
         svg.append(line);
       }
-      // One ring per piece a road runs into: thicker for every attacker that reaches it, cut when it is defended,
-      // dotted when the defenders match or outnumber the attackers.
+      // One ring per piece a road runs into: thicker the more the attackers outnumber the defenders, cut when it is
+      // defended, thin and dotted when the defenders match or outnumber the attackers.
       const hitSquares = new Map();
       for (const ray of drawnRays) if (ray.hit) hitSquares.set(`${ray.piece.color}:${ray.hit}`, { square: ray.hit, color: ray.piece.color });
       for (const { square, color } of hitSquares.values()) {
@@ -1250,7 +1250,8 @@ const VIEWS = {
         const cut = !defenders.length ? 'free' : defenders.length >= attackers.length ? 'held' : 'contested';
         const [cx, cy] = centre(square);
         const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${color} ${cut}`, 'stroke-width': (0.05 + 0.05 * Math.min(attackers.length, 4)).toFixed(2), 'data-attackers': attackers.length, 'data-defenders': defenders.length })) ring.setAttribute(k, v);
+        const edge = Math.max(0, Math.min(3, attackers.length - defenders.length));
+        for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${color} ${cut}`, 'stroke-width': (0.06 + 0.05 * edge).toFixed(2), 'data-attackers': attackers.length, 'data-defenders': defenders.length })) ring.setAttribute(k, v);
         const names = (xs) => (xs.length ? xs.map((p) => `${PIECE_WORDS[p.type]} ${p.square}`).join(', ') : 'nobody');
         ring.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${square}: attacked by ${names(attackers)}, defended by ${names(defenders)}` }));
         svg.append(ring);
@@ -1358,10 +1359,10 @@ const VIEWS = {
       container.append(legend([
         { sw: 'road', cls: 'road-w', width: 5, text: "a white rook, bishop or queen's road: every square it can reach that way" },
         { sw: 'road', cls: 'road-b', width: 5, text: 'a black one\'s road' },
-        { sw: 'hitring', width: 2, text: 'a piece one road runs into, nobody defends it' },
-        { sw: 'hitring', width: 4, text: 'thicker for every attacker that reaches it' },
-        { sw: 'hitring', width: 4, dash: '7 3', text: 'cut: it is defended, but the attackers outnumber the defenders' },
-        { sw: 'hitring', width: 2, dash: '2.5 4', text: 'dotted: defended at least as much as attacked' },
+        { sw: 'hitring', width: 3, text: 'a piece a road runs into, nobody defends it' },
+        { sw: 'hitring', width: 5, text: 'thicker the more the attackers outnumber the defenders' },
+        { sw: 'hitring', width: 3, dash: '7 3', text: 'cut: defended, but the attackers still outnumber the defenders' },
+        { sw: 'hitring', width: 1.5, dash: '2.5 4', text: 'thin and dotted: defended at least as much as attacked' },
         { sw: 'sq', cls: 'openline', text: 'open file: no pawns on it, a highway for rooks' },
         { sw: 'jump', text: 'square a knight can jump to now (blue white, red black, purple both)' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to the king: only its road along the pin is open, the others are faded' },
