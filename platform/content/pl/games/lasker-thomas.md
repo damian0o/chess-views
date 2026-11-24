@@ -5,7 +5,7 @@ group:
   id: lasker-thomas
 title: Lasker poluje na króla
 about: "Londyn 1912: ofiara hetmana ciągnie czarnego króla przez całą planszę."
-game: Partia Laskera
+game: Lasker – Thomas
 experience: basic
 moments:
   gift:

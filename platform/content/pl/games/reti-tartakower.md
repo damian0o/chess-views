@@ -5,7 +5,7 @@ group:
   id: reti-tartakower
 title: Réti kontra Tartakower
 about: "Wiedeń 1910: ofiara hetmana na d8, podwójny szach i mat gońcem."
-game: Partia Rétiego
+game: Réti – Tartakower
 experience: basic
 moments:
   gift:
@@ -106,5 +106,5 @@ Inna plansza.
 ## s11-board {scene: "board", pos: "reti-1910", ply: 21}
 
 ::: kids
-Partia Rétiego zaliczona: kolumna d, dar hetmana na d8, podwójny szach i mat gońcem.
+Partia Réti – Tartakower zaliczona: kolumna d, dar hetmana na d8, podwójny szach i mat gońcem.
 :::

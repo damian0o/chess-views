@@ -3,9 +3,9 @@ id: legal-mate
 group:
   kind: game
   id: legal-mate
-title: Mat Légala
+title: Mat Legala
 about: "Paryż 1750: białe oddają hetmana, a trzy lekkie figury dają mata."
-game: Mat Légala
+game: Mat Legala
 experience: basic
 moments:
   gift:
@@ -100,5 +100,5 @@ Inna plansza.
 ## s10-board {scene: "board", pos: "legal-1750", ply: 13}
 
 ::: kids
-Mat Légala zaliczony: związany skoczek, który wcale nie był związany, dar hetmana i trzy lekkie figury.
+Mat Legala zaliczony: związany skoczek, który wcale nie był związany, dar hetmana i trzy lekkie figury.
 :::
