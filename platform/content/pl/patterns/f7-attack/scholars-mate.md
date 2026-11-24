@@ -50,7 +50,7 @@ Zapomnij o bierkach i zapamiętaj kształt: duży blok na h5 i mały na c4, oba 
 ## s05-territory {scene: "board+territory", same: true, focus: "f7", moment: "attack"}
 
 ::: kids
-Dwóch napastników na f7, a pilnuje go tylko król. Król nie może odbić, bo goniec wciąż tam celuje. Gdyby był ruch białych: Qxf7, szach-mat.
+Dwie bierki atakują f7, a pilnuje go tylko król. Król nie może odbić, bo goniec wciąż tam celuje. Gdyby był ruch białych: Qxf7, szach-mat.
 :::
 
 ## s06-board {scene: "board", same: true, moment: "attack"}
@@ -203,5 +203,5 @@ Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Pokaż bierk
 ## s25-roads {scene: "board+roads", same: true}
 
 ::: kids
-Nie. Hetman jest jeszcze w domu, więc tylko jedna droga sięga f7. Jeden napastnik na jednego obrońcę to nie mat.
+Nie. Hetman jest jeszcze w domu, więc tylko jedna droga sięga f7. Jedna atakująca bierka na jednego obrońcę to nie mat.
 :::

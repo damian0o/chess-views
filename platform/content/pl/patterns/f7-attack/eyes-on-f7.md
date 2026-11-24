@@ -80,7 +80,7 @@ Pozycja 4 z 10. Tylko bloki: patrz na pole obok każdego króla.
 ## s09-territory {scene: "board+territory", same: true, focus: "f7"}
 
 ::: kids
-Sam hetman patrzy na f7: jeśli zbije, król go odbije. Jeden napastnik to zawsze za mało.
+Sam hetman patrzy na f7: jeśli zbije, król go odbije. Jedna bierka to za mało.
 :::
 
 ## s10-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. c3 Nf6 4. Qb3", ply: 7}
@@ -97,7 +97,7 @@ Pozycja 5 z 10. Tylko bloki: patrz na pole obok każdego króla.
 ## s11-roads {scene: "board+roads", same: true}
 
 ::: kids
-Hetman b3 za gońcem c4 na jednej drodze: dwóch napastników w rzędzie. Jeśli goniec zbije na f7, hetman pójdzie za nim.
+Hetman b3 za gońcem c4 na jednej drodze: dwie bierki w rzędzie. Jeśli goniec zbije na f7, hetman pójdzie za nim.
 :::
 
 ## s12-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qe2", ply: 5}
