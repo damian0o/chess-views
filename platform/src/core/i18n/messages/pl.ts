@@ -97,5 +97,7 @@ export const pl: Record<keyof typeof en, Message> = {
   lookTeens: "Spokojny",
   lookAdults: "Prosty",
   themeMode: "Jasny czy ciemny",
+  notFound: "Nie ma takiej strony",
+  play: "▶ Zagraj ruch",
   lessonNotHere: 'Nie ma tej lekcji',
 };

@@ -36,6 +36,13 @@ export function sceneFor(step: Step, { answered, layersOn }: { answered: boolean
 }
 
 /** The scene of a lesson run as it stands: one answer for the run and the screen. */
-export function sceneOfRun(run: { step: Step; answered: boolean; layersOn: LayerKind[] }): ResolvedScene {
-  return sceneFor(run.step, { answered: run.answered, layersOn: run.layersOn });
+export function sceneOfRun(run: { step: Step; answered: boolean; layersOn: LayerKind[]; ply?: number }): ResolvedScene {
+  const pos = run.step.scene.position;
+  // A game position follows the viewer's ply (▶ on a "find the move" step shows the move).
+  let step = run.step;
+  if (pos.kind === 'pgn' && run.ply !== undefined && run.ply !== pos.ply) {
+    const ply = Math.max(0, Math.min(run.ply, loadGame({ ...pos, ply: 0 }).length));
+    step = { ...run.step, scene: { ...run.step.scene, position: { ...pos, ply } } };
+  }
+  return sceneFor(step, { answered: run.answered, layersOn: run.layersOn });
 }

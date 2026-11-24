@@ -96,5 +96,7 @@ export const en = {
   lookTeens: "Calm",
   lookAdults: "Simple",
   themeMode: "Light or dark",
+  notFound: "This page does not exist",
+  play: "▶ Play the move",
   lessonNotHere: 'That lesson is not here',
 } satisfies Record<string, Message>;

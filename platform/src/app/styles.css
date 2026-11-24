@@ -27,3 +27,8 @@
   --shadow-card: var(--shadow-card);
   --text-step: var(--text-step);
 }
+
+@keyframes cv-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes cv-confetti { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(-120px) rotate(540deg); opacity: 0; } }
+.cv-pop { animation: cv-pop 450ms ease-out both; }
+.cv-confetti { animation: cv-confetti 900ms ease-out both; }

@@ -16,3 +16,10 @@ export function useApp<T>(select: (s: AppState) => T): T {
   if (!store) throw new Error('useApp outside AppStoreProvider');
   return useStore(store, select);
 }
+
+/** The store itself, for reading state right after an action (e.g. "did the lesson open?"). */
+export function useAppStore(): AppStore {
+  const store = useContext(StoreContext);
+  if (!store) throw new Error('useAppStore outside AppStoreProvider');
+  return store;
+}

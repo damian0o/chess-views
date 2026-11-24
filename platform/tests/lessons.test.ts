@@ -111,3 +111,19 @@ describe('unlocking', () => {
     expect([...unlockedLayers(kid, [LESSON])]).toEqual(['pieces']);
   });
 });
+
+describe('sceneOfRun follows the viewer ply', () => {
+  test('after ▶ on a solve step the scene shows the next position', async () => {
+    const { sceneOfRun } = await import('@core/scene');
+    const r = goto('find');
+    expect(sceneOfRun(r).ply).toBe(6);
+    const revealed = r.report({ kind: 'ply', ply: 7 });
+    expect(sceneOfRun(revealed).ply).toBe(7);
+    expect(sceneOfRun(revealed).fen).not.toBe(sceneOfRun(r).fen);
+  });
+});
+
+test('sceneOfRun clamps a ply past the end of the game', async () => {
+  const { sceneOfRun } = await import('@core/scene');
+  expect(sceneOfRun(goto('find').report({ kind: 'ply', ply: 99 })).ply).toBe(7);
+});
