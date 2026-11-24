@@ -141,7 +141,9 @@ the link as `eval=1`.
   can actually go: up to the first piece in the way, ending with a ring on an
   enemy piece it hits. The ring is thicker the more the attackers outnumber
   the defenders, cut when the piece is defended, and thin and dotted when the
-  defenders match or outnumber the attackers. Blue for White's pieces, red for Black's. The summary
+  defenders match or outnumber the attackers. A small × marks a road square
+  an enemy pawn guards: land there and the pawn takes you. Blue for White's
+  pieces, red for Black's. The summary
   says where two roads of one side meet, the sign of a target. Open files
   (no pawns on them) are shaded as the rooks' highway. Passed pawns get a
   star and their path to promotion. Small dots mark the squares a knight can
