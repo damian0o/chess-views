@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { loadGame, ChessError } from '@core/chess/rules';
 import {
-  LOCALES, LessonSchema, LibraryEntrySchema, StepSchema, PositionSourceSchema,
+  ANSWER_MAX, LOCALES, LessonSchema, LibraryEntrySchema, StepSchema, PositionSourceSchema,
   type AgedText, type Lesson, type LibraryEntry, type Locale, type Moment, type PositionSource, type Question, type Step,
 } from '@core/types';
 import { parseLesson, type RawLesson, type RawQuestion, type RawStep } from './parse';
@@ -190,7 +190,7 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
     if (r.error) { if (r.first) errors.push({ file, line, message: `moment ${id}: ${r.error}` }); continue; }
     const name = String(mm.name ?? '');
     const game = typeof m.game === 'string' ? m.game : String(m.title ?? '');
-    if (`${game}: ${name}`.length > 32) errors.push({ file, line, message: `the round answer "${game}: ${name}" is longer than 32 characters` });
+    if (`${game}: ${name}`.length > ANSWER_MAX) errors.push({ file, line, message: `the round answer "${game}: ${name}" is longer than ${ANSWER_MAX} characters` });
     moments.push({ id: id as never, name, board, ...(mm.looksLike ? { looksLike: asList(mm.looksLike) as never } : {}) });
   }
 
