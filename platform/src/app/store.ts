@@ -8,7 +8,7 @@ import type { AgeBand, Avatar, Lesson, LessonId, LibraryEntry, Locale, Profile }
 import { createLocalProfileStore, defaultProfile, migratePocProgress, type ProfileSummary, type StorageLike } from '@core/storage/index';
 import { startLesson, type LessonEvent, type LessonRun } from '@core/lessons/run';
 import { recordStep, finishLesson, resumeStepId } from '@core/lessons/progress';
-import { buildRound, type Round } from '@core/recognition';
+import { buildRound, roundUnlocked, type Round } from '@core/recognition';
 import { t } from '@core/i18n/index';
 
 export const POC_KEY = 'chess-views:lessons';
@@ -33,6 +33,10 @@ export interface AppState {
   back(): Promise<void>;
   leave(): void;
   dismissToast(): void;
+  lessonList(): Lesson[];
+  recogniseUnlocked(): boolean;
+  exportPlayer(): Promise<Blob | null>;
+  importPlayer(file: Blob): Promise<void>;
 }
 
 export interface StoreDeps {
@@ -130,6 +134,19 @@ export function createAppStore(deps: StoreDeps) {
       async back() { const run = get().run; if (run) set({ run: run.back() }); },
       leave() { set({ run: null, round: null }); },
       dismissToast() { set({ toast: null }); },
+
+      lessonList() { return lessonsOf(get().player); },
+      recogniseUnlocked() {
+        const p = get().player;
+        if (!p) return false;
+        const done = new Set(Object.entries(p.progress).filter(([, r]) => r.done).map(([k]) => k as LessonId));
+        return roundUnlocked(lessonsOf(p), done);
+      },
+      async exportPlayer() { const p = get().player; return p ? profiles.export(p.id) : null; },
+      async importPlayer(file) {
+        try { await profiles.import(file); set({ players: await profiles.list() }); say('imported'); }
+        catch { say('importFailed'); }
+      },
     };
   });
 }
