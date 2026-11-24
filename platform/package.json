@@ -9,18 +9,21 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "content": "tsx scripts/compile-content.ts content dist/content"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@types/node": "^24.19.2",
     "eslint": "^9.39.5",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.74.0",
     "vitest": "^3.2.7"
   },
   "dependencies": {
     "chess.js": "^1.4.0",
+    "yaml": "^2.9.1",
     "zod": "^4.6.7"
   }
 }
