@@ -203,6 +203,17 @@
   .legend { font-size: 0.9rem; color: var(--ink-soft); text-align: center; max-width: 60ch; margin: 0; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
   .lesson { border-bottom: 2px solid var(--pencil); padding: 8px 16px; background: var(--paper); display: grid; gap: 6px; }
+  .lesson .ask { margin: 0; font-weight: 700; }
+  .lesson .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  .lesson .choices button.choice { min-height: 44px; padding: 6px 14px; border-radius: 10px; border: 2px solid var(--pen-blue); background: var(--paper); color: var(--ink); font: inherit; font-weight: 600; max-width: 100%; overflow-wrap: anywhere; text-align: left; }
+  .lesson .choices button.choice.wrong { border-color: var(--pen-red); color: var(--ink-soft); text-decoration: line-through; }
+  .lesson .choices button.choice.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 18%, var(--paper)); color: var(--ink); }
+  .lesson .choices button.choice:disabled { cursor: default; }
+  .lesson .taphint { margin: 0; color: var(--ink-soft); }
+  .lesson .askline { margin: 0; min-height: 1.3em; color: var(--ink); }
+  .lesson .askline.right { font-weight: 700; }
+  .board .sq.tapwrong { box-shadow: inset 0 0 0 4px var(--pen-red); }
+  .board .sq.tapright { box-shadow: inset 0 0 0 4px var(--ok); }
   .lesson[hidden] { display: none; }
   .lesson .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .lesson .title { color: var(--ink-soft); }
@@ -596,7 +607,7 @@ const LEGEND = "Capitals are pieces. ' means black. o white pawn, x black pawn. 
 const NAMES = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 // ---------- state ----------
-const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false, evalOn: false, guess: null, lesson: null, task: null };
+const state = { chess: new Chess(), moves: [], ply: 0, source: { kind: 'fen', fen: A.START_FEN }, tab: 'board', pieceStyle: 'images', knightSquare: null, knightDistances: false, roadFocus: null, flipped: false, showMoves: null, allPawnPaths: false, shapesLevel: 'sizes', shapesReveal: false, territoryFocus: null, solve: false, evalOn: false, guess: null, lesson: null, task: null, answer: { wrong: [], right: false, last: null, value: null } };
 try { if (localStorage.getItem('pieceStyle') === 'letters') state.pieceStyle = 'letters'; } catch {}
 
 function currentChess() {
@@ -699,8 +710,9 @@ function gotoStep(index, { applyView = false, flip } = {}) {
   state.task = step.task;
   state.flipped = typeof flip === 'boolean' ? flip : step.flip;   // a reloaded link keeps the kid's own turn of the board
   state.shapesReveal = false;
+  state.answer = { wrong: [], right: false, last: null, value: null };   // a question is asked again on every visit
   $('input').value = '';   // the Load box must not offer the position from before the lesson
-  if (applyView || step.shapesGate) state.tab = step.view;   // a blocks-first step must not be seen through the previous view
+  if (applyView || step.shapesGate || step.blocks) state.tab = step.view;   // a blocks-first step must not be seen through the previous view
   const key = FOCUS_KEY[step.view];
   if (step.sq && key) state[key] = step.sq;
   progress.set(lesson.id, { step: index, done: lesson.done });
@@ -723,7 +735,7 @@ function renderLesson() {
   box.hidden = !lesson;
   if (!lesson) { box.replaceChildren(); return; }
   const step = lesson.steps[lesson.index - 1];
-  const gate = L.nextGate(step, { tab: state.tab, ply: state.ply, shapesReveal: state.shapesReveal });
+  const gate = L.nextGate(step, { tab: state.tab, ply: state.ply, shapesReveal: state.shapesReveal, answered: state.answer.right });
   const last = lesson.index === lesson.steps.length;
   const next = el('button', { type: 'button', class: 'primary', id: 'lesson-next', text: gate ? gate.text : last ? 'Finish ✓' : 'Next ▶',
     onclick: () => { if (gate) return; if (last) finishLesson(); else gotoStep(lesson.index + 1); } });
@@ -732,12 +744,65 @@ function renderLesson() {
   if (lesson.index === 1) back.disabled = true;
   box.replaceChildren(
     el('div', { class: 'row' }, [
-      el('span', { class: 'title' }, [el('b', { text: lesson.name }), ' · ', el('span', { 'aria-live': 'polite', id: 'lesson-count', text: `${lesson.index} of ${lesson.steps.length}` })]),
+      el('span', { class: 'title' }, [el('b', { text: lesson.name }), ' · ', ...(step.moment ? [el('span', { class: 'moment', text: step.moment.name }), ' · '] : []), el('span', { 'aria-live': 'polite', id: 'lesson-count', text: `${lesson.index} of ${lesson.steps.length}` })]),
       el('button', { type: 'button', class: 'icon', id: 'lesson-exit', text: '✕', 'aria-label': 'Leave the lesson', title: 'Leave the lesson', onclick: leaveLesson }),
     ]),
     el('p', { class: 'say' }, L.sayParts(step.say).map((part) => (part.strong ? el('strong', { text: part.text }) : part.text))),
+    ...(step.ask ? questionNodes(step.ask) : []),
     el('div', { class: 'row' }, [back, next]),
   );
+}
+
+/** The question under the step text: answer buttons or the tap hint, then "Try again" or the right line. */
+function questionNodes(ask) {
+  const a = state.answer;
+  const nodes = [el('p', { class: 'ask', text: ask.q })];
+  if (ask.choices) {
+    nodes.push(el('div', { class: 'choices', role: 'group', 'aria-label': ask.q }, ask.choices.map((label, i) => {
+      const cls = a.right && a.value === i ? ' right' : a.wrong.includes(i) ? ' wrong' : '';
+      const b = el('button', { type: 'button', class: `choice${cls}`, 'data-i': String(i), text: label, onclick: () => answerStep(i) });
+      if (a.right || a.wrong.includes(i)) b.disabled = true;
+      return b;
+    })));
+  } else {
+    nodes.push(el('p', { class: 'taphint', text: 'Tap a square on the board' }));
+  }
+  nodes.push(el('p', { class: `askline${a.right ? ' right' : ''}`, 'aria-live': 'polite', text: a.right ? ask.right : a.last === 'wrong' ? 'Try again' : '' }));
+  return nodes;
+}
+
+/** The step's question, when it is waiting for an answer in the step's own view; else null. */
+function openQuestion() {
+  const lesson = state.lesson;
+  if (!lesson) return null;
+  const step = lesson.steps[lesson.index - 1];
+  if (!step.ask || state.answer.right || state.tab !== step.view) return null;
+  return step.ask;
+}
+
+function answerStep(value) {
+  const ask = openQuestion();
+  if (!ask) return;
+  const ok = L.checkAnswer(ask, value);
+  if (ok) { state.answer.right = true; state.answer.value = value; state.answer.last = 'right'; }
+  else { if (typeof value === 'number') state.answer.wrong.push(value); state.answer.last = 'wrong'; }
+  render();
+  if (!ok && typeof value === 'string') {
+    const sq = document.querySelector(`#view .board .sq[data-square="${value}"]`);
+    if (sq) { sq.classList.add('tapwrong'); setTimeout(() => sq.classList.remove('tapwrong'), 600); }
+  }
+}
+
+// A tap question takes taps on the board before the view does: nothing is selected, moved or tinted.
+for (const type of ['pointerdown', 'click', 'contextmenu']) {
+  document.getElementById('view').addEventListener(type, (e) => {
+    const ask = openQuestion();
+    if (!ask || !ask.tap) return;
+    const sq = e.target.closest && e.target.closest('.board .sq');
+    if (!sq) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    if (type === 'click') answerStep(sq.dataset.square);
+  }, true);
 }
 
 // ---------- loading ----------
@@ -1690,12 +1755,14 @@ const VIEWS = {
     title: 'Shapes',
     render(container, board) {
       const level = state.shapesLevel;
-      const reveal = state.shapesReveal;
+      const lstep = state.lesson && state.lesson.steps[state.lesson.index - 1];
+      const hideReveal = !!(lstep && lstep.blocks && !state.answer.right);   // blocks first: the answer comes before the pieces
+      const reveal = state.shapesReveal && !hideReveal;
       const groups = level === 'groups' ? A.pieceGroups(board) : [];
       const levels = [['sizes', 'Sizes'], ['same', 'Same size'], ['groups', 'Groups']];
       container.append(el('div', { class: 'actions levels' }, [
         ...levels.map(([k, t]) => el('button', { type: 'button', class: 'quiet', 'aria-pressed': String(level === k), text: t, onclick: () => { state.shapesLevel = k; render(); } })),
-        el('button', { type: 'button', class: 'quiet reveal', text: reveal ? 'Hide pieces' : 'Reveal pieces', onclick: () => { state.shapesReveal = !reveal; render(); } }),
+        ...(hideReveal ? [] : [el('button', { type: 'button', class: 'quiet reveal', text: reveal ? 'Hide pieces' : 'Reveal pieces', onclick: () => { state.shapesReveal = !reveal; render(); } })]),
       ]));
       const grid = boardGrid(board, (r, c, cell, name) => {
         if (!cell) return null;
@@ -2093,6 +2160,10 @@ function render() {
       el('p', { text: 'This view could not be drawn. The page may be newer than the files your browser kept from last time.' }),
       el('button', { type: 'button', class: 'primary', text: 'Reload the page', onclick: () => location.reload() }),
     ]));
+  }
+  if (state.lesson && state.answer.right && typeof state.answer.value === 'string') {
+    const sq = container.querySelector(`.board .sq[data-square="${state.answer.value}"]`);
+    if (sq) sq.classList.add('tapright');
   }
   if (state.showMoves) {
     const p = chess.get(state.showMoves);
