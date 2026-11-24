@@ -76,7 +76,9 @@ def main(pw):
     # --- every view is open in a round
     s.goto(BASE, "lesson=recognise&seed=7&step=2", settle=600)
     check("a round link opens at its step", "2 of 5" in s.text("#lesson-count"))
-    check("no view is locked in a round", pg.locator(".tabs [role=tab].locked").count() == 0)
+    check("an unanswered round board closes the other tabs", pg.locator(".tabs [role=tab].locked").count() == 8)
+    pg.locator("#lesson button.choice").nth(pg.evaluate("__viewer.state.lesson.steps[1].ask.answer")).tap(); pg.wait_for_timeout(150)
+    check("once answered, no view is locked in a round", pg.locator(".tabs [role=tab].locked").count() == 0)
     # --- Review Focus 3: bad seeds
     for h in ("lesson=recognise&step=1", "lesson=recognise&seed=abc&step=1", "lesson=recognise&seed=-1&step=1", "lesson=recognise&seed=&step=1", "lesson=recognise&seed=7&step=9"):
         s.goto(BASE, h, settle=600)

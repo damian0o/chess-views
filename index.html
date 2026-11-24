@@ -209,6 +209,7 @@
   .lesson .choices button.choice.wrong { border-color: var(--pen-red); color: var(--ink-soft); text-decoration: line-through; }
   .lesson .choices button.choice.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 18%, var(--paper)); color: var(--ink); }
   .lesson .choices button.choice:disabled { cursor: default; }
+  .lesson .choices button.choice.right:disabled { opacity: 1; }
   .lesson .taphint { margin: 0; color: var(--ink-soft); }
   .lesson .askline { margin: 0; min-height: 1.3em; color: var(--ink); }
   .lesson .askline.right { font-weight: 700; }
@@ -721,6 +722,8 @@ function gotoStep(index, { applyView = false, flip } = {}) {
   const step = lesson.steps[index - 1];
   lesson.index = index;
   setPosition(step.source, { inLesson: true });
+  // A blocks question shows a bare position: no move list, no counter, nothing to step through (the moves name the game).
+  if (step.blocks) setPosition({ kind: 'fen', fen: currentChess().fen() }, { inLesson: true });
   state.solve = step.solve && state.moves.length > 0;
   state.task = step.task;
   state.flipped = typeof flip === 'boolean' ? flip : step.flip;   // a reloaded link keeps the kid's own turn of the board
@@ -764,20 +767,20 @@ function renderLesson() {
       el('button', { type: 'button', class: 'icon', id: 'lesson-exit', text: '✕', 'aria-label': 'Leave the lesson', title: 'Leave the lesson', onclick: leaveLesson }),
     ]),
     el('p', { class: 'say' }, L.sayParts(step.say).map((part) => (part.strong ? el('strong', { text: part.text }) : part.text))),
-    ...(step.ask ? questionNodes(step.ask) : []),
+    ...(step.ask ? questionNodes(step.ask, state.tab === step.view) : []),
     el('div', { class: 'row' }, [back, next]),
   );
 }
 
 /** The question under the step text: answer buttons or the tap hint, then "Try again" or the right line. */
-function questionNodes(ask) {
+function questionNodes(ask, here) {
   const a = state.answer;
   const nodes = [el('p', { class: 'ask', text: ask.q })];
   if (ask.choices) {
     nodes.push(el('div', { class: 'choices', role: 'group', 'aria-label': ask.q }, ask.choices.map((label, i) => {
       const cls = a.right && a.value === i ? ' right' : a.wrong.includes(i) ? ' wrong' : '';
       const b = el('button', { type: 'button', class: `choice${cls}`, 'data-i': String(i), text: label, onclick: () => answerStep(i) });
-      if (a.right || a.wrong.includes(i)) b.disabled = true;
+      if (a.right || a.wrong.includes(i) || !here) b.disabled = true;   // outside the step's view the buttons are visibly off
       return b;
     })));
   } else {
@@ -800,7 +803,11 @@ function answerStep(value) {
   const ask = openQuestion();
   if (!ask) return;
   const ok = L.checkAnswer(ask, value);
-  if (ok) { state.answer.right = true; state.answer.value = value; state.answer.last = 'right'; }
+  if (ok) {
+    state.answer.right = true; state.answer.value = value; state.answer.last = 'right';
+    const step = state.lesson.steps[state.lesson.index - 1];
+    if (step.blocks && step.source.kind === 'pgn') setPosition(step.source, { inLesson: true });   // answered: the game's moves come back
+  }
   else { if (typeof value === 'number') state.answer.wrong.push(value); state.answer.last = 'wrong'; }
   render();
   if (!ok && typeof value === 'string') {
@@ -1985,10 +1992,11 @@ function renderTabs() {
   const open = lesson ? L.openViews(lesson.steps, lesson.index, lesson.done) : null;
   const step = lesson ? lesson.steps[lesson.index - 1] : null;
   const wanted = step && state.tab !== step.view ? step.view : null;
+  const blocksWait = !!(step && step.blocks && !state.answer.right);   // an unanswered blocks board: every other view would show the pieces
   for (const [key, v] of Object.entries(VIEWS)) {
-    const locked = open ? !open.has(key) : false;
+    const locked = open ? !open.has(key) || (blocksWait && key !== step.view) : false;
     const btn = el('button', { role: 'tab', 'aria-selected': String(key === state.tab), class: `${locked ? 'locked' : ''}${key === wanted ? ' wanted' : ''}`.trim(), text: v.title,
-      onclick: () => { if (locked) { toast('Finish the lesson to open this'); return; } state.tab = key; writeHash(); render(); } });
+      onclick: () => { if (locked) { toast(blocksWait && open.has(key) ? 'Answer first' : 'Finish the lesson to open this'); return; } state.tab = key; writeHash(); render(); } });
     if (locked) { btn.setAttribute('aria-disabled', 'true'); btn.append(el('span', { class: 'lock', 'aria-hidden': 'true', text: '🔒' })); }
     nav.append(btn);
   }

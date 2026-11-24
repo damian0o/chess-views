@@ -91,7 +91,7 @@ test("library: the Scholar's mate lesson has 25 steps in three moments with ques
   assert.deepEqual([steps[8].solve, steps[8].task, steps[8].source.ply], [true, "Find White's strike", 6]);
   assert.equal(steps[9].source.ply, 7);
   const stop = steps.find((s) => s.ask && s.ask.q === 'Which move stops the mate?');
-  assert.deepEqual([stop.ask.choices, stop.ask.answer], [['g6', 'a6', 'h6'], 0]);
+  assert.deepEqual([[...stop.ask.choices].sort(), stop.ask.choices[stop.ask.answer]], [['a6', 'g6', 'h6'], 'g6']);
   assert.equal(steps.filter((s) => s.blocks).length, 6, 'a Yes and a No board for each moment');
   for (const m of ['attack', 'defence', 'mate']) assert.ok(steps.some((s) => s.blocks && s.moment && s.moment.id === m && s.ask.answer === 0) && steps.some((s) => s.blocks && s.moment && s.moment.id === m && s.ask.answer === 1), m);
   assert.equal(steps.filter((s) => s.shapesGate).length, 3);
@@ -160,4 +160,16 @@ test('library: with every lesson finished a round has 8 boards of 3-4 short answ
       assert.ok(s.ask.choices.every((c) => c.length <= 32), s.ask.choices.join(' | '));
     }
   }
+});
+
+test('library: the right answer is not always the same button within a lesson', () => {
+  for (const L of lib.lessons) {
+    const keys = L.steps.filter((s) => s.ask && s.ask.choices && !(s.ask.choices.length === 2 && s.ask.choices[0] === 'Yes')).map((s) => s.ask.answer);
+    if (keys.length >= 2) assert.ok(new Set(keys).size > 1, `${L.id}: every key is button ${keys[0] + 1}`);
+  }
+});
+
+test('library: the Lasker mate says that castling long mates too', () => {
+  const L = lib.lessons.find((x) => x.id === 'lasker-thomas');
+  assert.ok(L.steps.some((s) => s.view === 'kings' && /O-O-O/.test(s.say)));
 });

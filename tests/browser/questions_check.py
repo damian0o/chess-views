@@ -72,7 +72,7 @@ def main(pw):
     # --- recall step: blocks only, no reveal until answered
     pg.locator(NEXT).tap(); pg.wait_for_timeout(250)
     check("recall step opens in Shapes with blocks only and no reveal button", pg.evaluate("__viewer.state.tab") == "shapes" and pg.locator("#view .piece").count() == 0 and pg.locator("#view .shape").count() > 0 and pg.locator("#view button.reveal").count() == 0)
-    check("recall board is the mate (ply 7)", pg.evaluate("__viewer.state.ply") == 7)
+    check("recall board is the mate (queen on f7)", pg.evaluate("(__viewer.state.chess.get('f7') || {}).type") == "q")
     pg.locator("#lesson button.choice").nth(0).tap(); pg.wait_for_timeout(150)
     check("after the right answer the reveal button appears", pg.locator("#view button.reveal").count() == 1 and pg.locator(NEXT).is_enabled())
     # --- blocks No step, then Back re-asks (Review Focus 2)
@@ -103,6 +103,32 @@ def main(pw):
     c3 = pg.evaluate(CONTRAST, "#lesson button.choice.right")
     check("dark: wrong, right and the answer line are readable", c1 >= 3 and c2 >= 4.5 and c3 >= 4.5, f"wrong {c1:.2f} line {c2:.2f} right {c3:.2f}")
     check("no page errors (dark)", not s.errs, " | ".join(s.errs)[:300])
+    s.close()
+
+    # --- review fixes: nothing gives a blocks answer away; buttons never look live when they are not
+    s = Session(pw, init_script=INIT); pg = s.page
+    s.goto(BASE, "lesson=qfx&step=5", settle=600)
+    moves = s.text("#moves") + " " + s.text("#plyLabel")
+    check("blocks step: no move list and no ply counter before the answer", "Qh5" not in moves and "/" not in moves and pg.evaluate("__viewer.state.moves.length") == 0, moves)
+    fen = pg.evaluate("__viewer.state.chess.fen()")
+    pg.keyboard.press("ArrowLeft"); pg.wait_for_timeout(150)
+    check("blocks step: arrow keys cannot step away from the board", pg.evaluate("__viewer.state.chess.fen()") == fen)
+    s.tab("Board", force=True)
+    check("blocks step: other tabs are closed until the answer", pg.evaluate("__viewer.state.tab") == "shapes" and "Answer first" in s.text("#toast") and pg.locator("#view .piece").count() == 0, s.text("#toast"))
+    pg.locator("#lesson button.choice").nth(1).tap(); pg.wait_for_timeout(200)
+    check("after the answer the moves come back at the same ply", "Qh5" in s.text("#moves") and pg.evaluate("__viewer.state.ply") == 5 and pg.evaluate("__viewer.state.moves.length") == 7)
+    s.tab("Board")
+    check("after the answer other tabs open again", pg.evaluate("__viewer.state.tab") == "board")
+    s.goto(BASE, "lesson=qfx&step=4", settle=600)
+    check("recall step: no move list either", "Qxf7" not in s.text("#moves") and pg.evaluate("__viewer.state.moves.length") == 0, s.text("#moves"))
+    # a choice question seen from another view: the buttons are disabled, not dead
+    s.goto(BASE, "lesson=qfx&step=6&view=territory", settle=600)
+    check("choices are disabled outside the step's view", pg.locator("#lesson button.choice").count() == 4 and pg.evaluate("[...document.querySelectorAll('#lesson button.choice')].every(b => b.disabled)"))
+    s.tab("Board")
+    check("choices work again in the step's view", pg.evaluate("[...document.querySelectorAll('#lesson button.choice')].every(b => !b.disabled)"))
+    pg.locator("#lesson button.choice").nth(3).tap(); pg.wait_for_timeout(150)
+    check("the right answer is not dimmed", pg.evaluate("getComputedStyle(document.querySelector('#lesson button.choice.right')).opacity") == "1", pg.evaluate("getComputedStyle(document.querySelector('#lesson button.choice.right')).opacity"))
+    check("no page errors (review fixes)", not s.errs, " | ".join(s.errs)[:300])
     s.close()
 
 run(main)
