@@ -33,6 +33,8 @@ jobs:
       - run: npm run check
       - run: npm run build
       - run: npx tsx scripts/assemble-site.ts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
       - uses: actions/upload-pages-artifact@v3
         with:
           path: platform/site

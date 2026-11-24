@@ -100,3 +100,27 @@ describe('store', () => {
     expect([s.getState().player, s.getState().players]).toEqual([null, []]);
   });
 });
+
+describe('the current player is remembered', () => {
+  test('restore() picks the last chosen player after a reload', async () => {
+    const storage = memory();
+    const s = make(storage);
+    await s.getState().addPlayer({ name: 'Ola' });
+    await s.getState().addPlayer({ name: 'Kuba' });
+    await s.getState().pickPlayer(s.getState().players.find((p) => p.name === 'Ola')!.id);
+    const again = make(storage);
+    await again.getState().restore();
+    expect(again.getState().player?.name).toBe('Ola');
+  });
+  test('restore() with nothing remembered, or a removed player, leaves no player', async () => {
+    const storage = memory();
+    const s = make(storage);
+    await s.getState().restore();
+    expect(s.getState().player).toBeNull();
+    await s.getState().addPlayer({ name: 'Ola' });
+    await s.getState().removePlayer(s.getState().player!.id);
+    const again = make(storage);
+    await again.getState().restore();
+    expect(again.getState().player).toBeNull();
+  });
+});

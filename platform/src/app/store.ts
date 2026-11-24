@@ -13,6 +13,8 @@ import { t } from '@core/i18n/index';
 
 export const POC_KEY = 'chess-views:lessons';
 const MIGRATED_KEY = 'chess-views:poc-migrated';
+/** The player last chosen on this device, so a reload keeps them signed in. */
+const CURRENT_KEY = 'chess-views:current-player';
 export const ROUND_LESSON_ID = 'recognise';
 
 export interface AppState {
@@ -22,6 +24,7 @@ export interface AppState {
   round: Round | null;
   toast: string | null;
   loadPlayers(): Promise<void>;
+  restore(): Promise<void>;
   addPlayer(opts: { name?: string; age?: AgeBand; locale?: Locale; avatar?: Avatar }): Promise<void>;
   pickPlayer(id: string): Promise<void>;
   updatePlayer(patch: Partial<Omit<Profile, 'id' | 'version'>>): Promise<void>;
@@ -57,12 +60,18 @@ export function createAppStore(deps: StoreDeps) {
 
   return createStore<AppState>()((set, get) => {
     const say = (key: Parameters<typeof t>[1]) => set({ toast: t(get().player?.locale ?? 'pl', key) });
-    const savePlayer = async (p: Profile) => { await profiles.save(p); set({ player: p, players: await profiles.list() }); };
+    const savePlayer = async (p: Profile) => { await profiles.save(p); write(CURRENT_KEY, p.id); set({ player: p, players: await profiles.list() }); };
 
     return {
       players: [], player: null, run: null, round: null, toast: null,
 
       async loadPlayers() { set({ players: await profiles.list() }); },
+
+      async restore() {
+        const id = read(CURRENT_KEY);
+        const p = id ? await profiles.load(id) : null;
+        set({ players: await profiles.list(), player: p });
+      },
 
       async addPlayer(opts) {
         let p = defaultProfile(opts);
@@ -76,6 +85,7 @@ export function createAppStore(deps: StoreDeps) {
 
       async pickPlayer(id) {
         const p = await profiles.load(id);
+        if (p) write(CURRENT_KEY, p.id);
         set({ player: p, run: null, round: null });
       },
 
@@ -87,6 +97,7 @@ export function createAppStore(deps: StoreDeps) {
 
       async removePlayer(id) {
         await profiles.remove(id);
+        if (read(CURRENT_KEY) === id) { try { storage.removeItem(CURRENT_KEY); } catch { /* storage unavailable */ } }
         const players = await profiles.list();
         set({ players, ...(get().player?.id === id ? { player: null, run: null, round: null } : {}) });
       },

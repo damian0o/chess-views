@@ -35,6 +35,7 @@
     "src",
     "tests",
     "scripts",
+    "e2e",
     "*.ts"
   ]
 }

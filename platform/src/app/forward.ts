@@ -12,3 +12,8 @@ export function forwardOldLink(hash: string, pocStepIds: Record<string, string[]
   if (r.kind === 'lesson') nav.setHash(routeHash(r));
   return false;
 }
+
+/** Keep forwarding while the app is open: an old link typed or pasted into a running tab is handled too. */
+export function watchOldLinks(pocStepIds: Record<string, string[]>, env: { readonly hash: string; onHashChange(fn: () => void): void; replace(url: string): void; setHash(hash: string): void }): void {
+  env.onHashChange(() => { forwardOldLink(env.hash, pocStepIds, env); });
+}

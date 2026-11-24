@@ -5,6 +5,26 @@ UI-free TypeScript library with every rule of the app, the lesson content as Mar
 in CI. There are no screens yet; the proof of concept stays live until the platform matches it.
 Design: `../docs/superpowers/specs/2026-11-24-platform-design.md`.
 
+## The app (release 1)
+
+`src/app/` is the React app on top of the core: players ("Kto gra?"), home, the lesson screen
+(one board, a view dropdown with only the lesson's views, the "Co widzę?" legend, the step card with
+questions), Recognise, settings, and six themes (kids / teens / adults × light / dark) as CSS
+variables read by Tailwind. Components only render what the core returns.
+
+```
+npm run dev        # content + Vite dev server
+npm run build      # content + production build into dist/app
+npx tsx scripts/assemble-site.ts   # site/: the app at /, the proof of concept under /poc/
+npm run e2e        # Playwright on the assembled site (phone 390×844 and laptop 1280×800)
+```
+
+Publishing (`.github/workflows/pages.yml`) builds, checks and deploys `site/` to GitHub Pages; the
+repository's Pages source must be "GitHub Actions". Old proof-of-concept links that the app cannot
+open yet are forwarded to the same address under `/poc/`; old lesson links open the same step.
+
+Piece images: the cburnett set by Colin M.L. Burnett, CC BY-SA 3.0 (as embedded in chessground).
+
 ## Layout
 
 ```

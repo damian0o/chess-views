@@ -42,3 +42,21 @@ describe('forwardOldLink', () => {
     expect(run('')).toEqual({ done: false });
   });
 });
+
+describe('forwarding while the app is open', () => {
+  test('watchOldLinks forwards an old link typed into a running tab', async () => {
+    const { watchOldLinks } = await import('../src/app/forward');
+    const listeners: (() => void)[] = [];
+    let hash = '#/home';
+    const calls: string[] = [];
+    watchOldLinks({ 'scholars-mate': ['s01-board'] }, {
+      get hash() { return hash; },
+      onHashChange: (fn) => listeners.push(fn),
+      replace: (u) => calls.push(`replace ${u}`),
+      setHash: (h) => calls.push(`hash ${h}`),
+    });
+    hash = '#pos=lucena'; listeners.forEach((f) => f());
+    hash = '#lesson=scholars-mate&step=1'; listeners.forEach((f) => f());
+    expect(calls).toEqual(['replace ./poc/#pos=lucena', 'hash #/lesson/scholars-mate/s01-board']);
+  });
+});

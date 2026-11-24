@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Route, Router, Switch, useLocation } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { useStore } from 'zustand';
@@ -45,6 +45,9 @@ export interface AppProps { storage?: StorageLike | undefined }
 export default function App({ storage }: AppProps) {
   const [store] = useState(() => createAppStore({ storage, lessons: LESSONS, library: LIBRARY, pocStepIds: POC_STEP_IDS }));
   const player = useStore(store, (s) => s.player);
+  const [ready, setReady] = useState(false);
+  useEffect(() => { void store.getState().restore().then(() => setReady(true)); }, [store]);
+  if (!ready) return null;
   return (
     <AppStoreProvider store={store}>
       <ThemeRoot profile={player}>

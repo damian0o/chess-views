@@ -127,6 +127,8 @@ one of the lesson's `moments` (`id`, `name`, a board, optional
 
 ## The platform (in progress)
 
+The new app is published at the site's root once the repository's Pages source is "GitHub Actions"; this proof of concept then lives under `/poc/`.
+
 This page is the proof of concept. Its successor is being built in
 `platform/`: a typed TypeScript core (chess rules, analysis, lessons,
 recognition, engine, storage, languages) with no screens yet, lessons as
