@@ -8,6 +8,9 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    rules: { '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }] },
+  },
+  {
     files: ['src/core/**/*.ts'],
     rules: {
       // The core holds every rule and stays UI-free: no React, no content compiler, no scripts.
