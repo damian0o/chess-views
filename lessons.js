@@ -59,26 +59,49 @@ export const ALL_VIEWS = Object.keys(VIEW_TITLES);
  * `same: true` copies only the previous step's position (a step `ply` overrides); `pos` goes through
  * the library and never takes the entry's view. Throws on a missing entry.
  */
+/** A `fen` / `pgn`+`ply` / `pos` field set → a source, or null when it has none of them. Throws on a missing entry. */
+function directSource(raw, positions, where) {
+  if (raw.fen) return { kind: 'fen', fen: raw.fen };
+  if (raw.pgn) return { kind: 'pgn', pgn: raw.pgn, ply: raw.ply };
+  if (raw.pos) {
+    const entry = (positions || []).find((p) => p.id === raw.pos);
+    if (!entry) throw new Error(`${where}: no library entry "${raw.pos}"`);
+    return entry.fen ? { kind: 'fen', fen: entry.fen } : { kind: 'pgn', pgn: entry.pgn, ply: raw.ply ?? entry.ply };
+  }
+  return null;
+}
+
+/** A lesson's moments with their boards: [{ id, name, source, looksLike }]. */
+export function resolveMoments(lesson, positions) {
+  return (lesson.moments || []).map((m, i) => ({
+    id: m.id, name: m.name, looksLike: m.looksLike || [],
+    source: directSource(m, positions, `lesson ${lesson.id} moment ${i + 1}`),
+  }));
+}
+
 export function resolveSteps(lesson, positions) {
   const out = [];
+  const moments = resolveMoments(lesson, positions);
   lesson.steps.forEach((raw, i) => {
     const where = `lesson ${lesson.id} step ${i + 1}`;
-    let source;
-    if (raw.fen) source = { kind: 'fen', fen: raw.fen };
-    else if (raw.pgn) source = { kind: 'pgn', pgn: raw.pgn, ply: raw.ply };
-    else if (raw.pos) {
-      const entry = (positions || []).find((p) => p.id === raw.pos);
-      if (!entry) throw new Error(`${where}: no library entry "${raw.pos}"`);
-      source = entry.fen ? { kind: 'fen', fen: entry.fen } : { kind: 'pgn', pgn: entry.pgn, ply: raw.ply ?? entry.ply };
-    } else if (raw.same) {
+    const moment = raw.moment !== undefined ? moments.find((m) => m.id === raw.moment) : null;
+    if (raw.moment !== undefined && !moment) throw new Error(`${where}: no moment "${raw.moment}"`);
+    let source = directSource(raw, positions, where);
+    if (source) { /* given on the step */ }
+    else if (raw.recall) source = { ...moment.source };
+    else if (raw.same) {
       if (!out.length) throw new Error(`${where}: "same" on the first step`);
       source = { ...out[out.length - 1].source };
       if (raw.ply !== undefined && source.kind === 'pgn') source.ply = raw.ply;
     } else throw new Error(`${where}: no position`);
+    const a = raw.ask;
     out.push({
       index: i + 1, source, view: raw.view, sq: raw.sq || null,
       solve: !!raw.solve, task: raw.solve ? raw.task || null : null,
       flip: !!raw.flip, shapesGate: !!(raw.shapes && raw.shapes.gate), say: raw.say || '',
+      moment: moment ? { id: moment.id, name: moment.name } : null,
+      ask: a ? { q: a.q, choices: a.choices || null, answer: a.choices ? a.answer : null, tap: a.tap || null, right: a.right || 'Right!' } : null,
+      blocks: !!(raw.blocks || raw.recall),
     });
   });
   return out;
@@ -90,12 +113,19 @@ export function openViews(steps, index, done) {
   return new Set(steps.slice(0, index).map((s) => s.view));
 }
 
-/** What still blocks Next on a step, or null: the view first, then the hidden move, then the Shapes reveal. */
+/** What still blocks Next on a step, or null: the view, the hidden move, the question, then the Shapes reveal. */
 export function nextGate(step, now) {
   if (now.tab !== step.view) return { kind: 'view', text: `Open ${VIEW_TITLES[step.view] || step.view} first` };
   if (step.solve && step.source.kind === 'pgn' && !(now.ply > step.source.ply)) return { kind: 'reveal', text: 'Press ▶ first' };
-  if (step.shapesGate && !now.shapesReveal) return { kind: 'shapes', text: 'Press Reveal pieces first' };
+  if (step.ask && !now.answered) return { kind: 'answer', text: 'Answer first' };
+  if (step.shapesGate && !step.ask && !now.shapesReveal) return { kind: 'shapes', text: 'Press Reveal pieces first' };
   return null;
+}
+
+/** Is `value` (a choice index, or a tapped square) the right answer to `ask`? */
+export function checkAnswer(ask, value) {
+  if (typeof value === 'number') return Array.isArray(ask.choices) && ask.answer === value;
+  return Array.isArray(ask.tap) && ask.tap.includes(value);
 }
 
 // ---------- validating a lesson ----------

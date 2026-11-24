@@ -148,3 +148,56 @@ test('validateLesson: moments need a game and 2-4 entries', () => {
   assert.equal(errs({ ...L, moments: L.moments.slice(0, 1) }).length, 1);
   assert.equal(errs({ ...L, moments: [L.moments[0], { ...L.moments[1], ply: 99 }] }).length, 1);
 });
+
+// ---------- Task 2: questions in resolved steps, the answer gate ----------
+import { checkAnswer } from '../lessons.js';
+
+const Q = withMoments([
+  { pgn: PGN, ply: 5, moment: 'attack', view: 'board', say: SAY, ask: { q: 'Which square?', choices: ['f7', 'f2'], answer: 0 } },
+  { moment: 'mate', recall: true, view: 'shapes', say: SAY, ask: { q: 'Is this the mate?', choices: ['Yes', 'No'], answer: 0, right: 'Yes, Qxf7.' } },
+  { same: true, view: 'kings', say: SAY },
+  { pgn: PGN, ply: 3, view: 'board', say: SAY, ask: { q: 'Tap it', tap: ['f7'] } },
+]);
+
+test('resolveSteps: a recall step takes its moment\'s board', () => {
+  const st = resolveSteps(Q, []);
+  assert.deepEqual(st[1].source, { kind: 'pgn', pgn: PGN, ply: 7 });
+  assert.equal(st[1].blocks, true);
+  assert.deepEqual(st[1].moment, { id: 'mate', name: 'the mate' });
+  assert.deepEqual(st[2].source, st[1].source, 'same after a recall copies its board');
+  assert.equal(st[0].blocks, false);
+  assert.equal(st[2].moment, null);
+});
+
+test('resolveSteps: ask defaults', () => {
+  const st = resolveSteps(Q, []);
+  assert.deepEqual(st[0].ask, { q: 'Which square?', choices: ['f7', 'f2'], answer: 0, tap: null, right: 'Right!' });
+  assert.equal(st[1].ask.right, 'Yes, Qxf7.');
+  assert.deepEqual(st[3].ask, { q: 'Tap it', choices: null, answer: null, tap: ['f7'], right: 'Right!' });
+  assert.equal(st[2].ask, null);
+});
+
+test('nextGate: a question waits for the answer', () => {
+  const st = resolveSteps(Q, []);
+  assert.deepEqual(nextGate(st[0], { tab: 'board', ply: 5, answered: false }), { kind: 'answer', text: 'Answer first' });
+  assert.equal(nextGate(st[0], { tab: 'board', ply: 5, answered: true }), null);
+});
+
+test('nextGate: the view gate comes before the answer gate', () => {
+  const st = resolveSteps(Q, []);
+  assert.equal(nextGate(st[0], { tab: 'roads', ply: 5, answered: false }).kind, 'view');
+});
+
+test('nextGate: a blocks step with a question never asks for Reveal pieces', () => {
+  const st = resolveSteps(Q, []);
+  const s = { ...st[1], shapesGate: true };
+  assert.equal(nextGate(s, { tab: 'shapes', ply: 7, answered: true, shapesReveal: false }), null);
+});
+
+test('checkAnswer: choice index and tap square', () => {
+  assert.equal(checkAnswer({ choices: ['a', 'b'], answer: 1 }, 1), true);
+  assert.equal(checkAnswer({ choices: ['a', 'b'], answer: 1 }, 0), false);
+  assert.equal(checkAnswer({ tap: ['d8', 'e8'] }, 'e8'), true);
+  assert.equal(checkAnswer({ tap: ['d8', 'e8'] }, 'd7'), false);
+  assert.equal(checkAnswer({ tap: ['d8'] }, 0), false);
+});
