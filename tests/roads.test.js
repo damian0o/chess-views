@@ -42,3 +42,42 @@ test('bishop on an open diagonal is active, on a closed one is not', () => {
   const blocked = roads(boardFromFen('4k3/8/8/8/8/4p3/1P1P4/2B1K3 w - - 0 1'));
   assert.ok(!activeOnRoads(blocked).has('c1'));
 });
+
+import { rays, crossings } from '../analysis.js';
+const SCHOLAR_B = 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3';
+
+test('rays: a sliding piece\'s road runs to the first piece, keeping an enemy it hits and stopping before a friend', () => {
+  const r = rays(boardFromFen(SCHOLAR_B));
+  const from = (sq) => r.filter((x) => x.from === sq);
+  const bishopToF7 = from('c4').find((x) => x.squares.includes('f7'));
+  assert.deepEqual(bishopToF7.squares, ['d5', 'e6', 'f7']);
+  assert.equal(bishopToF7.hit, 'f7');
+  assert.equal(bishopToF7.end, 'enemy');
+  const queenToF7 = from('h5').find((x) => x.squares.includes('f7'));
+  assert.deepEqual(queenToF7.squares, ['g6', 'f7']);
+  const queenRank = from('h5').find((x) => x.squares.includes('g5'));
+  assert.deepEqual(queenRank.squares, ['g5', 'f5', 'e5']);   // the e5 pawn is an enemy: the road ends on it
+  assert.equal(queenRank.hit, 'e5');
+  const queenDown = from('h5').find((x) => x.squares.includes('h4'));
+  assert.deepEqual(queenDown.squares, ['h4', 'h3']);         // stops before the own pawn on h2
+  assert.equal(queenDown.end, 'own');
+  const edge = from('h5').find((x) => x.squares.includes('h6'));
+  assert.deepEqual(edge.squares, ['h6', 'h7']); assert.equal(edge.end, 'enemy'); assert.equal(edge.hit, 'h7');
+  assert.ok(r.every((x) => x.squares.length > 0), 'empty roads are left out');
+  assert.ok(r.every((x) => 'rbq'.includes(x.piece.type)));
+});
+
+test('rays: in the start position no rook, bishop or queen has a road', () => {
+  assert.deepEqual(rays(boardFromFen(START_FEN)), []);
+});
+
+test('crossings: squares where two roads of one side meet, enemy squares first', () => {
+  const r = rays(boardFromFen(SCHOLAR_B));
+  const x = crossings(r);
+  const f7 = x.find((c) => c.square === 'f7');
+  assert.ok(f7, 'f7 is a crossing');
+  assert.equal(f7.color, 'w');
+  assert.deepEqual(f7.from.sort(), ['c4', 'h5']);
+  assert.equal(f7.hit, true);
+  assert.equal(x[0].square, 'f7');          // a crossing on an enemy piece ranks first
+});

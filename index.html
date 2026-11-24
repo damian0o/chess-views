@@ -342,6 +342,12 @@
   .board .sq.frozen .piece { opacity: 0.75; }
   .board .sq .reach.frozen { background: #f8d9b5; color: #7a3a00; }
   .roadwrap line.frozen { stroke-dasharray: 0.16 0.14; opacity: 0.35; }
+  .roadwrap line.ray { stroke-width: 0.12; opacity: 0.75; }
+  .roadwrap line.ray.by-w { stroke: var(--side-w); } .roadwrap line.ray.by-b { stroke: var(--side-b); }
+  .roadwrap line.ray.focus { stroke-width: 0.18; opacity: 0.95; }
+  .roadwrap circle.hitring { fill: none; stroke-width: 0.07; opacity: 0.85; }
+  .roadwrap circle.hitring.by-w { stroke: var(--side-w); } .roadwrap circle.hitring.by-b { stroke: var(--side-b); }
+  .roadwrap .board .sq.openline, .sw.openline { background-image: linear-gradient(rgba(120, 120, 120, 0.22), rgba(120, 120, 120, 0.22)); }
   .sw .lock { position: static; width: 18px; height: 18px; }
   .presswrap line.defend { stroke-width: 0.05; opacity: 0.6; stroke-dasharray: 0.18 0.14; }
   .houses { display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); max-width: 72ch; width: 100%; }
@@ -570,7 +576,7 @@
 
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
-import * as A from './analysis.js?v=ebfd7f72';
+import * as A from './analysis.js?v=2d612830';
 import { createEngine } from './engine.js?v=e80dc02d';
 import * as C from './coach.js?v=80b5db19';
 import * as L from './lessons.js?v=14c9bf0b';
@@ -1188,8 +1194,6 @@ const VIEWS = {
     title: 'Roads',
     render(container, board) {
       const list = A.roads(board);
-      const usersOf = (road) => road.pieces.filter((p) => (road.kind === 'diag' ? 'bq' : 'rq').includes(p.type));
-      const sideOf = (users) => { const w = users.some((p) => p.color === 'w'), b = users.some((p) => p.color === 'b'); return w && b ? 'both' : w ? 'w' : b ? 'b' : 'none'; };
       const focus = state.roadFocus && board.flat().find((p) => p && p.square === state.roadFocus && 'rbqpn'.includes(p.type)) ? state.roadFocus : null;
       const paths = A.pawnPaths(board);
       const focusPawn = focus ? paths.find((x) => x.square === focus) : null;
@@ -1219,32 +1223,30 @@ const VIEWS = {
       svg.setAttribute('viewBox', '0 0 8 8');
       svg.setAttribute('aria-hidden', 'true');
       const centre = cellXY;
-      // Without focus: blocked roads are hidden, half-open diagonals only when long, ranks only when a rook/queen uses them.
-      const anySlider = board.flat().some((p) => p && 'rbq'.includes(p.type));
-      const worthDrawing = (road, users) => {
-        if (focusPawn || focusKnight) return false;
-        if (!users.length && !anySlider) return false; // nobody on the board could use it
-        if (focus) return road.squares.includes(focus) && users.some((p) => p.square === focus);
-        if (road.state === 'closed') return false;
-        if (road.kind === 'rank') return road.state === 'open' && users.length > 0;
-        if (road.kind === 'diag' && road.state === 'half') return road.squares.length >= 5 || users.length > 0;
-        return true;
-      };
-      const order = { closed: 0, half: 1, open: 2 };
-      const drawn = list.map((road) => ({ road, users: usersOf(road) })).filter(({ road, users }) => worthDrawing(road, users));
-      drawn.sort((a, b) => (order[a.road.state] - order[b.road.state]) || ((a.users.length ? 1 : 0) - (b.users.length ? 1 : 0)));
-      for (const { road, users } of drawn) {
-        const [x1, y1] = centre(road.squares[0]);
-        const [x2, y2] = centre(road.squares[road.squares.length - 1]);
+      // A road is where a rook, bishop or queen can actually go: up to the first piece, including an enemy it hits.
+      const allRays = A.rays(board);
+      const drawnRays = focusPawn || focusKnight ? [] : focus ? allRays.filter((ray) => ray.from === focus) : allRays;
+      const alongPin = (ray) => { const pn = frozen.get(ray.from); return !pn || pn.between.concat([pn.pinner.square, pn.target.square]).some((sq) => ray.squares.includes(sq)); };
+      for (const ray of drawnRays) {
+        const [x0, y0] = centre(ray.from);
+        const [x2, y2] = centre(ray.squares[ray.squares.length - 1]);
+        const len = Math.hypot(x2 - x0, y2 - y0) || 1;
+        const x1 = x0 + ((x2 - x0) / len) * 0.4, y1 = y0 + ((y2 - y0) / len) * 0.4;   // start at the piece's edge
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        const side = sideOf(users);
-        // A road only a pinned piece stands on is a road it cannot use (unless it is the pin line itself).
-        const usable = users.filter((u) => !frozen.has(u.square) || frozen.get(u.square).between.concat([frozen.get(u.square).pinner.square, frozen.get(u.square).target.square]).every((sq) => road.squares.includes(sq)));
-        const cls = [road.state, side !== 'none' ? `used-${side}` : '', focus ? 'focus' : '', users.length && !usable.length ? 'frozen' : ''].filter(Boolean).join(' ');
+        const cls = ['ray', `by-${ray.piece.color}`, focus ? 'focus' : '', alongPin(ray) ? '' : 'frozen'].filter(Boolean).join(' ');
         for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) line.setAttribute(k, v);
-        line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${road.kind} ${road.id}: ${road.state}${users.length ? ', used by ' + users.map((p) => p.square).join(' ') : ''}` }));
+        line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${PIECE_WORDS[ray.piece.type]} ${ray.from}: ${ray.squares.join(' ')}${ray.hit ? ` (hits ${ray.hit})` : ''}` }));
         svg.append(line);
+        if (ray.hit) {
+          const [cx, cy] = centre(ray.hit);
+          const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${ray.piece.color}` })) ring.setAttribute(k, v);
+          svg.append(ring);
+        }
       }
+      // Open files (no pawns at all) stay as a light shading: the classic highway for rooks.
+      const openFiles = new Set(list.filter((x) => x.kind === 'file' && x.state === 'open').flatMap((x) => x.squares));
+      for (const sq of grid.querySelectorAll('.sq')) if (openFiles.has(sq.dataset.square)) sq.classList.add('openline');
       // Pawn paths: passed pawns always (or every pawn with the toggle); a focused pawn alone.
       const pawnLine = (pp, cls) => {
         if (!pp.path.length) return;
@@ -1300,9 +1302,7 @@ const VIEWS = {
       for (const pp of shown) pawnLine(pp, pp.passed ? '' : 'guarded');
       container.append(el('div', { class: 'roadwrap' }, [grid, svg]));
 
-      const open = list.filter((x) => x.state === 'open');
-      const files = open.filter((x) => x.kind === 'file').map((x) => x.id);
-      const usedBy = (color) => list.filter((x) => x.state !== 'closed' && x.kind !== 'rank' && usersOf(x).some((p) => p.color === color)).length;
+      const files = list.filter((x) => x.state === 'open' && x.kind === 'file').map((x) => x.id);
       if (focusKnight) {
         const tracks = A.knightTracks(board, focus);
         const one = tracks.filter((t) => t.hops[0] && t.hops[0].status !== 'own').length;
@@ -1321,15 +1321,23 @@ const VIEWS = {
       } else if (focus) {
         const { row, col } = A.squareIndex(focus);
         const p = board[row][col];
-        const mine = list.filter((x) => x.squares.includes(focus) && usersOf(x).some((u) => u.square === focus));
-        const words = mine.map((x) => `${x.kind === 'file' ? x.id + '-file' : x.kind === 'rank' ? 'rank ' + x.id : x.id} ${x.state === 'open' ? 'open' : x.state === 'half' ? 'half open' : 'blocked'}`).join(', ');
-        container.append(el('p', { class: 'summary' }, [el('strong', { text: `${p.color === 'w' ? 'White' : 'Black'} ${PIECE_WORDS[p.type]} on ${focus}` }), `: ${words}. Click it again to see every road.`]));
-      } else {
+        const mine = allRays.filter((ray) => ray.from === focus);
+        const reach = mine.reduce((n, ray) => n + ray.squares.length, 0);
+        const hits = mine.filter((ray) => ray.hit).map((ray) => { const { row: hr, col: hc } = A.squareIndex(ray.hit); return `${PIECE_WORDS[board[hr][hc].type]} ${ray.hit}`; });
         container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: `${p.color === 'w' ? 'White' : 'Black'} ${PIECE_WORDS[p.type]} on ${focus}` }),
+          `: ${mine.length} road${mine.length === 1 ? '' : 's'}, ${reach} square${reach === 1 ? '' : 's'}${hits.length ? `, running into ${hits.join(', ')}` : ''}${frozen.has(focus) ? '. It is pinned: only the road along the pin is open to it' : ''}. Click it again to see every road.`,
+        ]));
+      } else {
+        const reach = (c) => allRays.filter((ray) => ray.piece.color === c).reduce((n, ray) => n + ray.squares.length, 0);
+        // Only crossings on an enemy piece are worth a sentence: two roads on one target.
+        const meet = A.crossings(allRays).filter((x) => x.hit).slice(0, 3).map((x) => `${x.square} (${x.color === 'w' ? 'White' : 'Black'}: ${x.from.map((sq) => { const { row, col } = A.squareIndex(sq); return `${PIECE_WORDS[board[row][col].type]} ${sq}`; }).join(', ')})`);
+        container.append(el('p', { class: 'summary' }, [
+          el('strong', { text: `White's roads reach ${reach('w')} squares, Black's ${reach('b')}` }), '. ',
+          el('strong', { text: meet.length ? `Two roads meet on ${meet.join('; ')}` : 'No two roads of one side meet on an enemy piece yet' }), '. ',
           el('strong', { text: `Open files: ${files.length ? files.join(' ') : 'none'}` }), '. ',
-          el('strong', { text: `White uses ${usedBy('w')} road${usedBy('w') === 1 ? '' : 's'}, Black ${usedBy('b')}` }), '. ',
           el('strong', { text: `Passed pawns: ${['w', 'b'].map((c) => { const ps = paths.filter((pp) => pp.color === c && pp.passed).map((pp) => pp.square); return `${c === 'w' ? 'White' : 'Black'} ${ps.length ? ps.join(' ') : 'none'}`; }).join(', ')}` }),
-          '. Dots are squares a knight can jump to now. Click a rook, bishop, queen or pawn to see only its road, or a knight to see its tracks.',
+          '. A road runs as far as the piece can go and ends on an enemy piece it hits. Dots are squares a knight can jump to now. Click a rook, bishop, queen or pawn to see only its roads, or a knight to see its tracks.',
         ]));
         container.append(el('label', { class: 'toggle' }, [
           Object.assign(el('input', { type: 'checkbox' }), { checked: state.allPawnPaths, onchange: (e) => { state.allPawnPaths = e.target.checked; render(); } }),
@@ -1337,14 +1345,12 @@ const VIEWS = {
         ]));
       }
       container.append(legend([
-        { sw: 'road', cls: 'road-w', width: 6, text: 'open road with a white rook, bishop or queen on it' },
-        { sw: 'road', cls: 'road-b', width: 6, text: 'open road with a black one on it' },
-        { sw: 'road', cls: 'road-both', width: 6, text: 'both sides have a piece on it' },
-        { sw: 'road', width: 6, text: 'open road nobody uses yet' },
-        { sw: 'road', width: 2, text: 'half open: pawns of one side only' },
-        { sw: 'road', cls: 'road-dashed', width: 2, text: 'blocked by pawns of both sides (shown only for a clicked piece)' },
+        { sw: 'road', cls: 'road-w', width: 5, text: "a white rook, bishop or queen's road: every square it can reach that way" },
+        { sw: 'road', cls: 'road-b', width: 5, text: 'a black one\'s road' },
+        { sw: 'ring', cls: 'side-b', text: 'the enemy piece a road runs into' },
+        { sw: 'sq', cls: 'openline', text: 'open file: no pawns on it, a highway for rooks' },
         { sw: 'jump', text: 'square a knight can jump to now (blue white, red black, purple both)' },
-        { sw: 'lock', kind: 'absolute', text: 'pinned to the king: its roads are faded, it cannot use them' },
+        { sw: 'lock', kind: 'absolute', text: 'pinned to the king: only its road along the pin is open, the others are faded' },
         { sw: 'star', text: 'passed pawn: no enemy pawn can stop it' },
         { sw: 'road', cls: 'road-w', width: 4, text: 'pawn path: the file ahead of a passed pawn, up to promotion or the first piece in the way (bar)' },
         { sw: 'road', cls: 'road-w road-dashed', width: 2, text: 'pawn path that an enemy pawn can still stop' },
