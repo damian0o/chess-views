@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run lint && npm run test",
+    "check": "npm run content && npm run typecheck && npm run lint && npm run test",
     "content": "tsx scripts/compile-content.ts content dist/content",
     "dev": "npm run content && vite",
     "build": "npm run content && vite build",
