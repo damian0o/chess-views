@@ -131,7 +131,7 @@ This page is the proof of concept. Its successor is being built in
 `platform/`: a typed TypeScript core (chess rules, analysis, lessons,
 recognition, engine, storage, languages) with no screens yet, lessons as
 Markdown, and checks in CI. Phase 1 has no user interface; this page stays
-live until the platform matches it. See
+live until the platform matches it. See `platform/README.md` and
 `docs/superpowers/specs/2026-11-24-platform-design.md`.
 
 ## Tests
