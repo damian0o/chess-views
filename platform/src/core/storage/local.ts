@@ -3,17 +3,26 @@
  * Every read is validated; anything unreadable behaves as absent, and a storage that throws
  * (blocked, private mode) behaves as empty with writes dropped. Loading never throws.
  */
-import { ProfileSchema, type Profile } from '../types';
+import { ProfileSchema, type AgeBand, type Avatar, type Locale, type Profile } from '../types';
+import { migrateProfile } from './migrate';
 import { EXPORT_FORMAT, type ProfileStore, type ProfileSummary, type StorageLike } from './store';
 
 type Record_ = { profiles: Record<string, unknown> };
 
-const newId = (): string => globalThis.crypto.randomUUID();
+let counter = 0;
+/** A random id; plain http pages have no crypto.randomUUID, so fall back to time + randomness. */
+const newId = (): string => {
+  const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  counter += 1;
+  return `p-${Date.now().toString(36)}-${counter.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
-export function defaultProfile(): Profile {
+export function defaultProfile(opts: { name?: string; age?: AgeBand; locale?: Locale; avatar?: Avatar } = {}): Profile {
+  const age = opts.age ?? 'kids';
   return {
-    version: 1, id: newId(), age: 'kids', experience: 'basic', locale: 'pl',
-    theme: { family: 'kids', mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'],
+    version: 2, id: newId(), ...(opts.name ? { name: opts.name } : {}), age, experience: 'basic', locale: opts.locale ?? 'pl',
+    theme: { family: age, mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'], avatar: opts.avatar ?? 'violet',
   };
 }
 
@@ -28,12 +37,12 @@ export function createLocalProfileStore(storage: StorageLike, key = 'chess-views
     return { profiles: {} };
   };
   const write = (data: Record_) => { try { storage.setItem(key, JSON.stringify(data)); } catch { /* storage unavailable */ } };
-  const valid = (v: unknown): Profile | null => { const r = ProfileSchema.safeParse(v); return r.success ? r.data : null; };
+  const valid = (v: unknown): Profile | null => migrateProfile(v);
 
   const store: ProfileStore = {
     async list() {
       return Object.values(read().profiles).map(valid).filter((p): p is Profile => p !== null)
-        .map((p): ProfileSummary => ({ id: p.id, ...(p.name ? { name: p.name } : {}), age: p.age }));
+        .map((p): ProfileSummary => ({ id: p.id, ...(p.name ? { name: p.name } : {}), age: p.age, avatar: p.avatar }));
     },
     async load(id) { return valid(read().profiles[id]); },
     async save(profile) {

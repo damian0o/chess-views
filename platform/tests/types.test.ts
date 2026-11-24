@@ -41,10 +41,10 @@ describe('types', () => {
     expect(ok(StepSchema, { id: 'attack-houses', scene, explain: { kids: 'x' } })).toBe(true);
     expect(ok(StepSchema, { id: 'Step 1', scene, explain: { kids: 'x' } })).toBe(false);
   });
-  test('Profile: version 1, locale pl|en, age kids|teens|adults', () => {
-    const p = { version: 1, id: 'p1', age: 'kids', experience: 'basic', locale: 'pl', theme: { family: 'kids', mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'] };
+  test('Profile: version 2, locale pl|en, age kids|teens|adults', () => {
+    const p = { version: 2, avatar: 'violet', id: 'p1', age: 'kids', experience: 'basic', locale: 'pl', theme: { family: 'kids', mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'] };
     expect(ok(ProfileSchema, p)).toBe(true);
-    expect(ok(ProfileSchema, { ...p, version: 2 })).toBe(false);
+    expect(ok(ProfileSchema, { ...p, version: 1 })).toBe(false);
     expect(ok(ProfileSchema, { ...p, locale: 'de' })).toBe(false);
     expect(ok(ProfileSchema, { ...p, age: 'toddler' })).toBe(false);
   });
