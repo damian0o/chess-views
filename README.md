@@ -63,7 +63,7 @@ roads, as a shape of blocks and as a count on one square, in a fixed order,
 with the kid moving themselves. Open the library and the Lessons shelf is
 at the top; Start opens step 1.
 
-- A **step bar** under the tabs shows the lesson name, "step 3 of 17", one
+- A **step bar** under the tabs shows the lesson name, the moment, "3 of 25", one
   or two sentences, Back and Next. Each step names the view to open, in
   bold; the tab pulses, and Next waits ("Open Roads first") until the kid
   taps it. Steps that say "find it, then press ▶" hide the moves like a
@@ -78,111 +78,52 @@ at the top; Start opens step 1.
   over". With storage blocked the lesson still works for the session.
 - A step's link is `#lesson=scholars-mate&step=3`.
 
-The first lesson, **Scholar's mate**, has 17 steps in three parts: make the
-mate (watch the setup through King houses, Roads, Shapes and Territory,
-then find the strike), stop it (defend f7 twice, then again after the
-queen returns), and spot the shape (three boards shown as blocks: the same
-shape by another road, the mirror against f2, and a near miss with the
-queen still at home).
+- **Questions**: a step may ask something. Either 2 to 4 answer buttons, or
+  "tap a square on the board" (the tap goes to the question, not to the
+  view). A wrong answer says "Try again"; Next opens only after the right
+  one. A reload, or Back then Next, asks again: answers are never saved.
+- **Moments**: a lesson is split into its crucial moments (2 to 4). Each
+  moment is shown in a few views, followed by quick questions and then
+  "Is this the moment?" on blocks, once with the moment's own board (Yes)
+  and once with another board (No). Pieces can be revealed only after the
+  answer.
 
-The second lesson, **Eyes on f7**, is a recognition drill: ten openings
-from the first three or four moves, each shown as blocks first. The kid
-says which two pieces aim at the square next to the king, f7 or f2, then
-reveals the pieces and reads the answer in Roads or Territory: mate, fork,
-nothing yet, or guarded. Yes and no boards alternate.
+The lessons:
+
+- **Scholar's mate** (25 steps): the attack on f7, the defence, the mate,
+  then three boards to spot the shape.
+- **Eyes on f7**: ten openings as blocks; for each the kid answers where
+  two pieces aim (f7, f2 or neither), then reads it in Roads or Territory.
+  A practice drill with no moments.
+- **Opera game** (Morphy, 1858): the fast start, the knight sacrifice, the
+  rook mate on d8.
+- **Légal's mate** (1750): the queen gift, the mate by three small pieces.
+- **Réti vs Tartakower** (1910): the queen gift on d8, the double check and
+  the bishop mate.
+- **Lasker's king hunt** (Edward Lasker vs Thomas, 1912): the queen gift on
+  h7, the king hunt, the mate on g1.
+
+**Recognise** is a round built from the lessons finished on this device:
+up to 8 boards as blocks, each asking "Which game, which moment?" with 3
+or 4 answers. Wrong answers come from other finished moments, other
+moments of the same game first; moments marked `looksLike` never stand
+side by side. It unlocks once two lessons with moments are finished. The
+link carries a seed (`#lesson=recognise&seed=123&step=1`), so a reload
+shows the same round; Start picks a new one. Nothing about a round is
+saved.
 
 Lessons live in `positions.json` under `lessons`. A step has a position
 (`fen`, `pgn` with `ply`, `pos` for a library entry, or `same` for the
 previous step's position with an optional `ply`), a `view`, an optional
 `sq`, `solve` with a `task` for a hidden move, `shapes: { gate: true }` to
 wait for the reveal, `flip`, and `say` (at most two sentences, `**bold**`
-for the view name). `npm test` validates every lesson.
-
-## How to use
-
-Press **Load** in the top bar (or the `l` key). On a phone, tap **Paste** and
-the position loads straight from the clipboard; otherwise paste into the box
-and press Load (or Ctrl/Cmd+Enter). The dialog also offers a few example
-positions and a "Current position" chip that puts the position you are
-looking at into the box for editing. It accepts:
-
-- a FEN, even just the piece placement part;
-- a PGN, including comments and variations (variations are ignored);
-- a lichess analysis link such as `https://lichess.org/analysis/standard/<fen>`;
-- a lichess game link such as `https://lichess.org/AbCd1234`. The PGN is
-  fetched from lichess; if that fails, paste the PGN instead.
-
-With a PGN you get a move slider and the arrow keys step through the game.
-"Flip board" (or the `f` key) turns every view around to play from Black's side.
-Right-click any piece (press and hold on a phone) to see its legal moves; Esc hides them.
-The position, the current view and the selected square (a Territory square,
-a Roads piece or the Knight square, as `sq=e4`) are kept in the URL, so you
-can bookmark or share a link that lands on exactly what you see; a lesson
-step is `lesson=scholars-mate&step=3`. On the
-Board view, "Engine evaluation" adds a bar and a sentence ("White is a
-little better (+0.6)") under the board; it is off by default and travels in
-the link as `eval=1`.
-
-## The views
-
-- **Board**: the paper board, with "Copy as text" and "Print". Print gives you
-  the position big on one page plus an empty grid to copy it into.
-- **Territory**: who owns each square. `+` white, `-` black, `=` equal. The
-  side with the cheapest guard owns a square (a pawn guard beats any piece,
-  since whatever lands there gets taken by a pawn); when the cheapest guards
-  are worth the same, the bigger attacker count wins. Pieces that can be
-  taken (undefended, or attacked by something cheaper) get a dashed frame and
-  an × in the taker's colour; attacked but defended pieces a dotted frame.
-  Tap a square to see exactly which pieces attack it, with a line from each,
-  why it is owned, and whether a capture there would be check or mate.
-- **Reach**: every piece shows how many squares it can move to right now
-  (pawns: the squares they attack). A stalemate watch warns when the other
-  side is out of moves and lists which moves would stalemate.
-- **Roads**: every rook, bishop and queen's roads, drawn as far as the piece
-  can actually go: up to the first piece in the way. Every piece under attack
-  gets a ring in the attacker's colour, whether a road, a knight or a pawn
-  reaches it. The ring is thicker the more the attackers outnumber
-  the defenders, cut when the piece is defended, and thin and dotted when the
-  defenders match or outnumber the attackers. A small × marks a road square
-  an enemy pawn guards: land there and the pawn takes you. Blue for White's
-  pieces, red for Black's. The summary
-  says where two roads of one side meet, the sign of a target. Open files
-  (no pawns on them) are shaded as the rooks' highway. Passed pawns get a
-  star and their path to promotion. Small dots mark the squares a knight can
-  jump to right now. Click a piece or pawn to see only its roads, or a knight
-  to see its four tracks.
-- **King houses**: the 3×3 zone around each king coloured by how well each
-  square is held, with the shield pawns, open files next to the king, the
-  pieces aiming at the house and the pieces defending it, a Strong / Shaky /
-  In danger label with its score explained, and the weakest square with how
-  many more attackers the opponent needs to break in. Red arrows show the
-  pressure, orange lines show pins, dashed circles the king's escape squares.
-- **Engine**: guess the best move. Tap a piece, then a square; only then
-  does Stockfish say how good it was ("Best!", "Just as good", "Good",
-  "Okay, but there was better", "Oops, that loses something", or the mate
-  you missed or allowed) and draw the two or three good moves as arrows,
-  thickest first. With a loaded game it also says what was actually played
-  and grades that. Library problems are checked against their stored key
-  instead. "Show me" reveals without a grade. Nothing engine-chosen is shown
-  before you commit to a move.
-- **Diamond**: the board turned 45°, so diagonals are straight lines and each
-  row is one colour.
-- **Shapes**: the chunking exercise from "How Masters See the Board": pieces
-  become squares (sized by value, or all the same), optionally boxed into
-  groups of touching pieces per wing. Look, say what each square is, then
-  press Reveal pieces.
-- **Knight**: a knight's four straight tracks with hop numbers; click any
-  square to move the knight there, and toggle hop counts for every square.
-
-## Run locally
-
-Browsers block ES modules from `file://`, so serve the folder:
-
-```
-python3 -m http.server 8080
-```
-
-then open http://localhost:8080/.
+for the view name). A question is `ask: { q, choices, answer }` or
+`ask: { q, tap: ["f7"] }`, with an optional `right` line; `moment` names
+one of the lesson's `moments` (`id`, `name`, a board, optional
+`looksLike: ["lesson/moment"]`), and the lesson then needs a `game` name.
+`recall: true` shows the moment's own board as a Yes/No question;
+`blocks: true` shows the step's board as blocks with a question.
+`npm test` validates every lesson and replays every PGN.
 
 ## Tests
 
@@ -192,6 +133,10 @@ The analysis functions in `analysis.js` and the pure modules `coach.js`,
 ```
 node --test
 ```
+
+To replay the lessons' games, the tests use a copy of chess.js 1.0.0 in
+`tests/vendor/chess.js`, pinned by its SHA-256. The page itself still loads
+chess.js from the CDN.
 
 The browser checks under `tests/browser/` drive the served page with
 Playwright on a throttled phone-sized viewport; see `tests/browser/README.md`:
