@@ -9,7 +9,8 @@ Live: https://damian0o.github.io/chess-views/ (GitHub Pages from `main`).
 The page is laid out like an app: the board comes first under a sticky bar
 (flip, letters, share link, Load), the views are a row of pills, and a loaded
 game gets player controls pinned to the bottom of the screen. It works on a
-phone as well as a desktop.
+phone as well as a desktop. In dark mode the page goes dark but the board
+stays light, so black pieces and the paper letters remain readable.
 
 ## Pieces
 
