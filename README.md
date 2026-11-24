@@ -139,8 +139,9 @@ the link as `eval=1`.
   (pawns: the squares they attack). A stalemate watch warns when the other
   side is out of moves and lists which moves would stalemate.
 - **Roads**: every rook, bishop and queen's roads, drawn as far as the piece
-  can actually go: up to the first piece in the way, ending with a ring on an
-  enemy piece it hits. The ring is thicker the more the attackers outnumber
+  can actually go: up to the first piece in the way. Every piece under attack
+  gets a ring in the attacker's colour, whether a road, a knight or a pawn
+  reaches it. The ring is thicker the more the attackers outnumber
   the defenders, cut when the piece is defended, and thin and dotted when the
   defenders match or outnumber the attackers. A small × marks a road square
   an enemy pawn guards: land there and the pawn takes you. Blue for White's
