@@ -97,3 +97,103 @@ export function nextGate(step, now) {
   if (step.shapesGate && !now.shapesReveal) return { kind: 'shapes', text: 'Press Reveal pieces first' };
   return null;
 }
+
+// ---------- validating a lesson ----------
+
+const SQUARE = /^[a-h][1-8]$/;
+const SLUG = /^[a-z0-9-]+$/;
+const POSITION_KEYS = ['fen', 'pgn', 'pos', 'same'];
+
+/**
+ * Everything wrong with one lesson, as readable lines ("<id> step <n>: …" or "<id>: …"); [] when valid.
+ * `Chess` is passed in (chess.js 1.0.0) so this module stays free of imports; every PGN is replayed.
+ */
+export function validateLesson(lesson, positions, Chess) {
+  const out = [];
+  const id = lesson.id;
+  const plies = new Map();   // pgn text → number of moves, or -1 when it does not replay
+  const replay = (pgn) => {
+    if (!plies.has(pgn)) {
+      try { const c = new Chess(); c.loadPgn(pgn); plies.set(pgn, c.history().length); } catch { plies.set(pgn, -1); }
+    }
+    return plies.get(pgn);
+  };
+  // A position field set → an error string or null. `allowSame` for steps only.
+  const checkPosition = (raw, allowSame) => {
+    const keys = POSITION_KEYS.filter((k) => k in raw && (k !== 'same' || allowSame));
+    if (keys.length !== 1) return 'needs exactly one position (fen, pgn+ply, pos' + (allowSame ? ' or same' : '') + ')';
+    let pgn = null, ply = raw.ply;
+    if (raw.pos) {
+      const entry = (positions || []).find((p) => p.id === raw.pos);
+      if (!entry) return `no library entry "${raw.pos}"`;
+      if (entry.pgn) { pgn = entry.pgn; ply = raw.ply ?? entry.ply; }
+    } else if (raw.pgn) pgn = raw.pgn;
+    if (pgn !== null) {
+      if (!Number.isInteger(ply) || ply < 0) return 'a pgn needs an integer ply of 0 or more';
+      const n = replay(pgn);
+      if (n < 0) return 'the pgn does not replay';
+      if (ply > n) return `ply ${ply} is beyond the game's ${n} moves`;
+    }
+    return null;
+  };
+
+  const moments = lesson.moments;
+  const momentIds = new Set();
+  if (moments !== undefined) {
+    if (!Array.isArray(moments) || moments.length < 2 || moments.length > 4) out.push(`${id}: moments needs 2 to 4 entries`);
+    if (!lesson.game) out.push(`${id}: moments need a game name`);
+    (Array.isArray(moments) ? moments : []).forEach((m, i) => {
+      const where = `${id} moment ${i + 1}`;
+      if (!SLUG.test(m.id || '') || momentIds.has(m.id)) out.push(`${where}: needs a unique id`);
+      momentIds.add(m.id);
+      if (!m.name) out.push(`${where}: needs a name`);
+      const p = checkPosition(m, false);
+      if (p) out.push(`${where}: ${p}`);
+      for (const k of m.looksLike || []) if (!/^[a-z0-9-]+\/[a-z0-9-]+$/.test(k)) out.push(`${where}: looksLike "${k}" is not lesson/moment`);
+    });
+  }
+
+  let prevPgn = null, prevPly = null;
+  lesson.steps.forEach((s, i) => {
+    const where = `${id} step ${i + 1}`;
+    const bad = (msg) => out.push(`${where}: ${msg}`);
+    if (!ALL_VIEWS.includes(s.view)) bad(`unknown view ${s.view}`);
+    if (s.sq && !SQUARE.test(s.sq)) bad(`bad square ${s.sq}`);
+    if (typeof s.say !== 'string' || !s.say.length || s.say.length > 220) bad('say must be 1 to 220 characters');
+    if (s.shapes && s.view !== 'shapes') bad('shapes options only on Shapes');
+    if (s.moment !== undefined && !momentIds.has(s.moment)) bad(`no moment "${s.moment}"`);
+    if (s.recall) {
+      if (s.moment === undefined) bad('a recall step needs a moment');
+      if (POSITION_KEYS.some((k) => k in s)) bad('a recall step shows its moment\'s board, not its own position');
+      const a = s.ask;
+      if (!a || JSON.stringify(a.choices) !== '["Yes","No"]' || a.answer !== 0) bad('a recall step asks Yes/No with Yes right');
+    } else {
+      if (i === 0 && s.same) bad('same is never first');
+      const p = checkPosition(s, true);
+      if (p) bad(p);
+    }
+    if ((s.blocks || s.recall) && (s.view !== 'shapes' || !s.ask)) bad('a blocks step is a question on Shapes');
+    if (s.ask !== undefined) {
+      const a = s.ask;
+      if (typeof a.q !== 'string' || !a.q.length || a.q.length > 80) bad('a question is 1 to 80 characters');
+      const hasChoices = 'choices' in a, hasTap = 'tap' in a;
+      if (hasChoices === hasTap) bad('a question has choices or tap, not both');
+      else if (hasChoices) {
+        if (!Array.isArray(a.choices) || a.choices.length < 2 || a.choices.length > 4) bad('2 to 4 choices');
+        else if (a.choices.some((c) => typeof c !== 'string' || !c.length || c.length > 32)) bad('each choice is 1 to 32 characters');
+        else if (!Number.isInteger(a.answer) || a.answer < 0 || a.answer >= a.choices.length) bad('the answer is not one of the choices');
+      } else if (!Array.isArray(a.tap) || !a.tap.length || a.tap.some((q) => !SQUARE.test(q))) bad('tap needs one or more squares');
+      if (a.right !== undefined && (typeof a.right !== 'string' || a.right.length > 120)) bad('right is at most 120 characters');
+    }
+    // the hidden-move rule: a solve step needs a pgn with a move after its ply
+    if (s.pgn) { prevPgn = s.pgn; prevPly = s.ply; } else if (s.same && s.ply !== undefined) prevPly = s.ply;
+    else if (s.pos) { const e = (positions || []).find((p) => p.id === s.pos); prevPgn = e && e.pgn ? e.pgn : null; prevPly = e ? s.ply ?? e.ply : null; }
+    else if (s.fen || s.recall) { prevPgn = null; }
+    if (s.solve) {
+      if (!s.task) bad('solve needs a task');
+      if (!prevPgn) bad('solve needs a pgn');
+      else if (!(replay(prevPgn) > prevPly)) bad(`solve needs a move after ply ${prevPly}`);
+    }
+  });
+  return out;
+}

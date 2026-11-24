@@ -76,3 +76,75 @@ test('nextGate: view first, then the reveal, then the shapes reveal', () => {
   assert.deepEqual(nextGate(s[6], { tab: 'shapes', ply: 6, shapesReveal: false }), { kind: 'shapes', text: 'Press Reveal pieces first' });
   assert.equal(nextGate(s[6], { tab: 'shapes', ply: 6, shapesReveal: true }), null);
 });
+
+// ---------- validateLesson (questions, moments, PGN replay) ----------
+import { validateLesson } from '../lessons.js';
+import { Chess } from './vendor/chess.js';
+import { readFileSync as readLib } from 'node:fs';
+
+const shipped = JSON.parse(readLib(new URL('../positions.json', import.meta.url), 'utf8'));
+const SAY = 'Open **Shapes**.';
+const base = (steps, extra = {}) => ({ id: 'fx', name: 'Fixture', about: 'x', steps, ...extra });
+const PGN = '1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#';
+const withMoments = (steps) => base(steps, { game: 'Fixture game', moments: [
+  { id: 'attack', name: 'the attack', pgn: PGN, ply: 5 },
+  { id: 'mate', name: 'the mate', pgn: PGN, ply: 7 },
+] });
+const errs = (L) => validateLesson(L, shipped.positions, Chess);
+
+test('validateLesson: the shipped lessons are valid', () => {
+  for (const L of shipped.lessons) assert.deepEqual(errs(L), [], L.id);
+});
+
+test('validateLesson: an illegal pgn is reported', () => {
+  const e = errs(base([{ pgn: '1. e4 e5 2. Ke3', ply: 3, view: 'board', say: SAY }]));
+  assert.equal(e.length, 1); assert.match(e[0], /^fx step 1: /);
+});
+
+test('validateLesson: a ply beyond the game is reported', () => {
+  assert.equal(errs(base([{ pgn: PGN, ply: 8, view: 'board', say: SAY }])).length, 1);
+});
+
+test('validateLesson: a recall step with its own position is reported', () => {
+  const e = errs(withMoments([{ fen: '8/8/8/8/8/8/8/K6k w - - 0 1', moment: 'mate', recall: true, view: 'shapes', say: SAY, ask: { q: 'Is this the mate?', choices: ['Yes', 'No'], answer: 0 } }]));
+  assert.ok(e.some((x) => x.startsWith('fx step 1: ')), e.join('|'));
+});
+
+test('validateLesson: a recall step whose answer is not Yes is reported', () => {
+  const e = errs(withMoments([{ moment: 'mate', recall: true, view: 'shapes', say: SAY, ask: { q: 'Is this the mate?', choices: ['Yes', 'No'], answer: 1 } }]));
+  assert.equal(e.length, 1, e.join('|'));
+});
+
+test('validateLesson: a valid recall step passes', () => {
+  assert.deepEqual(errs(withMoments([{ moment: 'mate', recall: true, view: 'shapes', say: SAY, ask: { q: 'Is this the mate?', choices: ['Yes', 'No'], answer: 0 } }])), []);
+});
+
+test('validateLesson: an unknown moment is reported', () => {
+  assert.equal(errs(withMoments([{ pgn: PGN, ply: 5, moment: 'nope', view: 'board', say: SAY }])).length, 1);
+});
+
+test('validateLesson: bad questions are each reported', () => {
+  const step = (ask) => ({ pgn: PGN, ply: 5, view: 'board', say: SAY, ask });
+  const bad = [
+    { q: 'Pick', choices: ['a', 'b', 'c', 'd', 'e'], answer: 0 },
+    { q: 'Pick', choices: ['a', 'b'], answer: 2 },
+    { q: 'Pick', choices: ['x'.repeat(33), 'b'], answer: 0 },
+    { q: 'Pick', choices: ['a', 'b'], answer: 0, tap: ['f7'] },
+    { q: 'Tap', tap: ['f9'] },
+    { q: 'x'.repeat(81), tap: ['f7'] },
+  ];
+  for (const ask of bad) assert.equal(errs(base([step(ask)])).length, 1, JSON.stringify(ask));
+  assert.deepEqual(errs(base([step({ q: 'Tap', tap: ['f7'] })])), []);
+});
+
+test('validateLesson: blocks outside Shapes is reported', () => {
+  assert.equal(errs(base([{ pgn: PGN, ply: 5, blocks: true, view: 'board', say: SAY, ask: { q: 'Yes?', choices: ['Yes', 'No'], answer: 0 } }])).length, 1);
+});
+
+test('validateLesson: moments need a game and 2-4 entries', () => {
+  const L = withMoments([{ pgn: PGN, ply: 5, view: 'board', say: SAY }]);
+  assert.deepEqual(errs(L), []);
+  assert.equal(errs({ ...L, game: undefined }).length, 1);
+  assert.equal(errs({ ...L, moments: L.moments.slice(0, 1) }).length, 1);
+  assert.equal(errs({ ...L, moments: [L.moments[0], { ...L.moments[1], ply: 99 }] }).length, 1);
+});

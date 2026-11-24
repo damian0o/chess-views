@@ -57,7 +57,9 @@ test('library: the Opera game names its players in PGN headers', () => {
   assert.equal(p.ply, 23);
 });
 
-import { resolveSteps } from '../lessons.js';
+import { resolveSteps, validateLesson } from '../lessons.js';
+import { Chess } from './vendor/chess.js';
+import { createHash } from 'node:crypto';
 
 test('library: lessons are well formed', () => {
   assert.ok(Array.isArray(lib.lessons) && lib.lessons.length >= 1);
@@ -66,24 +68,13 @@ test('library: lessons are well formed', () => {
     assert.match(L.id, /^[a-z0-9-]+$/); assert.ok(!ids.has(L.id)); ids.add(L.id);
     assert.ok(L.name && L.about);
     assert.ok(L.steps.length >= 3 && L.steps.length <= 30, `${L.id}: 3..30 steps`);
-    L.steps.forEach((s, i) => {
-      const sources = ['fen', 'pgn', 'pos', 'same'].filter((k) => k in s);
-      assert.equal(sources.length, 1, `${L.id} step ${i + 1}: one position source`);
-      if (i === 0) assert.ok(!s.same, `${L.id}: same is never first`);
-      assert.ok(VIEWS.includes(s.view), `${L.id} step ${i + 1}: view ${s.view}`);
-      if (s.sq) assert.match(s.sq, /^[a-h][1-8]$/);
-      assert.ok(typeof s.say === 'string' && s.say.length > 0 && s.say.length <= 220, `${L.id} step ${i + 1}: say`);
-      if (s.solve) assert.ok(s.task, `${L.id} step ${i + 1}: solve needs a task`);
-      if (s.shapes) assert.equal(s.view, 'shapes', `${L.id} step ${i + 1}: shapes options only on Shapes`);
-    });
-    const steps = resolveSteps(L, lib.positions);
-    for (const st of steps) {
-      if (!st.solve) continue;
-      assert.equal(st.source.kind, 'pgn', `${L.id} step ${st.index}: solve needs a pgn`);
-      const plies = st.source.pgn.replace(/\d+\.\s*/g, '').trim().split(/\s+/).length;
-      assert.ok(plies > st.source.ply, `${L.id} step ${st.index}: a move after ply ${st.source.ply}`);
-    }
+    assert.deepEqual(validateLesson(L, lib.positions, Chess), [], L.id);   // fields, questions, moments, every PGN replayed
   }
+});
+
+test('library: the test copy of chess.js is 1.0.0', () => {
+  const hash = createHash('sha256').update(readFileSync(new URL('./vendor/chess.js', import.meta.url))).digest('hex');
+  assert.equal(hash, 'b29ec4562b197c65d15eff8d1776c9005d3dcc25ecb1a38e543d3bcfa50ea4ee');
 });
 
 test("library: the Scholar's mate lesson has its 17 steps", () => {
