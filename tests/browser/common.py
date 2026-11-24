@@ -20,9 +20,10 @@ def base_arg(default="http://localhost:8080/"):
 
 class Session:
     """One Chromium context sized like a phone, CPU-throttled, collecting page errors."""
-    def __init__(self, pw, viewport=(390, 844), throttle=4, mobile=True, init_script=None, permissions=None):
+    def __init__(self, pw, viewport=(390, 844), throttle=4, mobile=True, init_script=None, permissions=None, color_scheme=None):
         self.browser = pw.chromium.launch()
         kw = {"viewport": {"width": viewport[0], "height": viewport[1]}, "is_mobile": mobile, "has_touch": mobile}
+        if color_scheme: kw["color_scheme"] = color_scheme
         if permissions: kw["permissions"] = permissions
         self.ctx = self.browser.new_context(**kw)
         if init_script: self.ctx.add_init_script(init_script)
