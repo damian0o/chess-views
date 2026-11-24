@@ -13,7 +13,7 @@ moments:
     pos: lasker-1912
     ply: 21
   hunt:
-    name: pogoń za królem
+    name: polowanie na króla
     pos: lasker-1912
     ply: 30
   mate:
@@ -101,7 +101,7 @@ Czarny król jest na f3, głęboko na połowie białych, daleko od swoich bierek
 Tylko bloki. Ta sama pozycja?
 :::
 
-? Czy to pogoń za królem? {recall: "hunt", answer: "yes"}
+? Czy to polowanie na króla? {recall: "hunt", answer: "yes"}
 ! Tak: czarny król jest na f3, daleko od domu.
 
 ## s10-blocks {scene: "blocks", pos: "lasker-1912", ply: 22, moment: "hunt"}
@@ -110,8 +110,8 @@ Tylko bloki. Ta sama pozycja?
 Inna plansza.
 :::
 
-? Czy to pogoń za królem? {recall: "hunt", answer: "no"}
-! Dobrze: pogoń jeszcze się nie zaczęła, król jest wciąż na h7.
+? Czy to polowanie na króla? {recall: "hunt", answer: "no"}
+! Dobrze: polowanie jeszcze się nie zaczęło, król jest wciąż na h7.
 
 ## s11-board {scene: "board", pos: "lasker-1912", ply: 34, moment: "mate", solve: "Znajdź mata"}
 
