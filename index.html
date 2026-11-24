@@ -584,7 +584,7 @@
 
 <script type="module">
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/esm/chess.js';
-import * as A from './analysis.js?v=2d612830';
+import * as A from './analysis.js?v=4e92d519';
 import { createEngine } from './engine.js?v=e80dc02d';
 import * as C from './coach.js?v=80b5db19';
 import * as L from './lessons.js?v=14c9bf0b';
@@ -1093,7 +1093,7 @@ const VIEWS = {
           const piece = `${side(st.piece.color)}'s ${PIECE_WORDS[st.piece.type]} on ${focus}`;
           const plural = (xs) => (xs.length === 1 ? 's' : '');
           let story;
-          if (st.status === 'free') story = `${piece} can be taken for free: ${list(st.attackers)} attack${plural(st.attackers)} it and nobody defends it.`;
+          if (st.status === 'free') story = `${piece} can be taken for free: ${list(st.attackers)} attack${plural(st.attackers)} it and ${st.kingOnly && st.kingOnly.length ? `only the king guards it, but the king cannot take back while an attacker would still hit ${focus}` : 'nobody defends it'}.`;
           else if (st.status === 'cheap') story = `${piece} can be taken: the ${name(st.by)} is worth less than it, even though ${list(st.defenders)} defend${plural(st.defenders)} it.`;
           else if (st.status === 'held') story = `${piece} is attacked by ${list(st.attackers)} but defended by ${list(st.defenders)}. Every attacker is worth at least as much, so taking it loses material.`;
           else story = st.defenders.length ? `${piece} is not attacked; ${list(st.defenders)} defend${plural(st.defenders)} it.` : `${piece} is not attacked, but nobody defends it either: a loose piece.`;
@@ -1275,14 +1275,16 @@ const VIEWS = {
       for (const ray of drawnRays) if (ray.hit) hitSquares.set(`${ray.piece.color}:${ray.hit}`, { square: ray.hit, color: ray.piece.color });
       for (const { square, color } of hitSquares.values()) {
         const who = A.attackersOf(board, square);
-        const attackers = who[color], defenders = who[color === 'w' ? 'b' : 'w'];
+        const attackers = who[color], allDefenders = who[color === 'w' ? 'b' : 'w'];
+        const defenders = A.realDefenders(attackers, allDefenders);
+        const lameKing = allDefenders.find((p) => p.type === 'k' && !defenders.includes(p));
         const cut = !defenders.length ? 'free' : defenders.length >= attackers.length ? 'held' : 'contested';
         const [cx, cy] = centre(square);
         const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         const edge = Math.max(0, Math.min(3, attackers.length - defenders.length));
         for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${color} ${cut}`, 'stroke-width': (0.06 + 0.05 * edge).toFixed(2), 'data-attackers': attackers.length, 'data-defenders': defenders.length })) ring.setAttribute(k, v);
         const names = (xs) => (xs.length ? xs.map((p) => `${PIECE_WORDS[p.type]} ${p.square}`).join(', ') : 'nobody');
-        ring.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${square}: attacked by ${names(attackers)}, defended by ${names(defenders)}` }));
+        ring.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${square}: attacked by ${names(attackers)}, defended by ${names(defenders)}${lameKing ? ` (the king on ${lameKing.square} cannot take back: an attacker would still hit ${square})` : ''}` }));
         svg.append(ring);
       }
       // Open files (no pawns at all) stay as a light shading: the classic highway for rooks.
