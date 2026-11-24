@@ -57,7 +57,9 @@ test('library: the Opera game names its players in PGN headers', () => {
   assert.equal(p.ply, 23);
 });
 
-import { resolveSteps } from '../lessons.js';
+import { resolveSteps, validateLesson } from '../lessons.js';
+import { Chess } from './vendor/chess.js';
+import { createHash } from 'node:crypto';
 
 test('library: lessons are well formed', () => {
   assert.ok(Array.isArray(lib.lessons) && lib.lessons.length >= 1);
@@ -66,50 +68,108 @@ test('library: lessons are well formed', () => {
     assert.match(L.id, /^[a-z0-9-]+$/); assert.ok(!ids.has(L.id)); ids.add(L.id);
     assert.ok(L.name && L.about);
     assert.ok(L.steps.length >= 3 && L.steps.length <= 30, `${L.id}: 3..30 steps`);
-    L.steps.forEach((s, i) => {
-      const sources = ['fen', 'pgn', 'pos', 'same'].filter((k) => k in s);
-      assert.equal(sources.length, 1, `${L.id} step ${i + 1}: one position source`);
-      if (i === 0) assert.ok(!s.same, `${L.id}: same is never first`);
-      assert.ok(VIEWS.includes(s.view), `${L.id} step ${i + 1}: view ${s.view}`);
-      if (s.sq) assert.match(s.sq, /^[a-h][1-8]$/);
-      assert.ok(typeof s.say === 'string' && s.say.length > 0 && s.say.length <= 220, `${L.id} step ${i + 1}: say`);
-      if (s.solve) assert.ok(s.task, `${L.id} step ${i + 1}: solve needs a task`);
-      if (s.shapes) assert.equal(s.view, 'shapes', `${L.id} step ${i + 1}: shapes options only on Shapes`);
-    });
-    const steps = resolveSteps(L, lib.positions);
-    for (const st of steps) {
-      if (!st.solve) continue;
-      assert.equal(st.source.kind, 'pgn', `${L.id} step ${st.index}: solve needs a pgn`);
-      const plies = st.source.pgn.replace(/\d+\.\s*/g, '').trim().split(/\s+/).length;
-      assert.ok(plies > st.source.ply, `${L.id} step ${st.index}: a move after ply ${st.source.ply}`);
-    }
+    assert.deepEqual(validateLesson(L, lib.positions, Chess), [], L.id);   // fields, questions, moments, every PGN replayed
   }
 });
 
-test("library: the Scholar's mate lesson has its 17 steps", () => {
+test('library: the test copy of chess.js is 1.0.0', () => {
+  const hash = createHash('sha256').update(readFileSync(new URL('./vendor/chess.js', import.meta.url))).digest('hex');
+  assert.equal(hash, 'b29ec4562b197c65d15eff8d1776c9005d3dcc25ecb1a38e543d3bcfa50ea4ee');
+});
+
+test("library: the Scholar's mate lesson has 25 steps in three moments with questions", () => {
   const L = lib.lessons.find((x) => x.id === 'scholars-mate');
   const steps = resolveSteps(L, lib.positions);
-  assert.equal(steps.length, 17);
+  assert.equal(steps.length, 25);
+  assert.equal(L.game, "Scholar's mate");
+  assert.deepEqual(L.moments.map((m) => m.id), ['attack', 'defence', 'mate']);
   assert.deepEqual(steps.slice(0, 5).map((s) => s.view), ['board', 'kings', 'roads', 'shapes', 'territory']);
   assert.equal(steps[4].sq, 'f7');
-  assert.deepEqual([steps[5].solve, steps[5].task, steps[5].source.ply], [true, "Find White's strike", 6]);
-  assert.equal(steps[6].source.ply, 7);
+  const tap = steps[5];
+  assert.deepEqual([tap.view, tap.ask.tap], ['board', ['f7']], 'the tap question is asked in Board, never in Territory with f7 focused');
+  assert.ok(steps.every((s) => !(s.ask && s.ask.tap && s.view === 'territory')));
+  assert.deepEqual([steps[8].solve, steps[8].task, steps[8].source.ply], [true, "Find White's strike", 6]);
+  assert.equal(steps[9].source.ply, 7);
+  const stop = steps.find((s) => s.ask && s.ask.q === 'Which move stops the mate?');
+  assert.deepEqual([[...stop.ask.choices].sort(), stop.ask.choices[stop.ask.answer]], [['a6', 'g6', 'h6'], 'g6']);
+  assert.equal(steps.filter((s) => s.blocks).length, 6, 'a Yes and a No board for each moment');
+  for (const m of ['attack', 'defence', 'mate']) assert.ok(steps.some((s) => s.blocks && s.moment && s.moment.id === m && s.ask.answer === 0) && steps.some((s) => s.blocks && s.moment && s.moment.id === m && s.ask.answer === 1), m);
   assert.equal(steps.filter((s) => s.shapesGate).length, 3);
   assert.ok(steps.every((s) => s.flip === false));
   assert.ok(steps[1].say.includes('**King houses**'));
 });
 
-test('library: Eyes on f7 has an opener and ten blocks-first boards with answers', () => {
+test('library: Eyes on f7 has an opener and ten blocks boards, each asking where two pieces aim', () => {
   const L = lib.lessons.find((x) => x.id === 'eyes-on-f7');
+  assert.equal(L.moments, undefined, 'a practice lesson: no moments, never in Recognise');
   const steps = resolveSteps(L, lib.positions);
   assert.equal(steps.length, 21);
-  const gated = steps.filter((s) => s.shapesGate);
-  assert.equal(gated.length, 10);
-  for (const g of gated) {
+  const boards = steps.filter((s) => s.blocks);
+  assert.equal(boards.length, 10);
+  assert.deepEqual(boards.map((b) => b.ask.choices[b.ask.answer]), ['f7', 'Neither', 'f7', 'Neither', 'f7', 'Neither', 'f7', 'f7', 'f2', 'f2']);
+  for (const g of boards) {
+    assert.deepEqual(g.ask.choices, ['f7', 'f2', 'Neither']);
     const answer = steps[g.index];            // the step after each board
     assert.ok(['roads', 'territory'].includes(answer.view), `board at step ${g.index}: answer view`);
     assert.deepEqual(answer.source, g.source, `board at step ${g.index}: the answer shows the same position`);
     if (answer.view === 'territory') assert.ok(['f7', 'f2'].includes(answer.sq));
   }
-  assert.ok(steps.every((s) => s.flip === false && !s.solve));
+  assert.ok(steps.every((s) => s.flip === false && !s.solve && !s.shapesGate));
+});
+
+import { buildRound, usableMoments } from '../lessons.js';
+
+const GAME_LESSONS = ['opera-game-lesson', 'legal-mate', 'reti-tartakower', 'lasker-thomas'];
+
+test('library: four game lessons with moments, a Yes and a No board for each moment', () => {
+  for (const id of GAME_LESSONS) {
+    const L = lib.lessons.find((x) => x.id === id);
+    assert.ok(L, id);
+    assert.ok(L.game && L.moments.length >= 2 && L.moments.length <= 4, `${id}: game and 2-4 moments`);
+    const steps = resolveSteps(L, lib.positions);
+    for (const m of L.moments) {
+      assert.ok(`${L.game}: ${m.name}`.length <= 32, `${id}/${m.id}: the round answer fits 32 characters`);
+      assert.ok(steps.some((s) => s.blocks && s.moment && s.moment.id === m.id && s.ask.answer === 0), `${id}/${m.id}: a Yes board`);
+      assert.ok(steps.some((s) => s.blocks && s.moment && s.moment.id === m.id && s.ask.answer === 1), `${id}/${m.id}: a No board`);
+    }
+    assert.ok(steps.filter((s) => s.ask && !s.blocks).length >= L.moments.length, `${id}: at least one quick question per moment`);
+    assert.equal(steps[0].view, 'board', `${id}: starts in Board`);
+  }
+});
+
+test('library: the three new games are library entries with their players', () => {
+  const byId = Object.fromEntries(lib.positions.map((p) => [p.id, p]));
+  assert.match(byId['legal-1750'].pgn, /\[White "Légal"\]/);
+  assert.match(byId['reti-1910'].pgn, /\[White "Réti"\]\n\[Black "Tartakower"\]/);
+  assert.match(byId['lasker-1912'].pgn, /\[White "Edward Lasker"\]\n\[Black "Thomas"\]/);
+  for (const id of ['legal-1750', 'reti-1910', 'lasker-1912']) {
+    const c = new Chess(); c.loadPgn(byId[id].pgn);
+    assert.ok(c.isCheckmate(), `${id} ends in mate`);
+    assert.ok(byId[id].tags.includes('game'));
+  }
+});
+
+test('library: with every lesson finished a round has 8 boards of 3-4 short answers', () => {
+  const done = new Set(lib.lessons.map((l) => l.id));
+  assert.ok(usableMoments(lib.lessons, lib.positions, done).length >= 8);
+  for (const seed of [1, 2, 3, 99]) {
+    const r = buildRound(lib.lessons, lib.positions, done, seed);
+    assert.equal(r.steps.length, 8);
+    for (const s of r.steps) {
+      assert.ok(s.ask.choices.length >= 3 && s.ask.choices.length <= 4);
+      assert.ok(s.ask.choices.every((c) => c.length <= 32), s.ask.choices.join(' | '));
+    }
+  }
+});
+
+test('library: the right answer is not always the same button within a lesson', () => {
+  for (const L of lib.lessons) {
+    const keys = L.steps.filter((s) => s.ask && s.ask.choices && !(s.ask.choices.length === 2 && s.ask.choices[0] === 'Yes')).map((s) => s.ask.answer);
+    if (keys.length >= 2) assert.ok(new Set(keys).size > 1, `${L.id}: every key is button ${keys[0] + 1}`);
+  }
+});
+
+test('library: the Lasker mate says that castling long mates too', () => {
+  const L = lib.lessons.find((x) => x.id === 'lasker-thomas');
+  assert.ok(L.steps.some((s) => s.view === 'kings' && /O-O-O/.test(s.say)));
 });
