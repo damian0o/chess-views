@@ -285,8 +285,9 @@
   /* Roads */
   .roadwrap { position: relative; display: inline-block; }
   .roadwrap > svg { position: absolute; left: var(--cell); top: var(--cell); width: calc(var(--cell) * 8); height: calc(var(--cell) * 8); pointer-events: none; }
-  .roadwrap .board .sq { background: transparent !important; }
-  .roadwrap .board .sq.dark { background: color-mix(in srgb, var(--square-dark) 45%, transparent) !important; }
+  .roadwrap .board .sq { background: var(--square-light) !important; }
+  /* paler dark squares so the roads stand out, but solid: never the page colour showing through in dark mode */
+  .roadwrap .board .sq.dark { background: color-mix(in srgb, var(--square-dark) 55%, var(--square-light)) !important; }
   .roadwrap .board .sq.frozen { background-image: repeating-linear-gradient(-45deg, transparent 0 5px, rgba(224,122,16,0.35) 5px 8px) !important; }
   .roadwrap .board .sq .p { position: relative; z-index: 1; }
   .roadwrap .board .sq .dot { display: none; }
@@ -349,7 +350,8 @@
   .roadwrap line.ray { stroke-width: 0.12; opacity: 0.75; }
   .roadwrap line.ray.by-w { stroke: var(--side-w); } .roadwrap line.ray.by-b { stroke: var(--side-b); }
   .roadwrap line.ray.focus { stroke-width: 0.18; opacity: 0.95; }
-  .roadwrap circle.hitring { fill: none; opacity: 0.9; }
+  .roadwrap circle.hitring { fill: none; opacity: 1; }
+  .roadwrap circle.hithalo { fill: none; stroke: #fff; opacity: 0.9; }
   .roadwrap g.pawnguard line { stroke-width: 0.07; stroke-linecap: round; opacity: 0.9; }
   .roadwrap g.pawnguard.by-w line { stroke: var(--side-w); } .roadwrap g.pawnguard.by-b line { stroke: var(--side-b); }
   .roadwrap circle.hitring.contested { stroke-dasharray: 0.3 0.14; }
@@ -1280,9 +1282,14 @@ const VIEWS = {
         const lameKing = allDefenders.find((p) => p.type === 'k' && !defenders.includes(p));
         const cut = !defenders.length ? 'free' : defenders.length >= attackers.length ? 'held' : 'contested';
         const [cx, cy] = centre(square);
-        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         const edge = Math.max(0, Math.min(3, attackers.length - defenders.length));
-        for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${color} ${cut}`, 'stroke-width': (0.06 + 0.05 * edge).toFixed(2), 'data-attackers': attackers.length, 'data-defenders': defenders.length })) ring.setAttribute(k, v);
+        const sw = 0.08 + 0.05 * edge;
+        // a white halo under the ring keeps it readable on light squares and over pieces
+        const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: 'hithalo', 'stroke-width': (sw + 0.08).toFixed(2) })) halo.setAttribute(k, v);
+        svg.append(halo);
+        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${color} ${cut}`, 'stroke-width': sw.toFixed(2), 'data-attackers': attackers.length, 'data-defenders': defenders.length })) ring.setAttribute(k, v);
         const names = (xs) => (xs.length ? xs.map((p) => `${PIECE_WORDS[p.type]} ${p.square}`).join(', ') : 'nobody');
         ring.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${square}: attacked by ${names(attackers)}, defended by ${names(defenders)}${lameKing ? ` (the king on ${lameKing.square} cannot take back: an attacker would still hit ${square})` : ''}` }));
         svg.append(ring);
