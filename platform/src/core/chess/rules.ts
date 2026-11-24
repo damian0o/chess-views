@@ -70,3 +70,21 @@ export function loadGame(src: PositionSource): Game {
     },
   };
 }
+
+/**
+ * Can an engine judge this position? Both kings present, the side not to move not in check,
+ * and at least one legal move.
+ */
+export function isJudgeable(fen: Fen): boolean {
+  let c: Chess;
+  try { c = new Chess(fen); } catch { return false; }
+  const board = c.board().flat();
+  if (board.filter((p) => p?.type === 'k').length !== 2) return false;
+  const parts = fen.split(' ');
+  parts[1] = parts[1] === 'w' ? 'b' : 'w'; parts[3] = '-';
+  try {
+    const other = new Chess(parts.join(' '), { skipValidation: true });
+    if (other.inCheck()) return false;
+  } catch { return false; }
+  return c.moves().length > 0;
+}
