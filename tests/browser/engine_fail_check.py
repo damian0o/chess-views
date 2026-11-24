@@ -29,6 +29,7 @@ with sync_playwright() as p:
     t0 = time.time()
     while time.time() - t0 < 12 and "could not start" not in summary(pg): pg.wait_for_timeout(200)
     check("blocked worker: The engine could not start in this browser.", "The engine could not start in this browser." in summary(pg) and pg.locator("#showme").count() == 0, f"{summary(pg)[:80]} after {time.time()-t0:.1f}s")
+    check("the Engine view says it once", pg.evaluate("[...document.querySelectorAll('#view *')].filter(e => e.children.length === 0 && e.textContent.includes('could not start')).length") == 1)
     pg.locator(".tabs [role=tab]", has_text="Board").tap(); pg.wait_for_timeout(200); pg.locator("#evaltoggle").tap(); pg.wait_for_timeout(300)
     check("board toggle shows the same sentence", "The engine could not start in this browser." in pg.locator(".evalline .words").inner_text())
     check("no page errors (2)", not errs, " | ".join(errs)[:200]); ctx.close()
