@@ -125,13 +125,22 @@ one of the lesson's `moments` (`id`, `name`, a board, optional
 `blocks: true` shows the step's board as blocks with a question.
 `npm test` validates every lesson and replays every PGN.
 
+## The platform (in progress)
+
+This page is the proof of concept. Its successor is being built in
+`platform/`: a typed TypeScript core (chess rules, analysis, lessons,
+recognition, engine, storage, languages) with no screens yet, lessons as
+Markdown, and checks in CI. Phase 1 has no user interface; this page stays
+live until the platform matches it. See
+`docs/superpowers/specs/2026-11-24-platform-design.md`.
+
 ## Tests
 
 The analysis functions in `analysis.js` and the pure modules `coach.js`,
 `engine.js` and `lessons.js` have unit tests that need only Node 20+:
 
 ```
-node --test
+npm test
 ```
 
 To replay the lessons' games, the tests use a copy of chess.js 1.0.0 in
