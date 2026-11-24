@@ -12,13 +12,13 @@ experience: basic
 ## s01-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 5}
 
 ::: kids
-Dziesięć plansz z pierwszych ruchów. Za każdym razem zapytaj: które bloki celują w pole obok króla, f7 albo f2? Dwie bierki w tym miejscu to znak niebezpieczeństwa.
+Dziesięć pozycji z pierwszych ruchów. Za każdym razem zapytaj: które bloki celują w pole obok króla, f7 albo f2? Dwie bierki w tym miejscu to znak niebezpieczeństwa.
 :::
 
 ## s02-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 5}
 
 ::: kids
-Plansza 1 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 1 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -35,7 +35,7 @@ Hetman h5 i goniec c4: dwie drogi krzyżują się na f7. Pilnuje go tylko król,
 ## s04-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Nf3", ply: 5}
 
 ::: kids
-Plansza 2 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 2 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -52,7 +52,7 @@ Tylko goniec celuje w f7, a król go pilnuje: jeden na jednego, na razie nic si�
 ## s06-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qf3", ply: 5}
 
 ::: kids
-Plansza 3 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 3 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -69,7 +69,7 @@ Hetman f3 i goniec c4. Droga hetmana przychodzi z drugiej strony, ale cel jest t
 ## s08-blocks {scene: "blocks", pgn: "1. e4 e5 2. Qh5 Nc6", ply: 4}
 
 ::: kids
-Plansza 4 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 4 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -86,7 +86,7 @@ Sam hetman patrzy na f7: jeśli zbije, król go odbije. Jeden napastnik to zawsz
 ## s10-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. c3 Nf6 4. Qb3", ply: 7}
 
 ::: kids
-Plansza 5 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 5 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -103,7 +103,7 @@ Hetman b3 za gońcem c4 na jednej drodze: dwóch napastników w rzędzie. Jeśli
 ## s12-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qe2", ply: 5}
 
 ::: kids
-Plansza 6 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 6 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -120,7 +120,7 @@ Dwie bierki wyszły, ale hetman na e2 patrzy wzdłuż kolumny e, nie na f7. Celu
 ## s14-blocks {scene: "blocks", pgn: "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5", ply: 7}
 
 ::: kids
-Plansza 7 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 7 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -137,7 +137,7 @@ Skoczek g5 i goniec c4 sięgają f7. Tu nie ma mata, ale Nxf7 zrobiłoby widełk
 ## s16-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 Qe7", ply: 6}
 
 ::: kids
-Plansza 8 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 8 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -154,7 +154,7 @@ Cały kształt jest, ale Qe7 pilnuje f7: dwóch na dwóch. Bicie na f7 teraz tra
 ## s18-blocks {scene: "blocks", pgn: "1. e4 e5 2. Nf3 Bc5 3. Nxe5 Qh4", ply: 6}
 
 ::: kids
-Plansza 9 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 9 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?
@@ -171,7 +171,7 @@ Teraz celują czarne: hetman h4 i goniec c5 patrzą na f2, a Qxf2 byłoby matem.
 ## s20-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Bc5 3. Nc3 Qf6", ply: 6}
 
 ::: kids
-Plansza 10 z 10. Tylko bloki: patrz na pole obok każdego króla.
+Pozycja 10 z 10. Tylko bloki: patrz na pole obok każdego króla.
 :::
 
 ? Gdzie celują dwie bierki?

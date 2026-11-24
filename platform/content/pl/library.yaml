@@ -4,7 +4,7 @@ start:
     centrum, zanim ktokolwiek zrobi ruch?"
 italian-opening:
   name: Partia włoska
-  note: "Oba gońce celują w najsłabsze pola na planszy, f7 i f2, których bronią
+  note: "Oba gońce celują w najsłabsze pola na szachownicy, f7 i f2, których bronią
     tylko króle. Drogi pokazują obie przekątne."
 london-system:
   name: System londyński
@@ -101,4 +101,4 @@ reti-1910:
 lasker-1912:
   name: "Lasker kontra Thomas: polowanie na króla"
   note: "Londyn 1912. Ofiara hetmana na h7 wyciąga czarnego króla z domku i
-    prowadzi go przez całą planszę aż na g1."
+    prowadzi go przez całą szachownicę aż na g1."

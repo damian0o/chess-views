@@ -61,7 +61,7 @@ Tylko bloki. Ta sama pozycja?
 ## s06-blocks {scene: "blocks", pos: "reti-1910", ply: 15, moment: "gift"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to dar hetmana? {recall: "gift", answer: "no"}
@@ -97,7 +97,7 @@ Tylko bloki. Ta sama pozycja?
 ## s10-blocks {scene: "blocks", pos: "opera-game", ply: 33, moment: "mate"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to mat Rétiego? {recall: "mate", answer: "no"}

@@ -53,7 +53,7 @@ Tylko bloki. Ta sama pozycja?
 ## s04-blocks {scene: "blocks", pos: "opera-game", ply: 4, moment: "start"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to szybki start? {recall: "start", answer: "no"}
@@ -89,7 +89,7 @@ Tylko bloki. Ta sama pozycja?
 ## s08-blocks {scene: "blocks", pos: "opera-game", ply: 25, moment: "sacrifice"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to poświęcenie skoczka? {recall: "sacrifice", answer: "no"}
@@ -125,7 +125,7 @@ Tylko bloki. Ta sama pozycja?
 ## s12-blocks {scene: "blocks", pos: "reti-1910", ply: 21, moment: "mate"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to mat z Partii w operze? {recall: "mate", answer: "no"}

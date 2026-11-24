@@ -74,7 +74,7 @@ Tylko bloki. Ten sam atak?
 ## s08-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Nf3", ply: 5, moment: "attack"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to atak na f7? {recall: "attack", answer: "no"}
@@ -83,7 +83,7 @@ Inna plansza.
 ## s09-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#", ply: 6, moment: "mate", solve: "Znajdź cios białych"}
 
 ::: kids
-Czarne zrobiły nieuważny ruch. Znajdź cios na planszy albo na kartce, potem naciśnij ▶.
+Czarne zrobiły nieuważny ruch. Znajdź cios na szachownicy albo na kartce, potem naciśnij ▶.
 :::
 
 ## s10-houses {scene: "board+kings", same: true, ply: 7, moment: "mate"}
@@ -110,7 +110,7 @@ Znowu tylko bloki.
 ## s12-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#", ply: 5, moment: "mate"}
 
 ::: kids
-Jeszcze jedna plansza.
+Jeszcze jedna pozycja.
 :::
 
 ? Czy to mat? {recall: "mate", answer: "no"}
@@ -164,7 +164,7 @@ Tylko bloki.
 ## s19-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#", ply: 6, moment: "defence"}
 
 ::: kids
-Jeszcze jedna plansza.
+Jeszcze jedna pozycja.
 :::
 
 ? Czy to obrona? {recall: "defence", answer: "no"}

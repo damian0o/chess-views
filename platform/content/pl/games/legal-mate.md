@@ -55,7 +55,7 @@ Tylko bloki. Ta sama pozycja?
 ## s05-blocks {scene: "blocks", pos: "legal-1750", ply: 6, moment: "gift"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to dar hetmana? {recall: "gift", answer: "no"}
@@ -91,7 +91,7 @@ Tylko bloki. Ta sama pozycja?
 ## s09-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#", ply: 7, moment: "mate"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to mat Légala? {recall: "mate", answer: "no"}

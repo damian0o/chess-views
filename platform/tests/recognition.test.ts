@@ -93,6 +93,6 @@ describe('recognition', () => {
     const q = r && choiceQ(r.steps[0]!);
     expect(q?.prompt.kids).toBe('Która partia, która pozycja?');
     expect(q?.choices.every((c) => c.startsWith('Partia '))).toBe(true);
-    expect(r?.steps[0]?.explain.kids).toMatch(/^Plansza 1 z /);
+    expect(r?.steps[0]?.explain.kids).toMatch(/^Pozycja 1 z /);
   });
 });

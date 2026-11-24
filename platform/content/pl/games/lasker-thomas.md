@@ -4,7 +4,7 @@ group:
   kind: game
   id: lasker-thomas
 title: Lasker poluje na króla
-about: "Londyn 1912: ofiara hetmana ciągnie czarnego króla przez całą planszę."
+about: "Londyn 1912: ofiara hetmana ciągnie czarnego króla przez całą szachownicę."
 game: Lasker – Thomas
 experience: basic
 moments:
@@ -71,7 +71,7 @@ Tylko bloki. Ta sama pozycja?
 ## s06-blocks {scene: "blocks", pos: "lasker-1912", ply: 20, moment: "gift"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to dar hetmana? {recall: "gift", answer: "no"}
@@ -107,7 +107,7 @@ Tylko bloki. Ta sama pozycja?
 ## s10-blocks {scene: "blocks", pos: "lasker-1912", ply: 22, moment: "hunt"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to polowanie na króla? {recall: "hunt", answer: "no"}
@@ -143,7 +143,7 @@ Tylko bloki. Ta sama pozycja?
 ## s14-blocks {scene: "blocks", pos: "lasker-1912", ply: 32, moment: "mate"}
 
 ::: kids
-Inna plansza.
+Inna pozycja.
 :::
 
 ? Czy to mat? {recall: "mate", answer: "no"}
@@ -152,5 +152,5 @@ Inna plansza.
 ## s15-board {scene: "board", pos: "lasker-1912", ply: 35}
 
 ::: kids
-Polowanie Laskera zaliczone: dar hetmana na h7, wędrówka króla przez całą planszę i mat na g1.
+Polowanie Laskera zaliczone: dar hetmana na h7, wędrówka króla przez całą szachownicę i mat na g1.
 :::
