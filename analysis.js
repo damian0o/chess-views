@@ -195,6 +195,16 @@ export function territory(board) {
  *  'held'  attacked, but every attacker is worth at least as much and it is defended
  *  'quiet' not attacked
  */
+/**
+ * The defenders that can really take back. A king may never recapture onto a square another attacker
+ * still hits, so it only counts as the last recapture: when the other defenders can trade off every
+ * attacker but one (attackers <= other defenders + 1).
+ */
+export function realDefenders(attackers, defenders) {
+  const others = defenders.filter((p) => p.type !== 'k');
+  return attackers.length <= others.length + 1 ? defenders.slice() : others;
+}
+
 export function pieceSafety(board) {
   const pinMap = absolutePinMap(board);
   const hits = new Map(); // square → { w: [], b: [] }
@@ -214,7 +224,9 @@ export function pieceSafety(board) {
     const h = hits.get(piece.square) || { w: [], b: [] };
     const enemy = piece.color === 'w' ? 'b' : 'w';
     const sortByValue = (list) => list.slice().sort((a, b) => (PIECE_VALUE[a.type] - PIECE_VALUE[b.type]) || a.square.localeCompare(b.square));
-    const attackers = sortByValue(h[enemy]), defenders = sortByValue(h[piece.color]);
+    const attackers = sortByValue(h[enemy]), all = sortByValue(h[piece.color]);
+    const defenders = realDefenders(attackers, all);
+    const kingOnly = all.filter((p) => !defenders.includes(p));   // a king that cannot take back
     const by = attackers[0] || null;
     let status = 'quiet';
     if (by) {
@@ -222,7 +234,7 @@ export function pieceSafety(board) {
       else if (PIECE_VALUE[by.type] < PIECE_VALUE[piece.type]) status = 'cheap';
       else status = 'held';
     }
-    out.set(piece.square, { piece, attackers, defenders, by, status });
+    out.set(piece.square, { piece, attackers, defenders, kingOnly, by, status });
   }
   return out;
 }

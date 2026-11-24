@@ -17,14 +17,19 @@ def main(pw):
     check("no road runs through a piece", not any("e8" in t and "h5" in t for t in titles))
     check("rings mark the pieces hit", pg.locator(".roadwrap circle.hitring").count() >= 3)
     rings = pg.evaluate("Object.fromEntries([...document.querySelectorAll('.roadwrap circle.hitring')].map(c => [c.querySelector('title').textContent.split(':')[0], { w: c.getAttribute('stroke-width'), a: c.dataset.attackers, d: c.dataset.defenders, cls: c.getAttribute('class') }]))")
-    check("f7 ring: two attackers, one defender, thick and cut", rings.get("f7", {}).get("a") == "2" and rings["f7"]["d"] == "1" and rings["f7"]["w"] == "0.11" and "contested" in rings["f7"]["cls"], str(rings.get("f7")))
+    check("f7 ring: two attackers, the king cannot take back: thick and solid", rings.get("f7", {}).get("a") == "2" and rings["f7"]["d"] == "0" and rings["f7"]["w"] == "0.16" and "free" in rings["f7"]["cls"], str(rings.get("f7")))
     check("e5 ring: one attacker, defended at least as much, thin and dotted", rings.get("e5", {}).get("a") == "1" and int(rings["e5"]["d"]) >= 1 and rings["e5"]["w"] == "0.06" and "held" in rings["e5"]["cls"], str(rings.get("e5")))
-    check("ring titles name attackers and defenders", pg.evaluate("[...document.querySelectorAll('.roadwrap circle.hitring title')].some(t => t.textContent === 'f7: attacked by queen h5, bishop c4, defended by king e8')"))
+    check("ring titles name attackers and defenders", pg.evaluate("[...document.querySelectorAll('.roadwrap circle.hitring title')].some(t => t.textContent === 'f7: attacked by queen h5, bishop c4, defended by nobody (the king on e8 cannot take back: an attacker would still hit f7)')"))
     check("one ring per piece hit, not per road", len(rings) == pg.locator(".roadwrap circle.hitring").count())
     # with ...Qe7 defending, f7 is two against two: thin and dotted
     s.goto(BASE, "fen=r1b1kbnr%2Fppppqppp%2F2n5%2F4p2Q%2F2B1P3%2F8%2FPPPP1PPP%2FRNB1K1NR+b+KQkq+-+3+3&view=roads", settle=500)
     r = pg.evaluate("(() => { const c = [...document.querySelectorAll('.roadwrap circle.hitring')].find(c => c.querySelector('title').textContent.startsWith('f7:')); return c && { w: c.getAttribute('stroke-width'), a: c.dataset.attackers, d: c.dataset.defenders, cls: c.getAttribute('class') }; })()")
-    check("f7 defended twice: thin dotted ring", r and r["a"] == "2" and r["d"] == "2" and r["w"] == "0.06" and "held" in r["cls"], str(r))
+    # the user's position: d4 added, e5 hit by queen and pawn, held by the knight; f7 only by the king
+    s.goto(BASE, "fen=r1bqkbnr%2Fpppp1ppp%2F2n5%2F4p2Q%2F2BPP3%2F8%2FPPP2PPP%2FRNB1K1NR+w+KQkq+-+3+3&view=roads", settle=500)
+    rr = pg.evaluate("Object.fromEntries([...document.querySelectorAll('.roadwrap circle.hitring')].map(c => [c.querySelector('title').textContent.split(':')[0], c.getAttribute('class') + ' ' + c.getAttribute('stroke-width')]))")
+    check("e5 and f7 now look different: e5 cut, f7 solid and thick", "contested" in rr.get("e5", "") and "free" in rr.get("f7", "") and rr["e5"] != rr["f7"], str(rr))
+    check("f7 defended twice (queen, then the king last): thin dotted ring", r and r["a"] == "2" and r["d"] == "2" and r["w"] == "0.06" and "held" in r["cls"], str(r))
+    s.goto(BASE, f"fen={SCHOLAR}&view=roads", settle=500)
     marks = pg.evaluate("[...document.querySelectorAll('.roadwrap g.pawnguard')].map(g => g.dataset.square + ':' + g.getAttribute('class')).sort()")
     check("pawn-guarded road squares carry an x in the pawn's colour", marks == ["a3:pawnguard by-w", "a6:pawnguard by-b", "e6:pawnguard by-b", "g6:pawnguard by-b", "h6:pawnguard by-b"], str(marks))
     # the f7 pawn is pinned to its king by the queen on h5, so only d7 guards e6
