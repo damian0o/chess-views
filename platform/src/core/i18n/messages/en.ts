@@ -11,5 +11,6 @@ export const en = {
   roundFinished: 'Round finished',
   lessonFinished: 'Lesson finished',
   whichGameWhichMoment: 'Which game, which moment?',
+  roundBoard: 'Board {n} of {total}. Which game, which moment? Answer, then reveal the pieces to check.',
   lessonNotHere: 'That lesson is not here',
 } satisfies Record<string, Message>;

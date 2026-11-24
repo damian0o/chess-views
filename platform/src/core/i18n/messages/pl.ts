@@ -12,5 +12,6 @@ export const pl: Record<keyof typeof en, Message> = {
   roundFinished: 'Runda skończona',
   lessonFinished: 'Lekcja skończona',
   whichGameWhichMoment: 'Która partia, który moment?',
+  roundBoard: 'Plansza {n} z {total}. Która partia, który moment? Odpowiedz, potem odkryj bierki, żeby sprawdzić.',
   lessonNotHere: 'Nie ma tej lekcji',
 };
