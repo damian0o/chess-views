@@ -13,21 +13,29 @@ export interface ResolvedScene {
 export const isBlocks = (step: Step): boolean => !step.scene.layers.includes('pieces') || step.question?.kind === 'recall';
 
 /**
- * While the step's question is open its locked layers are removed, and a blocks board has no moves and
- * hides the move list (the moves would name the game). Once answered, a blocks board gains its pieces back.
+ * The layers shown are the child's choice (`layersOn`, from the lesson run) or the step's own. While the
+ * step's question is open its locked layers are removed, and a blocks board never shows pieces. A blocks
+ * board hides its moves (they would name the game) until its pieces are shown. An answered blocks
+ * question shows its pieces when the caller gives no choice of its own.
  */
-export function sceneFor(step: Step, { answered }: { answered: boolean }): ResolvedScene {
+export function sceneFor(step: Step, { answered, layersOn }: { answered: boolean; layersOn?: LayerKind[] }): ResolvedScene {
   const game = loadGame(step.scene.position);
   const open = !!step.question && !answered;
   const blocks = isBlocks(step);
-  let layers = step.scene.layers.slice();
+  let layers = (layersOn ?? step.scene.layers).slice();
   if (open && step.scene.lockedLayers) layers = layers.filter((l) => !step.scene.lockedLayers!.includes(l));
-  if (blocks && !open && !layers.includes('pieces')) layers = [...layers, 'pieces'];
-  const hide = blocks ? open : !!step.scene.hideMoves;
+  if (blocks && open) layers = layers.filter((l) => l !== 'pieces');
+  if (blocks && step.question && answered && !layersOn && !layers.includes('pieces')) layers = [...layers, 'pieces'];
+  const hide = blocks ? !layers.includes('pieces') : !!step.scene.hideMoves;
   const fen = game.fen();
   return {
     fen, ply: game.ply, moves: hide ? [] : game.moves(),
     layers, data: analyse(fen, layers),
     focus: step.scene.focus ?? [], hideMoves: hide, flip: !!step.scene.flip,
   };
+}
+
+/** The scene of a lesson run as it stands: one answer for the run and the screen. */
+export function sceneOfRun(run: { step: Step; answered: boolean; layersOn: LayerKind[] }): ResolvedScene {
+  return sceneFor(run.step, { answered: run.answered, layersOn: run.layersOn });
 }

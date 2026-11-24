@@ -28,5 +28,7 @@ export const en = {
   evalBlackWinning: 'Black is winning',
   evalWhiteMates: 'White mates in {count}',
   evalBlackMates: 'Black mates in {count}',
+  yes: 'Yes',
+  no: 'No',
   lessonNotHere: 'That lesson is not here',
 } satisfies Record<string, Message>;

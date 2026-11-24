@@ -56,26 +56,49 @@ function replayer() {
   };
 }
 
+/** The line of `<marker>` in a YAML text (1-based), or 1. */
+const lineIn = (text: string, re: RegExp) => { const i = text.split('\n').findIndex((l) => re.test(l)); return i < 0 ? 1 : i + 1; };
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&');
+
+function readYaml(file: string, errors: ContentError[]): { text: string; data: unknown } | null {
+  if (!existsSync(file)) return null;
+  const text = readFileSync(file, 'utf8');
+  try { return { text, data: parseYaml(text) }; }
+  catch (e) { errors.push({ file, line: 1, message: `not valid YAML: ${(e as Error).message.split('\n')[0]}` }); return null; }
+}
+
 function compileLibrary(root: string, errors: ContentError[]): { positions: LibraryPositions; entries: Record<Locale, LibraryEntry[]> } {
   const positions: LibraryPositions = new Map();
   const entries = Object.fromEntries(LOCALES.map((l) => [l, [] as LibraryEntry[]])) as Record<Locale, LibraryEntry[]>;
   const file = join(root, 'library.yaml');
-  if (!existsSync(file)) return { positions, entries };
-  const shared = (parseYaml(readFileSync(file, 'utf8')) ?? []) as { id: string; tags: string[]; source: unknown; scene?: unknown }[];
-  shared.forEach((e, i) => {
-    const src = PositionSourceSchema.safeParse(e.source);
-    if (!src.success) { errors.push({ file, line: i + 1, message: `${e.id}: ${zodMessage(src.error.issues)}` }); return; }
-    positions.set(e.id, src.data);
-  });
+  const read = readYaml(file, errors);
+  if (!read) return { positions, entries };
+  if (!Array.isArray(read.data)) { errors.push({ file, line: 1, message: 'library.yaml must be a list of entries (- id: …)' }); return { positions, entries }; }
+  const shared: { id: string; tags: string[]; scene?: unknown }[] = [];
+  for (const raw of read.data as Record<string, unknown>[]) {
+    const id = String(raw?.id ?? '');
+    const line = lineIn(read.text, new RegExp(`^-\\s+id:\\s*${esc(id)}\\s*$`));
+    if (positions.has(id) || shared.some((e) => e.id === id)) { errors.push({ file, line, message: `library id "${id}" is used twice` }); continue; }
+    const src = PositionSourceSchema.safeParse(raw?.source);
+    if (!src.success) { errors.push({ file, line, message: `${id}: ${zodMessage(src.error.issues)}` }); continue; }
+    try { loadGame(src.data); } catch (e) { errors.push({ file, line, message: `${id}: ${(e as Error).message}` }); continue; }
+    positions.set(id, src.data);
+    shared.push({ id, tags: raw.tags as string[], ...(raw.scene ? { scene: raw.scene } : {}) });
+  }
   for (const locale of LOCALES) {
     const wfile = join(root, locale, 'library.yaml');
-    const words = existsSync(wfile) ? ((parseYaml(readFileSync(wfile, 'utf8')) ?? {}) as Record<string, { name?: string; note?: unknown }>) : {};
+    const wread = readYaml(wfile, errors);
+    const words = (wread && wread.data && typeof wread.data === 'object' && !Array.isArray(wread.data) ? wread.data : {}) as Record<string, { name?: string; note?: unknown }>;
+    if (wread && words !== wread.data) errors.push({ file: wfile, line: 1, message: 'the library words must be a map: <id>: { name, note }' });
+    for (const id of Object.keys(words)) {
+      if (!positions.has(id) && !shared.some((e) => e.id === id)) errors.push({ file: wfile, line: lineIn(wread!.text, new RegExp(`^${esc(id)}:`)), message: `words for "${id}", which is not in library.yaml` });
+    }
     for (const e of shared) {
       const w = words[e.id];
       if (!w) { errors.push({ file: wfile, line: 1, message: `no name and note for library entry "${e.id}"` }); continue; }
       const parsed = LibraryEntrySchema.safeParse({ id: e.id, tags: e.tags, name: w.name, note: aged(w.note), source: positions.get(e.id), ...(e.scene ? { scene: e.scene } : {}) });
       if (parsed.success) entries[locale].push(parsed.data);
-      else errors.push({ file: wfile, line: 1, message: `${e.id}: ${zodMessage(parsed.error.issues)}` });
+      else errors.push({ file: wfile, line: wread ? lineIn(wread.text, new RegExp(`^${esc(e.id)}:`)) : 1, message: `${e.id}: ${zodMessage(parsed.error.issues)}` });
     }
   }
   return { positions, entries };
@@ -85,12 +108,13 @@ function compileQuestion(q: RawQuestion, momentIds: Set<string>, file: string, e
   const prompt = q.prompt as AgedText;
   const right = Object.keys(q.right).length ? { right: q.right as AgedText } : {};
   const bad = (message: string) => { errors.push({ file, line: q.line, message }); return null; };
+  if ((q.attrs.recall !== undefined || q.attrs.tap !== undefined) && q.choices.length) return bad('choices (- …) belong only to a choice question');
   if (q.attrs.recall !== undefined) {
     const moment = String(q.attrs.recall);
     if (!momentIds.has(moment)) return bad(`no moment "${moment}"`);
     const answer = q.attrs.answer === true || q.attrs.answer === 'yes' ? 'yes' : q.attrs.answer === false || q.attrs.answer === 'no' ? 'no' : null;
     if (!answer) return bad('a recall question needs answer: yes or no');
-    return { kind: 'recall', moment: moment as never, answer, ...right };
+    return { kind: 'recall', ...(prompt.kids ? { prompt } : {}), moment: moment as never, answer, ...right };
   }
   if (q.attrs.tap !== undefined) return { kind: 'tap', prompt, squares: asList(q.attrs.tap) as never, ...right };
   const rights = q.choices.filter((c) => c.right).length;
@@ -147,6 +171,7 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
       ...(ages.length ? { audience: { ages } } : {}),
     };
     if (candidate.moment !== undefined && !momentIds.has(candidate.moment)) { err(`no moment "${candidate.moment}"`); continue; }
+    if (recall !== undefined && candidate.scene.layers.includes('pieces')) { err('a recall step is a blocks board: its scene must not show pieces (use scene: blocks)'); continue; }
     const parsed = StepSchema.safeParse(candidate);
     if (!parsed.success) {
       const onQuestion = parsed.error.issues[0]?.path[0] === 'question';

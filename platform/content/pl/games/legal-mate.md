@@ -4,7 +4,7 @@ group:
   kind: game
   id: legal-mate
 title: Mat Légala
-about: "Paryż 1750: białe oddają hetmana, a trzy małe figury dają mata."
+about: "Paryż 1750: białe oddają hetmana, a trzy lekkie figury dają mata."
 game: Mat Légala
 experience: basic
 moments:
@@ -70,7 +70,7 @@ Czarne zbiły hetmana. Teraz białe dają mata w dwóch ruchach. Znajdź pierwsz
 ## s07-houses {scene: "board+kings", same: true, ply: 13, moment: "mate"}
 
 ::: kids
-Bxf7+, Ke7, Nd5: mat. Trzy małe figury pilnują wszystkich pól, a resztę pól zajmują własne bierki czarnych.
+Bxf7+, Ke7, Nd5: mat. Trzy lekkie figury pilnują wszystkich pól, a resztę pól zajmują własne bierki czarnych.
 :::
 
 ? Ile białych bierek robi mata?
@@ -95,10 +95,10 @@ Inna plansza.
 :::
 
 ? Czy to mat Légala? {recall: "mate", answer: "no"}
-! Dobrze: to mat szkolny, hetman na f7. Légal daje mata małymi figurami.
+! Dobrze: to mat szkolny, hetman na f7. Légal daje mata lekkimi figurami.
 
 ## s10-board {scene: "board", pos: "legal-1750", ply: 13}
 
 ::: kids
-Mat Légala zaliczony: związany skoczek, który wcale nie był związany, dar hetmana i trzy małe figury.
+Mat Légala zaliczony: związany skoczek, który wcale nie był związany, dar hetmana i trzy lekkie figury.
 :::

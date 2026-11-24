@@ -31,8 +31,8 @@ describe('compileContent: a valid lesson', () => {
     expect(by.look!.explain).toEqual({ kids: 'Trzy ruchy białych.', adults: 'Short.' });
     expect(by.roads!.question).toEqual({ kind: 'choice', prompt: { kids: 'Which square?' }, choices: ['e5', 'f7', 'f2'], answer: 1, right: { kids: 'Yes, f7.' } });
     expect(by['tap-it']!.question).toEqual({ kind: 'tap', prompt: { kids: 'Tap the square.' }, squares: ['f7'] });
-    expect(by['is-attack']!.question).toEqual({ kind: 'recall', moment: 'attack', answer: 'yes' });
-    expect(by['not-mate']!.question).toEqual({ kind: 'recall', moment: 'mate', answer: 'no' });
+    expect(by['is-attack']!.question).toEqual({ kind: 'recall', prompt: { kids: 'Is this the attack?' }, moment: 'attack', answer: 'yes' });
+    expect(by['not-mate']!.question).toEqual({ kind: 'recall', prompt: { kids: 'Is this the mate?' }, moment: 'mate', answer: 'no' });
     expect(by.strike!.solve).toEqual({ task: { kids: 'Find the strike' } });
   });
   test('library: shared positions, words per locale', () => {

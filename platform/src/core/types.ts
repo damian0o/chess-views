@@ -82,7 +82,7 @@ export const QuestionSchema = z.discriminatedUnion('kind', [
     right: AgedTextSchema.optional(),
   }).refine((q) => q.answer < q.choices.length, { message: 'the answer is not one of the choices', path: ['answer'] }),
   z.object({ kind: z.literal('tap'), prompt: AgedTextSchema, squares: z.array(SquareSchema).min(1), right: AgedTextSchema.optional() }),
-  z.object({ kind: z.literal('recall'), moment: MomentIdSchema, answer: z.enum(['yes', 'no']), right: AgedTextSchema.optional() }),
+  z.object({ kind: z.literal('recall'), prompt: AgedTextSchema.optional(), moment: MomentIdSchema, answer: z.enum(['yes', 'no']), right: AgedTextSchema.optional() }),
 ]);
 export type Question = z.infer<typeof QuestionSchema>;
 

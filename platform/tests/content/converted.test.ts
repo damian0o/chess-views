@@ -63,10 +63,9 @@ describe('converted content', () => {
     for (const L of [...out.lessons.en, ...out.lessons.pl]) for (const s of L.steps) expect(s.explain.kids, `${L.id}/${s.id}`).not.toMatch(/(Open|Otwórz) \*\*/);
   });
 
-  test('the step-id table covers every lesson in proof-of-concept order', () => {
+  test('the step-id table is frozen in proof-of-concept order (see tests/review.test.ts I11)', () => {
     const table = JSON.parse(readFileSync(join(ROOT, 'poc-step-ids.json'), 'utf8')) as Record<string, string[]>;
     expect(table['scholars-mate']).toHaveLength(25);
-    for (const L of out.lessons.en) expect(table[L.id]).toEqual(L.steps.map((s) => s.id));
   });
 
   test('the library has all 25 entries in both languages', () => {

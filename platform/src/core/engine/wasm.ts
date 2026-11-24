@@ -5,6 +5,7 @@
  */
 import type { Fen } from '../types';
 import { analysisFromLines, moveOf } from './uci';
+import { isJudgeable } from '../chess/rules';
 import type { Analysis, EngineInfo, EngineService, Level } from './types';
 
 export interface WorkerLike {
@@ -24,8 +25,11 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
   const worker = workerFactory();
   const listeners = new Set<(line: string) => void>();
   const failures = new Set<(err: Error) => void>();
+  // Once the worker fails, stops answering or is disposed, it is dead: everything waiting and everything later rejects at once.
+  let dead: Error | null = null;
+  const kill = (err: Error) => { if (dead) return; dead = err; for (const fail of [...failures]) fail(err); };
   worker.onmessage = (e) => { const line = String(e.data); for (const fn of [...listeners]) fn(line); };
-  worker.onerror = () => { const err = new Error('engine: worker failed'); for (const fail of [...failures]) fail(err); };
+  worker.onerror = () => kill(new Error('engine: worker failed'));
   const send = (cmd: string) => worker.postMessage(cmd);
 
   const waitFor = (prefix: string, ms: number, signal?: AbortSignal) => new Promise<string>((resolve, reject) => {
@@ -34,6 +38,7 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
     const fn = (line: string) => { if (line.startsWith(prefix)) { done(); resolve(line); } };
     const fail = (err: Error) => { done(); reject(err); };
     const onAbort = () => { done(); reject(new Error('engine: search aborted')); };
+    if (dead) { done(); reject(dead); return; }
     if (signal?.aborted) { onAbort(); return; }
     signal?.addEventListener('abort', onAbort);
     listeners.add(fn); failures.add(fail);
@@ -49,8 +54,12 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
       await waitFor('bestmove', timeoutMs, signal);
     } catch (err) {
       listeners.delete(collect);
-      send('stop');
-      await waitFor('bestmove', 2000).catch(() => undefined);
+      if (!dead) {
+        // Stop, and wait for the stopped search's bestmove so it cannot answer the next one. No answer: the worker is dead.
+        send('stop');
+        const drained = await waitFor('bestmove', 2000).then(() => true, () => false);
+        if (!drained && !dead) { kill(new Error('engine: the engine stopped responding')); worker.terminate(); }
+      }
       throw err;
     } finally { listeners.delete(collect); }
     return lines;
@@ -58,7 +67,8 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
 
   let queue: Promise<unknown> = Promise.resolve();
   const serial = <T>(job: () => Promise<T>): Promise<T> => {
-    const run = queue.then(job, job);
+    const guarded = () => (dead ? Promise.reject(dead) : job());
+    const run = queue.then(guarded, guarded);
     queue = run.catch(() => undefined);
     return run;
   };
@@ -78,9 +88,12 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
   let multiPV: number | null = null;
   let skill: number | null = null;
 
+  const unjudgeable = () => Promise.reject(new Error('engine: the engine cannot judge this position'));
+
   return {
-    ready: () => readyP,
+    ready: () => (dead ? Promise.reject(dead) : readyP),
     analyse(fen: Fen, { depth = 10, multipv = 1, movetimeMs } = {}, signal, onProgress) {
+      if (!isJudgeable(fen)) return unjudgeable();
       return serial(async (): Promise<Analysis> => {
         await readyP;
         if (multipv !== multiPV) { send(`setoption name MultiPV value ${multipv}`); multiPV = multipv; }
@@ -90,6 +103,7 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
       });
     },
     bestMove(fen: Fen, { level }, signal) {
+      if (!isJudgeable(fen)) return unjudgeable();
       return serial(async () => {
         await readyP;
         const o = LEVELS[level];
@@ -101,6 +115,6 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
         return !uci || uci === '(none)' ? null : moveOf(uci);
       });
     },
-    dispose: () => worker.terminate(),
+    dispose: () => { kill(new Error('engine: disposed')); worker.terminate(); },
   };
 }

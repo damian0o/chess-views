@@ -29,5 +29,7 @@ export const pl: Record<keyof typeof en, Message> = {
   evalBlackWinning: 'Czarne wygrywają',
   evalWhiteMates: { one: 'Białe dają mata w {count} ruchu', few: 'Białe dają mata w {count} ruchach', many: 'Białe dają mata w {count} ruchach', other: 'Białe dają mata w {count} ruchu' },
   evalBlackMates: { one: 'Czarne dają mata w {count} ruchu', few: 'Czarne dają mata w {count} ruchach', many: 'Czarne dają mata w {count} ruchach', other: 'Czarne dają mata w {count} ruchu' },
+  yes: 'Tak',
+  no: 'Nie',
   lessonNotHere: 'Nie ma tej lekcji',
 };

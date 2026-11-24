@@ -45,14 +45,18 @@ export function compareLocales(
         errors.push({ file, line: (at && origin.steps.get(at)?.line) || 1, message: `step ids differ from ${REFERENCE}: ${a.join(', ')} vs ${b.join(', ')}` });
         continue;
       }
-      if (JSON.stringify(base.moments.map((m) => [m.id, m.board])) !== JSON.stringify(lesson.moments.map((m) => [m.id, m.board]))) {
-        errors.push({ file, line: 1, message: `moments differ from ${REFERENCE}` });
+      const lessonShape = (l: Lesson) => JSON.stringify([l.group, l.experience, !!l.game, l.moments.map((m) => [m.id, m.board, m.looksLike ?? []])]);
+      if (lessonShape(base) !== lessonShape(lesson)) {
+        errors.push({ file, line: 1, message: `the lesson's group, experience, game or moments differ from ${REFERENCE}` });
       }
       lesson.steps.forEach((s, k) => {
         const r = base.steps[k]!;
         const where = origin.steps.get(s.id);
         if (JSON.stringify(r.scene.position) !== JSON.stringify(s.scene.position)) {
           errors.push({ file, line: where?.line ?? 1, message: `step "${s.id}": the position differs from ${REFERENCE}` });
+        } else {
+          const shape = (x: typeof s) => JSON.stringify([x.scene, !!x.solve, x.moment ?? null, x.audience ?? null]);
+          if (shape(r) !== shape(s)) errors.push({ file, line: where?.line ?? 1, message: `step "${s.id}": the scene, solve, moment or ages differ from ${REFERENCE}` });
         }
         if (answerOf(r.question) !== answerOf(s.question)) {
           errors.push({ file, line: where?.questionLine ?? where?.line ?? 1, message: `step "${s.id}": the answer differs from ${REFERENCE}` });

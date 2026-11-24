@@ -5,6 +5,7 @@
  */
 import type { LayerKind, Lesson, Profile, Square, Step } from '../types';
 import { unlockedLayers } from './unlock';
+import { isBlocks } from '../scene';
 
 export type Gate = { kind: 'reveal' | 'answer' };
 export type LessonEvent =
@@ -34,9 +35,16 @@ function isRight(step: Step, value: number | Square): boolean {
   return value === (q.answer === 'yes' ? 0 : 1);       // recall: 0 = Yes, 1 = No
 }
 
+/** While a question is open: no locked layers, and no pieces on a blocks board. */
+function whileOpen(step: Step, layers: LayerKind[]): LayerKind[] {
+  if (!step.question) return layers;
+  const locked = step.scene.lockedLayers ?? [];
+  return layers.filter((l) => !locked.includes(l) && !(l === 'pieces' && isBlocks(step)));
+}
+
 function fresh(base: Omit<State, 'answered' | 'lastAnswer' | 'wrong' | 'ply' | 'layersOn'>): State {
   const step = base.steps[base.index]!;
-  return { ...base, answered: false, lastAnswer: null, wrong: [], ply: plyOf(step), layersOn: step.scene.layers.slice() };
+  return { ...base, answered: false, lastAnswer: null, wrong: [], ply: plyOf(step), layersOn: whileOpen(step, step.scene.layers.slice()) };
 }
 
 function make(s: State): LessonRun {
@@ -51,11 +59,13 @@ function make(s: State): LessonRun {
       if (e.kind === 'ply') return make({ ...s, ply: e.ply });
       if (e.kind === 'layers') {
         const allowed = new Set<LayerKind>([...unlockedLayers(s.profile, [s.lesson]), ...step.scene.layers]);
-        return make({ ...s, layersOn: e.on.filter((l) => allowed.has(l)) });
+        const on = e.on.filter((l) => allowed.has(l));
+        return make({ ...s, layersOn: s.answered ? on : whileOpen(step, on) });
       }
       if (s.answered || !step.question) return run;
+      const back = [...new Set<LayerKind>([...s.layersOn, ...step.scene.layers, ...(isBlocks(step) ? ['pieces' as const] : [])])];
       return isRight(step, e.value)
-        ? make({ ...s, answered: true, lastAnswer: 'right' })
+        ? make({ ...s, answered: true, lastAnswer: 'right', layersOn: back })
         : make({ ...s, lastAnswer: 'wrong', wrong: s.wrong.includes(e.value) ? s.wrong : [...s.wrong, e.value] });
     },
     next: () => (gate || last ? run : make(fresh({ ...s, index: s.index + 1 }))),

@@ -104,7 +104,8 @@ Same bloki. To ten moment?
   - `? prompt {tap: f7}`;
   - `? prompt {recall: <moment>, answer: yes|no}`.
   - `!` gives the line shown after the right answer. `?teens` / `!adults` give other ages.
-- **Moves in the text** stay in standard notation (Qxf7); the app shows them with the language's letters (Hxf7 in Polish).
+- **Moves in the text** stay in standard notation (Qxf7); the app shows them with the language's letters (Hxf7 in Polish) through `localizeMoves` in `src/core/chess/san.ts`.
+- `content/poc-step-ids.json` is **frozen**: it maps the proof of concept's step numbers to step ids for migrating saved progress. Never regenerate it after steps change.
 
 ## Adding a language
 
