@@ -76,7 +76,7 @@ def main(pw):
     s.goto(BASE, "", settle=400)
     pg.keyboard.press("p"); pg.wait_for_timeout(300)
     card = pg.locator("#liblessons .lesson-card", has_text="Scholar's mate")
-    check("library: lessons shelf with the card", card.count() == 1 and pg.locator("#liblessons .lesson-card").count() == 2 and "Scholar's mate" in card.inner_text() and "17 steps" in card.inner_text() and card.locator("button.start").inner_text() == "Start", card.inner_text()[:120] if card.count() else "no card")
+    check("library: lessons shelf with the card", card.count() == 1 and pg.locator("#liblessons .lesson-card:not(.round)").count() == 2 and "Scholar's mate" in card.inner_text() and "17 steps" in card.inner_text() and card.locator("button.start").inner_text() == "Start", card.inner_text()[:120] if card.count() else "no card")
     pg.fill("#libsearch", "scholar"); pg.wait_for_timeout(200)
     check("search keeps the card", pg.locator("#liblessons .lesson-card", has_text="Scholar's mate").count() == 1 and pg.locator(".libitem").count() >= 1)
     pg.fill("#libsearch", "lucena"); pg.wait_for_timeout(200)

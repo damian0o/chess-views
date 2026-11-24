@@ -646,7 +646,9 @@ function writeHash() {
   const p = new URLSearchParams();
   if (state.lesson) {
     // A lesson link carries the step; the step provides the position and the selected square.
-    p.set('lesson', state.lesson.id); p.set('step', String(state.lesson.index));
+    p.set('lesson', state.lesson.id);
+    if (state.lesson.id === L.ROUND_ID) p.set('seed', String(state.lesson.seed));
+    p.set('step', String(state.lesson.index));
     if (state.tab !== 'board') p.set('view', state.tab);
     // The step sets the orientation; the link carries it only when the kid turned the board.
     if (state.flipped !== state.lesson.steps[state.lesson.index - 1].flip) p.set('flip', state.flipped ? '1' : '0');
@@ -690,12 +692,25 @@ function applyFocus(sq) {
 const progress = L.progressStore((() => { try { return window.localStorage; } catch { return null; } })());   // even reading the property can throw
 
 /** Open a lesson at a step. Entering applies the step's view unless told not to (a reload keeps the kid's view). */
-function enterLesson(id, index = 1, { applyView = true, flip } = {}) {
+function enterLesson(id, index = 1, { applyView = true, flip, seed } = {}) {
+  if (id === L.ROUND_ID) return enterRound(seed, index, { applyView, flip });
   const raw = library.lessons.find((x) => x.id === id);
   let steps = null;
   try { steps = raw ? L.resolveSteps(raw, library.positions) : null; } catch (e) { console.error(e); }
   if (!steps || !Number.isInteger(index) || index < 1 || index > steps.length) { toast('That lesson is not here'); return false; }
   state.lesson = { id, name: raw.name, steps, index, done: !!(progress.get(id) || {}).done };
+  gotoStep(index, { applyView, flip });
+  return true;
+}
+
+/** The ids of lessons finished on this device. */
+const finishedIds = () => new Set(Object.entries(progress.all()).filter(([, r]) => r && r.done).map(([k]) => k));
+
+/** Open a Recognise round from its seed. A bad seed, a locked round or a step outside it → the same toast as a bad lesson link. */
+function enterRound(seed, index, { applyView = true, flip } = {}) {
+  const round = Number.isInteger(seed) && seed >= 0 ? L.buildRound(library.lessons, library.positions, finishedIds(), seed) : null;
+  if (!round || !Number.isInteger(index) || index < 1 || index > round.steps.length) { toast('That lesson is not here'); return false; }
+  state.lesson = { id: round.id, name: round.name, steps: round.steps, index, done: true, seed };   // done: every view is open
   gotoStep(index, { applyView, flip });
   return true;
 }
@@ -715,7 +730,7 @@ function gotoStep(index, { applyView = false, flip } = {}) {
   if (applyView || step.shapesGate || step.blocks) state.tab = step.view;   // a blocks-first step must not be seen through the previous view
   const key = FOCUS_KEY[step.view];
   if (step.sq && key) state[key] = step.sq;
-  progress.set(lesson.id, { step: index, done: lesson.done });
+  if (lesson.id !== L.ROUND_ID) progress.set(lesson.id, { step: index, done: lesson.done });   // rounds are never saved
   writeHash(); render();
 }
 
@@ -723,6 +738,7 @@ function leaveLesson() { state.lesson = null; state.task = null; writeHash(); re
 
 function finishLesson() {
   const lesson = state.lesson;
+  if (lesson.id === L.ROUND_ID) { toast('Round finished'); leaveLesson(); return; }
   progress.set(lesson.id, { step: lesson.steps.length, done: true });
   toast('Lesson finished');
   leaveLesson();
@@ -2011,7 +2027,11 @@ async function loadLibrary() {
     library.positions = json.positions; library.lessons = json.lessons || [];
   } catch { library.positions = []; library.lessons = []; }
   const p = new URLSearchParams(location.hash.slice(1));
-  if (p.get('lesson')) { enterLesson(p.get('lesson'), Number(p.get('step') || 1), { applyView: !p.get('view'), flip: p.has('flip') ? p.get('flip') === '1' : undefined }); return; }
+  if (p.get('lesson')) {
+    const seed = /^\d+$/.test(p.get('seed') || '') ? Number(p.get('seed')) : null;
+    enterLesson(p.get('lesson'), Number(p.get('step') || 1), { applyView: !p.get('view'), flip: p.has('flip') ? p.get('flip') === '1' : undefined, seed });
+    return;
+  }
   if (p.get('pos') && !p.get('fen') && !p.get('pgn')) {
     const entry = library.positions.find((x) => x.id === p.get('pos'));
     if (entry) openEntry(entry);
@@ -2066,6 +2086,16 @@ function renderLessonsShelf(q) {
       el('span', { class: 'buttons' }, buttons),
     ]));
   }
+  // Recognise: boards from the finished game lessons; never saved, a new seed each Start.
+  const unlocked = L.roundUnlocked(library.lessons, library.positions, finishedIds());
+  const start = el('button', { type: 'button', class: 'primary start', text: 'Start',
+    onclick: () => { if (enterLesson(L.ROUND_ID, 1, { seed: Math.floor(Math.random() * 2 ** 31) })) $('library').close(); } });
+  if (!unlocked) start.disabled = true;
+  if (!q || 'recognise which game which moment'.includes(q)) box.append(el('article', { class: 'lesson-card round' }, [
+    el('span', { class: 'name', text: 'Recognise' }),
+    el('span', { class: 'about', text: unlocked ? 'Which game, which moment? Boards from the lessons you finished.' : 'Finish two game lessons to unlock' }),
+    el('span', { class: 'buttons' }, [start]),
+  ]));
 }
 
 function renderLibrary() {
