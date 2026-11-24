@@ -62,7 +62,7 @@ Król zbił hetmana i wyszedł ze swojego domku.
 ## s05-blocks {scene: "blocks", moment: "gift"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to dar hetmana? {recall: "gift", answer: "yes"}
@@ -98,7 +98,7 @@ Czarny król jest na f3, głęboko na połowie białych, daleko od swoich bierek
 ## s09-blocks {scene: "blocks", moment: "hunt"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to pogoń za królem? {recall: "hunt", answer: "yes"}
@@ -134,7 +134,7 @@ Kd2 odsłania wieżę na a1: mat na pierwszej linii. Długa roszada, O-O-O, też
 ## s13-blocks {scene: "blocks", moment: "mate"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to mat? {recall: "mate", answer: "yes"}

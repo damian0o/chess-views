@@ -52,7 +52,7 @@ Król musiał zbić i teraz stoi na d8, na jednej linii z wieżą na d1.
 ## s05-blocks {scene: "blocks", moment: "gift"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to dar hetmana? {recall: "gift", answer: "yes"}
@@ -88,7 +88,7 @@ Bg5+ to był podwójny szach, Kc7, potem Bd8: mat. Wieża na d1 pilnuje gońca.
 ## s09-blocks {scene: "blocks", moment: "mate"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to mat? {recall: "mate", answer: "yes"}

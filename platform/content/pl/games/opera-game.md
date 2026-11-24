@@ -44,7 +44,7 @@ Hetman i goniec białych już celują w obóz czarnych. Goniec i wieża czarnych
 ## s03-blocks {scene: "blocks", moment: "start"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to szybki start? {recall: "start", answer: "yes"}
@@ -80,7 +80,7 @@ Skoczek zbił na b5 i zostanie zbity. W zamian otwierają się drogi do czarnego
 ## s07-blocks {scene: "blocks", moment: "sacrifice"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to ofiara skoczka? {recall: "sacrifice", answer: "yes"}
@@ -116,7 +116,7 @@ Qb8+, Nxb8, Rd8: mat. Goniec na g5 pilnuje wieży i pola e7.
 ## s11-blocks {scene: "blocks", moment: "mate"}
 
 ::: kids
-Tylko bloki. Czy to ten sam moment, co przed chwilą?
+Tylko bloki. Ten sam moment?
 :::
 
 ? Czy to mat? {recall: "mate", answer: "yes"}

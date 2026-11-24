@@ -65,7 +65,7 @@ Tu nie ma narysowanych dróg: odpowiedz z pamięci.
 ## s07-blocks {scene: "blocks", moment: "attack"}
 
 ::: kids
-Tylko bloki. Czy to ten sam atak, co przed chwilą?
+Tylko bloki. Ten sam atak?
 :::
 
 ? Czy to atak na f7? {recall: "attack", answer: "yes"}
