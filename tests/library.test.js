@@ -77,30 +77,42 @@ test('library: the test copy of chess.js is 1.0.0', () => {
   assert.equal(hash, 'b29ec4562b197c65d15eff8d1776c9005d3dcc25ecb1a38e543d3bcfa50ea4ee');
 });
 
-test("library: the Scholar's mate lesson has its 17 steps", () => {
+test("library: the Scholar's mate lesson has 25 steps in three moments with questions", () => {
   const L = lib.lessons.find((x) => x.id === 'scholars-mate');
   const steps = resolveSteps(L, lib.positions);
-  assert.equal(steps.length, 17);
+  assert.equal(steps.length, 25);
+  assert.equal(L.game, "Scholar's mate");
+  assert.deepEqual(L.moments.map((m) => m.id), ['attack', 'defence', 'mate']);
   assert.deepEqual(steps.slice(0, 5).map((s) => s.view), ['board', 'kings', 'roads', 'shapes', 'territory']);
   assert.equal(steps[4].sq, 'f7');
-  assert.deepEqual([steps[5].solve, steps[5].task, steps[5].source.ply], [true, "Find White's strike", 6]);
-  assert.equal(steps[6].source.ply, 7);
+  const tap = steps[5];
+  assert.deepEqual([tap.view, tap.ask.tap], ['board', ['f7']], 'the tap question is asked in Board, never in Territory with f7 focused');
+  assert.ok(steps.every((s) => !(s.ask && s.ask.tap && s.view === 'territory')));
+  assert.deepEqual([steps[8].solve, steps[8].task, steps[8].source.ply], [true, "Find White's strike", 6]);
+  assert.equal(steps[9].source.ply, 7);
+  const stop = steps.find((s) => s.ask && s.ask.q === 'Which move stops the mate?');
+  assert.deepEqual([stop.ask.choices, stop.ask.answer], [['g6', 'a6', 'h6'], 0]);
+  assert.equal(steps.filter((s) => s.blocks).length, 6, 'a Yes and a No board for each moment');
+  for (const m of ['attack', 'defence', 'mate']) assert.ok(steps.some((s) => s.blocks && s.moment && s.moment.id === m && s.ask.answer === 0) && steps.some((s) => s.blocks && s.moment && s.moment.id === m && s.ask.answer === 1), m);
   assert.equal(steps.filter((s) => s.shapesGate).length, 3);
   assert.ok(steps.every((s) => s.flip === false));
   assert.ok(steps[1].say.includes('**King houses**'));
 });
 
-test('library: Eyes on f7 has an opener and ten blocks-first boards with answers', () => {
+test('library: Eyes on f7 has an opener and ten blocks boards, each asking where two pieces aim', () => {
   const L = lib.lessons.find((x) => x.id === 'eyes-on-f7');
+  assert.equal(L.moments, undefined, 'a practice lesson: no moments, never in Recognise');
   const steps = resolveSteps(L, lib.positions);
   assert.equal(steps.length, 21);
-  const gated = steps.filter((s) => s.shapesGate);
-  assert.equal(gated.length, 10);
-  for (const g of gated) {
+  const boards = steps.filter((s) => s.blocks);
+  assert.equal(boards.length, 10);
+  assert.deepEqual(boards.map((b) => b.ask.choices[b.ask.answer]), ['f7', 'Neither', 'f7', 'Neither', 'f7', 'Neither', 'f7', 'f7', 'f2', 'f2']);
+  for (const g of boards) {
+    assert.deepEqual(g.ask.choices, ['f7', 'f2', 'Neither']);
     const answer = steps[g.index];            // the step after each board
     assert.ok(['roads', 'territory'].includes(answer.view), `board at step ${g.index}: answer view`);
     assert.deepEqual(answer.source, g.source, `board at step ${g.index}: the answer shows the same position`);
     if (answer.view === 'territory') assert.ok(['f7', 'f2'].includes(answer.sq));
   }
-  assert.ok(steps.every((s) => s.flip === false && !s.solve));
+  assert.ok(steps.every((s) => s.flip === false && !s.solve && !s.shapesGate));
 });
