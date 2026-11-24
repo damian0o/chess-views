@@ -345,7 +345,9 @@
   .roadwrap line.ray { stroke-width: 0.12; opacity: 0.75; }
   .roadwrap line.ray.by-w { stroke: var(--side-w); } .roadwrap line.ray.by-b { stroke: var(--side-b); }
   .roadwrap line.ray.focus { stroke-width: 0.18; opacity: 0.95; }
-  .roadwrap circle.hitring { fill: none; stroke-width: 0.07; opacity: 0.85; }
+  .roadwrap circle.hitring { fill: none; opacity: 0.9; }
+  .roadwrap circle.hitring.contested { stroke-dasharray: 0.3 0.14; }
+  .roadwrap circle.hitring.held { stroke-dasharray: 0.1 0.16; opacity: 0.75; }
   .roadwrap circle.hitring.by-w { stroke: var(--side-w); } .roadwrap circle.hitring.by-b { stroke: var(--side-b); }
   .roadwrap .board .sq.openline, .sw.openline { background-image: linear-gradient(rgba(120, 120, 120, 0.22), rgba(120, 120, 120, 0.22)); }
   .sw .lock { position: static; width: 18px; height: 18px; }
@@ -1237,12 +1239,21 @@ const VIEWS = {
         for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) line.setAttribute(k, v);
         line.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${PIECE_WORDS[ray.piece.type]} ${ray.from}: ${ray.squares.join(' ')}${ray.hit ? ` (hits ${ray.hit})` : ''}` }));
         svg.append(line);
-        if (ray.hit) {
-          const [cx, cy] = centre(ray.hit);
-          const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${ray.piece.color}` })) ring.setAttribute(k, v);
-          svg.append(ring);
-        }
+      }
+      // One ring per piece a road runs into: thicker for every attacker that reaches it, cut when it is defended,
+      // dotted when the defenders match or outnumber the attackers.
+      const hitSquares = new Map();
+      for (const ray of drawnRays) if (ray.hit) hitSquares.set(`${ray.piece.color}:${ray.hit}`, { square: ray.hit, color: ray.piece.color });
+      for (const { square, color } of hitSquares.values()) {
+        const who = A.attackersOf(board, square);
+        const attackers = who[color], defenders = who[color === 'w' ? 'b' : 'w'];
+        const cut = !defenders.length ? 'free' : defenders.length >= attackers.length ? 'held' : 'contested';
+        const [cx, cy] = centre(square);
+        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        for (const [k, v] of Object.entries({ cx, cy, r: 0.42, class: `hitring by-${color} ${cut}`, 'stroke-width': (0.05 + 0.05 * Math.min(attackers.length, 4)).toFixed(2), 'data-attackers': attackers.length, 'data-defenders': defenders.length })) ring.setAttribute(k, v);
+        const names = (xs) => (xs.length ? xs.map((p) => `${PIECE_WORDS[p.type]} ${p.square}`).join(', ') : 'nobody');
+        ring.append(Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'title'), { textContent: `${square}: attacked by ${names(attackers)}, defended by ${names(defenders)}` }));
+        svg.append(ring);
       }
       // Open files (no pawns at all) stay as a light shading: the classic highway for rooks.
       const openFiles = new Set(list.filter((x) => x.kind === 'file' && x.state === 'open').flatMap((x) => x.squares));
@@ -1347,7 +1358,10 @@ const VIEWS = {
       container.append(legend([
         { sw: 'road', cls: 'road-w', width: 5, text: "a white rook, bishop or queen's road: every square it can reach that way" },
         { sw: 'road', cls: 'road-b', width: 5, text: 'a black one\'s road' },
-        { sw: 'ring', cls: 'side-b', text: 'the enemy piece a road runs into' },
+        { sw: 'hitring', width: 2, text: 'a piece one road runs into, nobody defends it' },
+        { sw: 'hitring', width: 4, text: 'thicker for every attacker that reaches it' },
+        { sw: 'hitring', width: 4, dash: '7 3', text: 'cut: it is defended, but the attackers outnumber the defenders' },
+        { sw: 'hitring', width: 2, dash: '2.5 4', text: 'dotted: defended at least as much as attacked' },
         { sw: 'sq', cls: 'openline', text: 'open file: no pawns on it, a highway for rooks' },
         { sw: 'jump', text: 'square a knight can jump to now (blue white, red black, purple both)' },
         { sw: 'lock', kind: 'absolute', text: 'pinned to the king: only its road along the pin is open, the others are faded' },
@@ -1762,6 +1776,7 @@ function legend(items) {
       case 'defend-line': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine(it.color === 'w' ? '#2456c8' : '#c93b3b', true, false); break;
     case 'arrow-w': sw.classList.add('wide', 'none'); sw.innerHTML = svgLine('#2456c8', false, true).replace('fill="#c93b3b"', 'fill="#2456c8"').replace(/lg-arrow/g, 'lg-arrow-w'); break;
       case 'road': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><line x1="4" y1="13" x2="40" y2="13" stroke="#1d2a44" stroke-width="${it.width || 5}" stroke-linecap="round" opacity="0.6"/></svg>`; break;
+      case 'hitring': sw.classList.add('wide', 'none'); sw.innerHTML = `<svg viewBox="0 0 44 26"><circle cx="22" cy="13" r="9" fill="none" stroke="${it.color === 'b' ? '#c93b3b' : '#2456c8'}" stroke-width="${it.width || 2}" ${it.dash ? `stroke-dasharray="${it.dash}"` : ''}/></svg>`; break;
       case 'jump': sw.classList.add('wide', 'none'); sw.innerHTML = '<svg viewBox="0 0 44 26"><circle cx="12" cy="13" r="4" fill="#2456c8"/><circle cx="32" cy="13" r="4" fill="#c93b3b"/></svg>'; break;
       case 'take': sw.classList.add('take', it.cls); sw.append(el('span', { class: 'taketag', text: '×' })); break;
       case 'take-held': sw.classList.add('take-held'); break;
