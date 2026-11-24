@@ -44,5 +44,6 @@ export const pl: Record<keyof typeof en, Message> = {
   viewDiamond: 'Romb',
   viewShapes: 'Bloki',
   viewKnight: 'Skoczek',
+  whoPlays: 'Kto gra?',
   lessonNotHere: 'Nie ma tej lekcji',
 };

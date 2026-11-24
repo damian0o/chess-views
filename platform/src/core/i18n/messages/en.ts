@@ -43,5 +43,6 @@ export const en = {
   viewDiamond: 'Diamond',
   viewShapes: 'Shapes',
   viewKnight: 'Knight',
+  whoPlays: "Who's playing?",
   lessonNotHere: 'That lesson is not here',
 } satisfies Record<string, Message>;
