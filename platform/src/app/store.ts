@@ -44,6 +44,9 @@ export interface AppState {
 
 export interface StoreDeps {
   storage: StorageLike | undefined;
+  /** Ignore a second Next/Back within this many ms of a step change (a double tap). Default 300. */
+  minStepMs?: number;
+  now?: () => number;
   lessons: Record<Locale, Lesson[]>;
   library: Record<Locale, LibraryEntry[]>;
   pocStepIds: Record<string, string[]>;
@@ -57,6 +60,12 @@ export function createAppStore(deps: StoreDeps) {
   const read = (k: string) => { try { return storage.getItem(k); } catch { return null; } };
   const write = (k: string, v: string) => { try { storage.setItem(k, v); } catch { /* storage unavailable */ } };
   const lessonsOf = (p: Profile | null) => deps.lessons[p?.locale ?? 'pl'] ?? [];
+
+  const now = deps.now ?? (() => Date.now());
+  const minStep = deps.minStepMs ?? 300;
+  let lastMove = -Infinity;
+  /** True when a step change happened too recently (a double tap): the press is ignored. */
+  const tooSoon = () => { const t0 = now(); if (t0 - lastMove < minStep) return true; lastMove = t0; return false; };
 
   return createStore<AppState>()((set, get) => {
     const say = (key: Parameters<typeof t>[1]) => set({ toast: t(get().player?.locale ?? 'pl', key) });
@@ -92,7 +101,15 @@ export function createAppStore(deps: StoreDeps) {
       async updatePlayer(patch) {
         const p = get().player;
         if (!p) return;
-        await savePlayer({ ...p, ...patch, theme: { ...p.theme, ...(patch.theme ?? {}) } });
+        const next = { ...p, ...patch, theme: { ...p.theme, ...(patch.theme ?? {}) } };
+        const { run, round } = get();
+        const changesLesson = next.locale !== p.locale || next.age !== p.age || next.experience !== p.experience;
+        if (run && changesLesson) {
+          // The open lesson continues at the same step in the new language and age; a round is left.
+          const lesson = round ? null : lessonsOf(next).find((l) => l.id === run.lesson.id);
+          set({ run: lesson ? startLesson(lesson, next, run.step.id) : null, ...(round ? { round: null } : {}) });
+        }
+        await savePlayer(next);
       },
 
       async removePlayer(id) {
@@ -107,8 +124,9 @@ export function createAppStore(deps: StoreDeps) {
         const lesson = lessonsOf(player).find((l) => l.id === id);
         if (!player || !lesson) { set({ run: null, round: null }); say('lessonNotHere'); return; }
         const run = startLesson(lesson, player, stepId ?? resumeStepId(player, lesson));
-        set({ run, round: null });
-        await savePlayer(recordStep(player, run));
+        const saved = recordStep(player, run);
+        set({ run: run.withProfile(saved), round: null });
+        await savePlayer(saved);
       },
 
       async openRound(seed, stepIndex = 1) {
@@ -129,7 +147,7 @@ export function createAppStore(deps: StoreDeps) {
 
       async next() {
         const { run, player, round } = get();
-        if (!run || !player || run.gate) return;
+        if (!run || !player || run.gate || tooSoon()) return;
         if (run.done) {
           set({ run: null, round: null });
           if (round) { say('roundFinished'); return; }
@@ -138,11 +156,13 @@ export function createAppStore(deps: StoreDeps) {
           return;
         }
         const nextRun = run.next();
-        set({ run: nextRun });
-        if (!round) await savePlayer(recordStep(player, nextRun));
+        if (round) { set({ run: nextRun }); return; }
+        const saved = recordStep(player, nextRun);
+        set({ run: nextRun.withProfile(saved) });
+        await savePlayer(saved);
       },
 
-      async back() { const run = get().run; if (run) set({ run: run.back() }); },
+      async back() { const run = get().run; if (run && !tooSoon()) set({ run: run.back() }); },
       leave() { set({ run: null, round: null }); },
       dismissToast() { set({ toast: null }); },
 

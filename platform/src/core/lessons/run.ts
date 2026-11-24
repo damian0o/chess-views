@@ -18,7 +18,11 @@ export interface LessonRun {
   gate: Gate | null; done: boolean;
   answered: boolean; lastAnswer: 'right' | 'wrong' | null; wrong: (number | Square)[];
   ply: number; layersOn: LayerKind[];
+  /** Layers the child may turn on in this step: unlocked ones plus the step's own. */
+  allowedLayers: LayerKind[];
   report(e: LessonEvent): LessonRun;
+  /** The same run with an up-to-date profile (after progress unlocked more layers). */
+  withProfile(profile: Profile): LessonRun;
   next(): LessonRun;
   back(): LessonRun;
 }
@@ -52,13 +56,15 @@ function make(s: State): LessonRun {
   const gate: Gate | null = step.solve && !(s.ply > plyOf(step)) ? { kind: 'reveal' }
     : step.question && !s.answered ? { kind: 'answer' } : null;
   const last = s.index === s.steps.length - 1;
+  const allowed = new Set<LayerKind>([...unlockedLayers(s.profile, [s.lesson]), ...step.scene.layers]);
   const run: LessonRun = {
     lesson: s.lesson, step, index: s.index, total: s.steps.length, gate, done: last && !gate,
     answered: s.answered, lastAnswer: s.lastAnswer, wrong: s.wrong.slice(), ply: s.ply, layersOn: s.layersOn.slice(),
+    allowedLayers: [...allowed],
+    withProfile: (profile) => make({ ...s, profile }),
     report(e) {
       if (e.kind === 'ply') return make({ ...s, ply: e.ply });
       if (e.kind === 'layers') {
-        const allowed = new Set<LayerKind>([...unlockedLayers(s.profile, [s.lesson]), ...step.scene.layers]);
         const on = e.on.filter((l) => allowed.has(l));
         return make({ ...s, layersOn: s.answered ? on : whileOpen(step, on) });
       }

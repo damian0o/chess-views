@@ -5,6 +5,9 @@
  * The kids family is deliberately bright and playful.
  */
 :root {
+  /* Marks drawn on the board. The board stays light in every theme, so these stay dark and saturated. */
+  --board-road-w: #92400e; --board-road-b: #4c1d95; --board-good: #166534; --board-bad: #b91c1c;
+  --board-focus: #9a3412; --board-house: #065f46;
   --font-ui: "Nunito", "Segoe UI", system-ui, sans-serif;
   --radius-control: 1.25rem; --radius-card: 1.75rem;
   --shadow-card: 0 6px 0 rgb(0 0 0 / 0.08), 0 14px 30px rgb(0 0 0 / 0.10);

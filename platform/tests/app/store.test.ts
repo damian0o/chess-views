@@ -15,7 +15,7 @@ const memory = (init: Record<string, string> = {}): StorageLike & { data: Record
   const data = { ...init };
   return { data, getItem: (k) => data[k] ?? null, setItem: (k, v) => { data[k] = v; }, removeItem: (k) => { delete data[k]; } };
 };
-const make = (storage = memory()) => createAppStore({ storage, lessons: content.lessons, library: content.library, pocStepIds: stepIds });
+const make = (storage = memory()) => createAppStore({ storage, lessons: content.lessons, library: content.library, pocStepIds: stepIds, minStepMs: 0 });
 
 describe('store', () => {
   test('add then pick a player persists it', async () => {

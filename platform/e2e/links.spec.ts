@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addPlayer } from './helpers';
+import { addPlayer, pressNext, walkLesson } from './helpers';
 
 // Review Focus 3
 test('an old lesson link opens the same step after picking a player', async ({ page }) => {
@@ -23,4 +23,25 @@ test('a link before any player shows Kto gra? first, then the asked-for lesson',
   await page.getByRole('textbox', { name: 'Imię' }).fill('Kuba');
   await page.getByRole('button', { name: 'Zapisz' }).click();
   await expect(page).toHaveURL(/#\/lesson\/legal-mate\/s01-/);
+});
+
+// Review C1: two ways that used to blank the page
+test('Od nowa while the lesson is still in memory opens its first step', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await walkLesson(page, 'legal-mate');
+  const card = page.getByRole('article', { name: /Mat Legala/ });
+  await card.getByRole('button', { name: 'Od nowa' }).click();
+  await pressNext(page);
+  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('article', { name: /Mat Legala/ }).getByRole('button', { name: 'Od nowa' }).click();
+  await expect(page).toHaveURL(/#\/lesson\/legal-mate\/s01-/);
+  await expect(page.getByRole('grid')).toBeVisible();
+});
+test('an old lesson link pasted inside the open lesson opens that step', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await page.goto('./#/lesson/scholars-mate/s03-roads');
+  await expect(page.getByRole('grid')).toBeVisible();
+  await page.evaluate(() => { location.hash = '#lesson=scholars-mate&step=7'; });
+  await expect(page).toHaveURL(/#\/lesson\/scholars-mate\/s07-/);
+  await expect(page.getByRole('grid')).toBeVisible();
 });

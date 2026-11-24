@@ -9,7 +9,7 @@ const withPlayer = async () => { const store = makeStore(); await store.getState
 const scholar = LESSONS.pl.find((l) => l.id === 'scholars-mate')!;
 const stepWith = (pred: (s: (typeof scholar.steps)[number]) => boolean) => scholar.steps.find(pred)!.id;
 const next = () => screen.getByRole('button', { name: /^(Dalej|Zakończ ✓)/ }) as HTMLButtonElement;
-const pieces = () => screen.queryAllByRole('img', { name: /white|black/ });
+const pieces = () => screen.queryAllByRole('img', { name: /biał|czarn/ });
 
 describe('lesson screen', () => {
   test("a step opens with its own view selected and the dropdown lists only the lesson's views", async () => {
@@ -18,7 +18,7 @@ describe('lesson screen', () => {
     const picker = await screen.findByRole('button', { name: /Widok/ });
     expect(picker.textContent).toMatch(/Drogi/);
     fireEvent.click(picker);
-    const names = (await screen.findAllByRole('option')).map((o) => o.textContent?.trim());
+    const names = (await screen.findAllByRole('option')).map((o) => o.textContent?.replace('🔒', '').trim());
     expect(names).toEqual(['Szachownica', 'Terytorium', 'Drogi', 'Bloki']);
   });
   test('a wrong choice shows Spróbuj jeszcze raz and keeps Next disabled; the right one enables Next', async () => {

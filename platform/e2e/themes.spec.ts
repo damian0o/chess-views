@@ -36,7 +36,7 @@ for (const look of ['Kolorowy', 'Spokojny', 'Prosty']) for (const mode of ['Jasn
     const width = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(width).toBe(page.viewportSize()!.width);
     if (info.project.name === 'laptop') {
-      const board = await page.getByRole('grid', { name: 'board' }).boundingBox();
+      const board = await page.getByRole('grid', { name: 'Szachownica' }).boundingBox();
       const card = await page.locator('section').first().boundingBox();
       expect(card!.x).toBeGreaterThan(board!.x + board!.width - 1);   // the card sits beside the board
     }

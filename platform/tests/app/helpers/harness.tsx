@@ -16,11 +16,11 @@ export const memory = (init: Record<string, string> = {}): StorageLike & { data:
   const data = { ...init };
   return { data, getItem: (k) => data[k] ?? null, setItem: (k, v) => { data[k] = v; }, removeItem: (k) => { delete data[k]; } };
 };
-export const makeStore = (storage = memory()) => createAppStore({ storage, lessons: content.lessons, library: content.library, pocStepIds: stepIds as Record<string, string[]> });
+export const makeStore = (storage = memory(), opts: { minStepMs?: number } = {}) => createAppStore({ storage, lessons: content.lessons, library: content.library, pocStepIds: stepIds as Record<string, string[]>, minStepMs: opts.minStepMs ?? 0 });
 
 /** Render UI with a store and an in-memory router starting at `path`. */
 export function mount(ui: ReactNode, { store = makeStore(), path = '/' }: { store?: AppStore; path?: string } = {}) {
   const loc = memoryLocation({ path, record: true });
   const result = render(<AppStoreProvider store={store}><Router hook={loc.hook}>{ui}</Router></AppStoreProvider>);
-  return { ...result, store, history: loc.history! };
+  return { ...result, store, history: loc.history!, navigate: loc.navigate };
 }

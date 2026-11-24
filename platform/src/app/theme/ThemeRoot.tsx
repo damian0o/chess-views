@@ -18,9 +18,11 @@ export function ThemeRoot({ profile, children }: { profile: Profile | null; chil
     return () => mq.removeEventListener('change', on);
   }, [wanted]);
   const mode = wanted === 'system' ? (dark ? 'dark' : 'light') : wanted;
+  const lang = profile?.locale ?? 'pl';
   useEffect(() => {
     document.documentElement.dataset.family = family;
     document.documentElement.dataset.mode = mode;
-  }, [family, mode]);
+    document.documentElement.lang = lang;
+  }, [family, mode, lang]);
   return <>{children}</>;
 }

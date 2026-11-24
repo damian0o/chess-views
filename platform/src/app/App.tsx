@@ -14,6 +14,7 @@ import { LessonScreen, RecogniseScreen } from './screens/Lesson';
 import { Toast } from './ui/Toast';
 import { useT } from './i18n';
 import { Button } from './ui/Button';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 
 function NotFound() {
   const t = useT(); const [, navigate] = useLocation();
@@ -51,7 +52,7 @@ export default function App({ storage }: AppProps) {
   return (
     <AppStoreProvider store={store}>
       <ThemeRoot profile={player}>
-        <Router hook={useHashLocation}><AppRoutes /></Router>
+        <Router hook={useHashLocation}><ErrorBoundary><AppRoutes /></ErrorBoundary></Router>
       </ThemeRoot>
     </AppStoreProvider>
   );

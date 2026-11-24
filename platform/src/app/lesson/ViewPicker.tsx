@@ -3,7 +3,8 @@ import type { View, ViewId } from '../views';
 import { useT } from '../i18n';
 
 /** The view dropdown: only the given views; disabled while a blocks question is open. */
-export function ViewPicker({ views, selected, onChange, disabled }: { views: View[]; selected: ViewId; onChange: (v: View) => void; disabled: boolean }) {
+export function ViewPicker({ views, selected, onChange, disabled, allowed }: { views: View[]; selected: ViewId; onChange: (v: View) => void; disabled: boolean; allowed: readonly string[] }) {
+  const usable = (v: View) => v.layers.every((l) => allowed.includes(l));
   const t = useT();
   return (
     <Select selectedKey={selected} isDisabled={disabled} onSelectionChange={(k) => { const v = views.find((x) => x.id === k); if (v) onChange(v); }}
@@ -15,9 +16,9 @@ export function ViewPicker({ views, selected, onChange, disabled }: { views: Vie
       <Popover className="min-w-40 rounded-control bg-card p-1 shadow-card">
         <ListBox className="outline-none">
           {views.map((v) => (
-            <ListBoxItem key={v.id} id={v.id} textValue={t(v.label)}
-              className="cursor-pointer rounded-control px-4 py-3 font-bold outline-none data-[focused]:bg-accent data-[focused]:text-accent-ink data-[selected]:underline">
-              {t(v.label)}
+            <ListBoxItem key={v.id} id={v.id} textValue={t(v.label)} isDisabled={!usable(v)}
+              className="cursor-pointer rounded-control px-4 py-3 font-bold outline-none data-[focused]:bg-accent data-[focused]:text-accent-ink data-[selected]:underline data-[disabled]:cursor-default data-[disabled]:opacity-50">
+              {t(v.label)}{usable(v) ? '' : ' 🔒'}
             </ListBoxItem>
           ))}
         </ListBox>

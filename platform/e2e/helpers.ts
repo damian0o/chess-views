@@ -34,11 +34,26 @@ export async function answerStep(page: Page) {
 export async function walkLesson(page: Page, id: string) {
   await page.goto(`./#/lesson/${id}`);
   await expect(nextButton(page)).toBeVisible();
-  for (let guard = 0; guard < 40; guard++) {
+  for (let guard = 0; guard < 80; guard++) {
     await answerStep(page);
     const finishing = (await nextButton(page).textContent())?.startsWith('Zakończ');
-    await nextButton(page).click();
-    if (finishing) break;
+    if (finishing) { await pressFinish(page); break; }
+    await pressNext(page);
   }
+  await expect(page).toHaveURL(/#\/home$/);
+}
+
+/** Press Next once the double-tap window (300 ms after a step change) has passed, and expect the step to move. */
+export async function pressNext(page: Page) {
+  const before = page.url();
+  await page.waitForTimeout(350);
+  await nextButton(page).click();
+  await expect(page).not.toHaveURL(before);
+}
+
+/** Press "Zakończ ✓" the same way and expect to land on home. */
+export async function pressFinish(page: Page) {
+  await page.waitForTimeout(350);
+  await nextButton(page).click();
   await expect(page).toHaveURL(/#\/home$/);
 }

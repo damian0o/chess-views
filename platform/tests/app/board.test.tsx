@@ -15,11 +15,11 @@ describe('Board', () => {
   test('start position draws 32 piece images and 64 cells', () => {
     render(<Board scene={scene(START, ['pieces'])} />);
     expect(screen.getAllByRole('gridcell')).toHaveLength(64);
-    expect(screen.getAllByRole('img', { name: /white|black/ })).toHaveLength(32);
+    expect(screen.getAllByRole('img', { name: /biał|czarn/ })).toHaveLength(32);
   });
   test('a blocks scene draws blocks and no piece image', () => {
     render(<Board scene={scene(START, ['shapes'])} />);
-    expect(screen.queryAllByRole('img', { name: /white|black/ })).toHaveLength(0);
+    expect(screen.queryAllByRole('img', { name: /biał|czarn/ })).toHaveLength(0);
     expect(document.querySelectorAll('[data-block]')).toHaveLength(32);
     expect(within(cell('d1')).getByTestId('block').dataset.size).toBe('big');
     expect(within(cell('e2')).getByTestId('block').dataset.size).toBe('small');
