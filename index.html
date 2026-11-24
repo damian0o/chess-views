@@ -1273,8 +1273,16 @@ const VIEWS = {
       }
       // One ring per piece a road runs into: thicker the more the attackers outnumber the defenders, cut when it is
       // defended, thin and dotted when the defenders match or outnumber the attackers.
+      // Rings go on every piece under attack, whoever attacks it: a road's end, but also a knight or a pawn.
+      // With a piece selected, only the pieces it attacks.
       const hitSquares = new Map();
-      for (const ray of drawnRays) if (ray.hit) hitSquares.set(`${ray.piece.color}:${ray.hit}`, { square: ray.hit, color: ray.piece.color });
+      for (const p of board.flat()) {
+        if (!p) continue;
+        const enemy = p.color === 'w' ? 'b' : 'w';
+        const atk = A.attackersOf(board, p.square)[enemy];
+        if (!atk.length || (focus && !atk.some((q) => q.square === focus))) continue;
+        hitSquares.set(`${enemy}:${p.square}`, { square: p.square, color: enemy });
+      }
       for (const { square, color } of hitSquares.values()) {
         const who = A.attackersOf(board, square);
         const attackers = who[color], allDefenders = who[color === 'w' ? 'b' : 'w'];
@@ -1397,7 +1405,7 @@ const VIEWS = {
       container.append(legend([
         { sw: 'road', cls: 'road-w', width: 5, text: "a white rook, bishop or queen's road: every square it can reach that way" },
         { sw: 'road', cls: 'road-b', width: 5, text: 'a black one\'s road' },
-        { sw: 'hitring', width: 3, text: 'a piece a road runs into, nobody defends it' },
+        { sw: 'hitring', width: 3, text: 'a piece under attack (by a road, a knight or a pawn), nobody defends it' },
         { sw: 'hitring', width: 5, text: 'thicker the more the attackers outnumber the defenders' },
         { sw: 'hitring', width: 3, dash: '7 3', text: 'cut: defended, but the attackers still outnumber the defenders' },
         { sw: 'hitring', width: 1.5, dash: '2.5 4', text: 'thin and dotted: defended at least as much as attacked' },
