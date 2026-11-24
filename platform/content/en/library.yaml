@@ -1,0 +1,102 @@
+start:
+  name: Start position
+  note: "Where every game begins. Try each view on it: who controls the centre
+    before anyone has moved?"
+italian-opening:
+  name: Italian Game
+  note: Both bishops aim at the weakest squares on the board, f7 and f2, which
+    only the kings defend. Roads shows the two diagonals.
+london-system:
+  name: London System
+  note: "The bishop comes out to f4 before e3 shuts it in; then c3 and e3 make a
+    pawn pyramid around d4. White plays this against almost anything. Step back
+    through the moves: the bishop keeps its diagonal the whole way."
+scholars-mate-threat:
+  name: Scholar's mate threat
+  note: "White threatens Qxf7 mate. Territory shows f7 attacked twice with only
+    the king to guard it. Black to move: how do you stop it?"
+alapin-structure:
+  name: Alapin structure
+  note: "From the blog post 'How Masters See the Board': a d4-e5 pawn chain
+    against a fianchetto. Shapes turns it into the chunking exercise."
+isolated-queen-pawn:
+  name: Isolated queen's pawn
+  note: White's d-pawn has no pawn neighbours. It gives space and open roads now,
+    and becomes a weakness in the endgame. Black to move.
+french-chain:
+  name: French pawn chains
+  note: Advance French. The chains d4-e5 and d5-e6 lock the centre. Black attacks
+    the base with ...c5, and Black's light bishop is shut in.
+carlsbad:
+  name: Carlsbad structure
+  note: "White's plan is the minority attack: b4 and b5 to make c6 weak. Black
+    plays for ...Ne4 and a push on the kingside."
+double-fianchetto:
+  name: Two fianchetto houses
+  note: Both kings live behind a fianchetto. King houses shows how the g-bishop
+    holds the house together, and what is missing if it gets traded.
+king-trap-study:
+  name: King trap study
+  note: White to move. Black's king is boxed in by its own pieces, but careless
+    White moves are stalemate. Which moves keep the win?
+back-rank:
+  name: Back-rank mate
+  note: Mate in one. The pawns that shield the king also lock it in, and the back
+    rank is open. Look in King houses, then find it in Reach.
+queen-mate:
+  name: Queen mate
+  note: "King and queen against king. Shrink the box with the queen, walk your
+    king up, and never take the last square away: that is stalemate."
+rook-mate:
+  name: Rook mate
+  note: King and rook against king. Cut the king off with the rook, then push it
+    to the edge with your own king.
+king-in-front:
+  name: King in front of its pawn
+  note: The white king stands two squares ahead of its pawn, so White wins whoever
+    is to move. Reach shows how few squares the black king has.
+stalemate-corner:
+  name: Stalemate, no move left
+  note: "White to move, not in check, and no legal move: stalemate, a draw. Black
+    was a pawn from winning. Reach paints the stuck king grey."
+stalemate-trap:
+  name: Mate or stalemate?
+  note: "White to move. Some queen moves are mate, one of them (Qf7) is stalemate.
+    Reach marks the ½ squares: find them before you move."
+lucena:
+  name: Lucena bridge
+  note: Rook endgame. Rd1+ pushes the black king away, then Rd4 builds the bridge
+    so your rook can block the checks on the 4th rank.
+knight-fork:
+  name: Knight fork
+  note: Find the knight move that gives check and attacks the rook at the same
+    time. Click the knight to see its tracks.
+bishop-pin:
+  name: Bishop pins the knight
+  note: "Black's bishop on g4 pins the knight to the queen. Reach shows the open
+    padlock: the knight may move, but it would cost the queen."
+knight-corner:
+  name: Knight in the corner
+  note: Turn on hop counts. How many hops from the corner to the other corner?
+    Which squares are farthest from the knight?
+mate-in-three:
+  name: Mate in three (a real problem)
+  note: "From NM ZugAddict's blog: solve a real composed problem, not a
+    tactics-trainer one. Set it up on a real board. The moves are hidden; find
+    White's first move, then press ▶ to check. Hint: it is a quiet move."
+opera-game:
+  name: Morphy's Opera game
+  note: Paris 1858. Every White move develops a piece with a threat. Step through
+    it; after 12.O-O-O count the roads pointing at Black's king.
+legal-1750:
+  name: Légal's mate
+  note: Paris 1750. White lets the queen go, and three small pieces mate the king.
+    Step back to 5.Nxe5 and ask why Black should not take the queen.
+reti-1910:
+  name: Réti vs Tartakower
+  note: Vienna 1910. White castles long, gives the queen on d8, then a double
+    check and a bishop mate. Watch the d-file.
+lasker-1912:
+  name: "Lasker vs Thomas: the king hunt"
+  note: London 1912. A queen sacrifice on h7 drags the black king out of his house
+    and across the whole board to g1.

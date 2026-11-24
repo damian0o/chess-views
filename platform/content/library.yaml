@@ -1,0 +1,297 @@
+- id: start
+  tags:
+    - start
+  source:
+    kind: fen
+    fen: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+  scene:
+    base: board
+    layers: &a6
+      - pieces
+- id: italian-opening
+  tags:
+    - opening
+  source:
+    kind: fen
+    fen: r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4
+  scene:
+    base: board
+    layers: &a1
+      - pieces
+      - roads
+- id: london-system
+  tags:
+    - opening
+    - structure
+  source:
+    kind: pgn
+    pgn: 1. d4 d5 2. Bf4 Nf6 3. e3 e6 4. Nf3 c5 5. c3 Nc6 6. Nbd2 Bd6 7. Bg3 O-O 8.
+      Bd3
+    ply: 15
+  scene:
+    base: board
+    layers: *a1
+- id: scholars-mate-threat
+  tags:
+    - opening
+    - tactic
+    - king safety
+  source:
+    kind: fen
+    fen: r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3
+  scene:
+    base: board
+    layers: &a2
+      - pieces
+      - territory
+- id: alapin-structure
+  tags:
+    - structure
+    - exercise
+  source:
+    kind: fen
+    fen: r1bqk1nr/pp2ppbp/2n3p1/3pP3/3P4/5N2/PP3PPP/RNBQKB1R w KQkq - 0 1
+  scene:
+    base: board
+    layers:
+      - shapes
+- id: isolated-queen-pawn
+  tags:
+    - structure
+  source:
+    kind: fen
+    fen: r1bq1rk1/pp2bppp/2n1pn2/8/2BP4/2N2N2/PP3PPP/R2QR1K1 b - - 0 1
+  scene:
+    base: board
+    layers: *a1
+- id: french-chain
+  tags:
+    - structure
+    - opening
+  source:
+    kind: fen
+    fen: rnbqkbnr/pp3ppp/4p3/2ppP3/3P4/8/PPP2PPP/RNBQKBNR w KQkq - 0 4
+  scene:
+    base: board
+    layers: *a1
+- id: carlsbad
+  tags:
+    - structure
+  source:
+    kind: fen
+    fen: r1bq1rk1/pp1nbppp/2p1pn2/3p2B1/3P4/2NBPN2/PPQ2PPP/R4RK1 w - - 0 1
+  scene:
+    base: board
+    layers: *a2
+- id: double-fianchetto
+  tags:
+    - king safety
+    - structure
+  source:
+    kind: fen
+    fen: r1bq1rk1/ppp2pbp/2np1np1/4p3/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 w - - 0 1
+  scene:
+    base: board
+    layers: &a3
+      - pieces
+      - kings
+- id: king-trap-study
+  tags:
+    - study
+    - king safety
+  source:
+    kind: fen
+    fen: kb4Q1/1p6/1P6/8/1N6/1K6/8/8 w - - 0 1
+  scene:
+    base: board
+    layers: *a3
+- id: back-rank
+  tags:
+    - mate
+    - king safety
+  source:
+    kind: fen
+    fen: 6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1
+  scene:
+    base: board
+    layers: *a3
+- id: queen-mate
+  tags:
+    - endgame
+    - mate
+  source:
+    kind: fen
+    fen: 8/8/8/3k4/8/8/8/3QK3 w - - 0 1
+  scene:
+    base: board
+    layers: *a2
+- id: rook-mate
+  tags:
+    - endgame
+    - mate
+  source:
+    kind: fen
+    fen: 8/8/8/3k4/8/8/8/R3K3 w - - 0 1
+  scene:
+    base: board
+    layers: *a2
+- id: king-in-front
+  tags:
+    - endgame
+  source:
+    kind: fen
+    fen: 4k3/8/4K3/4P3/8/8/8/8 w - - 0 1
+  scene:
+    base: board
+    layers: &a4
+      - pieces
+      - reach
+- id: stalemate-corner
+  tags:
+    - endgame
+    - study
+  source:
+    kind: fen
+    fen: 8/8/8/8/8/4k3/4p3/4K3 w - - 0 1
+  scene:
+    base: board
+    layers: *a4
+- id: stalemate-trap
+  tags:
+    - endgame
+    - mate
+    - study
+  source:
+    kind: fen
+    fen: 7k/8/6K1/8/8/8/8/5Q2 w - - 0 1
+  scene:
+    base: board
+    layers: *a4
+- id: lucena
+  tags:
+    - endgame
+    - study
+  source:
+    kind: fen
+    fen: 1K1k4/1P6/8/8/8/8/r7/2R5 w - - 0 1
+  scene:
+    base: board
+    layers: *a1
+- id: knight-fork
+  tags:
+    - tactic
+    - knight
+  source:
+    kind: fen
+    fen: 2r1k3/8/8/8/4N3/8/8/4K3 w - - 0 1
+  scene:
+    base: board
+    layers: &a5
+      - pieces
+      - knight
+- id: bishop-pin
+  tags:
+    - tactic
+  source:
+    kind: fen
+    fen: r2qkbnr/ppp2ppp/2np4/4p3/2B1P1b1/5N2/PPPP1PPP/RNBQ1RK1 w kq - 0 1
+  scene:
+    base: board
+    layers: *a4
+- id: knight-corner
+  tags:
+    - knight
+    - exercise
+  source:
+    kind: fen
+    fen: 7N/8/8/8/8/8/8/k6K w - - 0 1
+  scene:
+    base: board
+    layers: *a5
+- id: mate-in-three
+  tags:
+    - problem
+    - mate
+  source:
+    kind: pgn
+    pgn: |-
+      [Event "White to play and mate in three"]
+      [FEN "8/1n4K1/qpB4p/3R3P/4kp1N/2p4P/2P1pP2/6R1 w - - 0 1"]
+      [SetUp "1"]
+
+      1. Rf1 b5 2. f3+ Ke3 3. Rd3#
+    ply: 0
+  scene:
+    base: board
+    layers: *a6
+- id: opera-game
+  tags:
+    - game
+    - tactic
+  source:
+    kind: pgn
+    pgn: >-
+      [White "Morphy"]
+
+      [Black "Duke of Brunswick and Count Isouard"]
+
+
+      1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3
+      Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13.
+      Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8#
+    ply: 23
+  scene:
+    base: board
+    layers: *a1
+- id: legal-1750
+  tags:
+    - game
+    - mate
+  source:
+    kind: pgn
+    pgn: |-
+      [White "Légal"]
+      [Black "Saint Brie"]
+
+      1. e4 e5 2. Nf3 d6 3. Bc4 Bg4 4. Nc3 g6 5. Nxe5 Bxd1 6. Bxf7+ Ke7 7. Nd5#
+    ply: 13
+  scene:
+    base: board
+    layers: *a6
+- id: reti-1910
+  tags:
+    - game
+    - mate
+  source:
+    kind: pgn
+    pgn: >-
+      [White "Réti"]
+
+      [Black "Tartakower"]
+
+
+      1. e4 c6 2. d4 d5 3. Nc3 dxe4 4. Nxe4 Nf6 5. Qd3 e5 6. dxe5 Qa5+ 7. Bd2
+      Qxe5 8. O-O-O Nxe4 9. Qd8+ Kxd8 10. Bg5+ Kc7 11. Bd8#
+    ply: 21
+  scene:
+    base: board
+    layers: *a6
+- id: lasker-1912
+  tags:
+    - game
+    - mate
+  source:
+    kind: pgn
+    pgn: >-
+      [White "Edward Lasker"]
+
+      [Black "Thomas"]
+
+
+      1. d4 e6 2. Nf3 f5 3. Nc3 Nf6 4. Bg5 Be7 5. Bxf6 Bxf6 6. e4 fxe4 7. Nxe4
+      b6 8. Ne5 O-O 9. Bd3 Bb7 10. Qh5 Qe7 11. Qxh7+ Kxh7 12. Nxf6+ Kh6 13.
+      Neg4+ Kg5 14. h4+ Kf4 15. g3+ Kf3 16. Be2+ Kg2 17. Rh2+ Kg1 18. Kd2#
+    ply: 35
+  scene:
+    base: board
+    layers: *a3
