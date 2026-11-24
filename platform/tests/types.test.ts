@@ -29,6 +29,8 @@ describe('types', () => {
     expect(ok(QuestionSchema, q(['a', 'b'], 2))).toBe(false);
     expect(ok(QuestionSchema, q(['a'], 0))).toBe(false);
     expect(ok(QuestionSchema, q(['a', 'b', 'c', 'd', 'e'], 0))).toBe(false);
+    expect(ok(QuestionSchema, q(['x'.repeat(40), 'b'], 0))).toBe(true);
+    expect(ok(QuestionSchema, q(['x'.repeat(41), 'b'], 0))).toBe(false);
   });
   test('Question tap: one or more valid squares', () => {
     expect(ok(QuestionSchema, { kind: 'tap', prompt: { kids: 'q' }, squares: ['f7'] })).toBe(true);

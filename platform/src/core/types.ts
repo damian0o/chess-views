@@ -12,6 +12,9 @@ export const AGE_BANDS = ['kids', 'teens', 'adults'] as const;   // 8â€“12, 12â€
 export const EXPERIENCES = ['basic'] as const;                   // more levels later
 export const LOCALES = ['pl', 'en'] as const;                    // pl is the default
 
+/** The longest answer label, and Recognise answer "<game>: <moment>": longer ones wrap onto two lines on a phone. */
+export const ANSWER_MAX = 40;
+
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // ---------- board basics ----------
@@ -78,7 +81,7 @@ export type MomentRef = z.infer<typeof MomentRefSchema>;
 export const QuestionSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('choice'), prompt: AgedTextSchema,
-    choices: z.array(z.string().min(1).max(32)).min(2).max(4), answer: z.number().int().min(0),
+    choices: z.array(z.string().min(1).max(ANSWER_MAX)).min(2).max(4), answer: z.number().int().min(0),
     right: AgedTextSchema.optional(),
   }).refine((q) => q.answer < q.choices.length, { message: 'the answer is not one of the choices', path: ['answer'] }),
   z.object({ kind: z.literal('tap'), prompt: AgedTextSchema, squares: z.array(SquareSchema).min(1), right: AgedTextSchema.optional() }),

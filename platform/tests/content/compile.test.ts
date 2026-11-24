@@ -77,9 +77,12 @@ describe('compileContent: errors with file and line', () => {
     expect(errs[0]!.message).toMatch(/answer differs/);
     expect(errs[0]!.line).toBe(lineOf(lesson('en'), '? Which square?'));
   });
-  test('a round answer longer than 32 characters', () => {
-    const errs = broken({ 'game: Mat szkolny': 'game: Bardzo długa nazwa partii szachowej' });
-    expect(errs.some((e) => /32 characters/.test(e.message))).toBe(true);
+  test('a round answer longer than 40 characters', () => {
+    const errs = broken({ 'game: Mat szkolny': 'game: Bardzo długa nazwa partii szachowej' });   // 41 with ": mat"
+    expect(errs.some((e) => /40 characters/.test(e.message))).toBe(true);
+  });
+  test('a round answer of up to 40 characters is fine', () => {
+    expect(broken({ 'game: Mat szkolny': 'game: Partia w operze', 'name: atak, ply: 5': 'name: poświęcenie skoczka, ply: 5' })).toEqual([]);   // 36
   });
 });
 
