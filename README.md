@@ -139,7 +139,9 @@ the link as `eval=1`.
   side is out of moves and lists which moves would stalemate.
 - **Roads**: every rook, bishop and queen's roads, drawn as far as the piece
   can actually go: up to the first piece in the way, ending with a ring on an
-  enemy piece it hits. Blue for White's pieces, red for Black's. The summary
+  enemy piece it hits. The ring is thicker for every attacker that reaches
+  that piece, cut when it is defended, and dotted when the defenders match or
+  outnumber the attackers. Blue for White's pieces, red for Black's. The summary
   says where two roads of one side meet, the sign of a target. Open files
   (no pawns on them) are shaded as the rooks' highway. Passed pawns get a
   star and their path to promotion. Small dots mark the squares a knight can
