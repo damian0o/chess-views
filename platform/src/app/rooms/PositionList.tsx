@@ -28,15 +28,16 @@ export function PositionList({ entries }: { entries: LibraryEntry[] }) {
   const q = query.trim().toLowerCase();
   const shown = entries.filter((e) => (!tag || e.tags.includes(tag)) && (!q || `${e.id} ${e.name} ${tx(e.note)} ${e.tags.map(tagName).join(' ')} ${e.tags.join(' ')}`.toLowerCase().includes(q)));
   if (!entries.length) return null;
+  const many = entries.length > 4;   // search and tag chips help only a longer list
   return (
     <div className="flex flex-col gap-4">
-      {entries.length > 4 && (
+      {many && (
         <SearchField value={query} onChange={setQuery} className="flex flex-col gap-1">
           <Label className="font-bold">{t('search')}</Label>
           <Input className="rounded-control bg-card px-4 py-3 text-lg ring-2 ring-ink/15" />
         </SearchField>
       )}
-      {tags.length > 1 && (
+      {many && tags.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {tags.map((g) => (
             <button key={g} type="button" aria-pressed={tag === g} onClick={() => setTag(tag === g ? null : g)}

@@ -17,6 +17,16 @@ describe('home with rooms', () => {
     expect(screen.queryByRole('article', { name: 'Biblioteka' })).toBeNull();
     expect(screen.queryByRole('article', { name: 'Kontynuuj' })).toBeNull();     // nothing opened yet
   });
+  test('room cards count only what the room lists: game boards sit on their lessons', async () => {
+    const store = await withPlayer();
+    mount(<AppRoutes />, { store, path: '/home' });
+    const text = async (name: string) => (await screen.findByRole('article', { name })).textContent ?? '';
+    expect(await text('Wzory')).toContain('Lekcje: 2 · Pozycje: 6');
+    expect(await text('Partie')).toContain('Lekcje: 4');
+    expect(await text('Partie')).not.toContain('Pozycje');
+    expect(await text('Końcówki')).toContain('Pozycje: 7');
+    expect(await text('Końcówki')).not.toContain('Lekcje');
+  });
   test('Kontynuuj shows the lesson opened last and opens it', async () => {
     const store = await withPlayer();
     await store.getState().openLesson('scholars-mate', 's05-board');
@@ -59,6 +69,14 @@ describe('a room', () => {
     expect(within(elsewhere).getByText('Partia włoska')).toBeTruthy();
     fireEvent.click(within(elsewhere).getByRole('button', { name: /Partia włoska/ }));
     await waitFor(() => expect(history.at(-1)).toMatch(/^\/board\?/));
+  });
+  test('a short list of positions has no tag chips or search: one position under the f7 filter', async () => {
+    const store = await withPlayer();
+    mount(<AppRoutes />, { store, path: '/room/patterns' });
+    expect(await screen.findByRole('button', { name: 'taktyka', pressed: false })).toBeTruthy();   // 6 positions: chips
+    fireEvent.click(screen.getByRole('button', { name: 'Atak na f7 i f2' }));
+    expect(screen.queryByRole('button', { name: 'taktyka' })).toBeNull();
+    expect(screen.queryByRole('searchbox')).toBeNull();
   });
   test('Partie: a game appears once, its lesson and its board on one card', async () => {
     const store = await withPlayer();

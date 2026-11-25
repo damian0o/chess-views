@@ -37,7 +37,8 @@ export function Home() {
               <div className={`h-2 w-16 rounded-full ${COLOURS[i % COLOURS.length]}`} aria-hidden="true" />
               <h2 className="text-2xl font-black">{t(ROOM_NAME[r.id])}</h2>
               <p className="text-ink-soft">{t(ROOM_ABOUT[r.id])}</p>
-              <p className="font-bold">{t('roomCount', { lessons: r.lessons.length, positions: r.positions.length + r.boardOf.size })}</p>
+              {/* Count what the room lists: a game's board sits on its lesson's card, so it is not counted twice. */}
+              <p className="font-bold">{[r.lessons.length ? t('roomLessonsCount', { n: r.lessons.length }) : '', r.positions.length ? t('roomPositionsCount', { n: r.positions.length }) : ''].filter(Boolean).join(' · ')}</p>
               <div className="mt-auto"><Button onPress={() => navigate(`/room/${r.id}`)}>{t('open')}</Button></div>
             </article>
           ))}
