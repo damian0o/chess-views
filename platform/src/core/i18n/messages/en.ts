@@ -166,6 +166,7 @@ export const en = {
   moveSlider: "Scroll through the game",
   moveOfTotal: "Move {n} of {total}",
   tagNames: "{\"mate\": \"mate\", \"structure\": \"structure\", \"endgame\": \"endgame\", \"opening\": \"opening\", \"tactic\": \"tactic\", \"king safety\": \"king safety\", \"study\": \"study\", \"game\": \"game\", \"exercise\": \"exercise\", \"knight\": \"knight\", \"start\": \"start\", \"problem\": \"problem\"}",
+  answerChoices: "Answers",
   lessonNotHere: 'That lesson is not here',
   loadUnknown: 'Could not read that as FEN, PGN or a lichess link.',
   loadBadFen: 'That FEN is not a legal position.',

@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chess Views</title>
+    <script>
+      // Before the first paint: the default theme in the device's light or dark mode, so a dark device
+      // does not flash light. ThemeRoot replaces it with the player's own choice.
+      document.documentElement.dataset.family = 'kids';
+      document.documentElement.dataset.mode = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    </script>
   </head>
   <body>
     <div id="root"></div>

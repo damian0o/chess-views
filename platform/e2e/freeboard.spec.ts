@@ -45,3 +45,15 @@ test('the free board fits a phone', async ({ page }, info) => {
   const box = await page.getByRole('dialog').boundingBox();
   expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(390);
 });
+
+// Release-1 minor: Enter/Space on a board square now come only through the button's own click
+test('Enter and Space on a board square choose it once', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await page.goto(`./#/board?${q({ fen: '8/8/8/3N4/8/8/8/k6K w - - 0 1', view: 'knight' })}`);
+  await page.getByRole('gridcell', { name: /^a1\b/ }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('gridcell', { name: /^b3\b/ }).locator('[data-dist]')).toHaveText('1');
+  await page.getByRole('gridcell', { name: /^h8\b/ }).focus();
+  await page.keyboard.press(' ');
+  await expect(page.getByRole('gridcell', { name: /^g6\b/ }).locator('[data-dist]')).toHaveText('1');
+});

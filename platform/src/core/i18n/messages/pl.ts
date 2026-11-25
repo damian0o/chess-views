@@ -167,6 +167,7 @@ export const pl: Record<keyof typeof en, Message> = {
   moveSlider: "Przewiń partię",
   moveOfTotal: "Ruch {n} z {total}",
   tagNames: "{\"mate\": \"mat\", \"structure\": \"struktura\", \"endgame\": \"końcówka\", \"opening\": \"debiut\", \"tactic\": \"taktyka\", \"king safety\": \"bezpieczeństwo króla\", \"study\": \"studium\", \"game\": \"partia\", \"exercise\": \"ćwiczenie\", \"knight\": \"skoczek\", \"start\": \"start\", \"problem\": \"zadanie\"}",
+  answerChoices: "Odpowiedzi",
   lessonNotHere: 'Nie ma tej lekcji',
   loadUnknown: 'Nie umiem odczytać tego jako FEN, PGN ani linku z lichess.',
   loadBadFen: 'Ten FEN nie jest poprawną pozycją.',

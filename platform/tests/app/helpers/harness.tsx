@@ -12,6 +12,7 @@ import type { StorageLike } from '@core/storage/index';
 
 const content = compileContent(join(process.cwd(), 'content'));   // vitest runs in platform/
 export const LESSONS = content.lessons;
+export const LIBRARY = content.library;
 
 export const memory = (init: Record<string, string> = {}): StorageLike & { data: Record<string, string> } => {
   const data = { ...init };

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import type { Profile } from '@core/types';
 
 const QUERY = '(prefers-color-scheme: dark)';
@@ -19,7 +19,7 @@ export function ThemeRoot({ profile, children }: { profile: Profile | null; chil
   }, [wanted]);
   const mode = wanted === 'system' ? (dark ? 'dark' : 'light') : wanted;
   const lang = profile?.locale ?? 'pl';
-  useEffect(() => {
+  useLayoutEffect(() => {   // before paint, so a player's theme replaces the default without a flash
     document.documentElement.dataset.family = family;
     document.documentElement.dataset.mode = mode;
     document.documentElement.lang = lang;

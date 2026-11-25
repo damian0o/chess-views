@@ -60,10 +60,9 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
       const ni = Math.max(0, Math.min(7, i + d[0])), nj = Math.max(0, Math.min(7, j + d[1]));
       setCursor([ni, nj]);
       refs.current.get(`${ni}:${nj}`)?.focus();
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSquare?.(squareName(order[i]!, order[j]!));
     }
+    // Enter and Space reach onSquare through the button's own click; handling them here too made
+    // Firefox report the square twice.
   };
 
   const cell = (row: number, col: number, i: number, j: number) => {

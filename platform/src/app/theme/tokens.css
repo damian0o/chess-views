@@ -20,7 +20,7 @@
   --accent: #7c3aed; --accent-ink: #ffffff; --accent-2: #f97316; --accent-2-ink: #1e1b4b;
   --fun-1: #ec4899; --fun-2: #facc15; --fun-3: #22c55e; --fun-4: #38bdf8;
   --good: #15803d; --good-ink: #ffffff; --bad: #dc2626; --bad-ink: #ffffff;
-  --board-light: #fff4d6; --board-dark: #a5d4fa; --board-ink: #1e1b4b; --focus: #f97316;
+  --board-light: #fff4d6; --board-dark: #a5d4fa; --board-ink: #1e1b4b; --focus: #c2410c;
 }
 [data-family="kids"][data-mode="dark"] {
   --surface: #1b1440; --card: #2a2160; --ink: #f5f3ff; --ink-soft: #c4b5fd;
@@ -37,7 +37,7 @@
   --accent: #2563eb; --accent-ink: #ffffff; --accent-2: #0f766e; --accent-2-ink: #ffffff;
   --fun-1: #6366f1; --fun-2: #0ea5e9; --fun-3: #10b981; --fun-4: #f59e0b;
   --good: #15803d; --good-ink: #ffffff; --bad: #b91c1c; --bad-ink: #ffffff;
-  --board-light: #f1f5fb; --board-dark: #b8cbe8; --board-ink: #0f172a; --focus: #f59e0b;
+  --board-light: #f1f5fb; --board-dark: #b8cbe8; --board-ink: #0f172a; --focus: #b45309;
 }
 [data-family="teens"][data-mode="dark"] {
   --surface: #0f172a; --card: #1e293b; --ink: #e2e8f0; --ink-soft: #94a3b8;

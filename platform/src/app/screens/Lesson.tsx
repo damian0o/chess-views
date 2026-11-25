@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import type { LessonRun } from '@core/lessons/run';
 import { sceneOfRun, isBlocks } from '@core/scene';
@@ -25,7 +25,9 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   const answering = run.gate?.kind === 'answer';
   const views = lessonViews(run.lesson);
   const view = viewOf(run.layersOn);
-  const tapRight = q?.kind === 'tap' && run.answered ? q.squares[0] : undefined;
+  // The right mark goes on the square the child tapped (any of the right squares), else the first one.
+  const [lastTap, setLastTap] = useState<Square | undefined>(undefined);
+  const tapRight = q?.kind === 'tap' && run.answered ? (lastTap && q.squares.includes(lastTap) ? lastTap : q.squares[0]) : undefined;
   const tapWrong = q?.kind === 'tap' && run.lastAnswer === 'wrong' ? (run.wrong.at(-1) as Square | undefined) : undefined;
   const tapOpen = q?.kind === 'tap' && answering;
   const after = (move: () => Promise<void>) => async () => {
@@ -40,7 +42,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
           <Board scene={scene} flip={scene.flip}
-            onSquare={tapOpen ? (sq) => report({ kind: 'answer', value: sq }) : undefined}
+            onSquare={tapOpen ? (sq) => { setLastTap(sq); report({ kind: 'answer', value: sq }); } : undefined}
             tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}) }} />
           <div className="flex flex-wrap items-center gap-2">
             <ViewPicker views={views} selected={view.id} allowed={run.allowedLayers} disabled={answering && isBlocks(run.step)}

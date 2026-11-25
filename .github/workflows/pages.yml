@@ -29,6 +29,8 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: platform/package-lock.json
+      - run: npm test
+        working-directory: .
       - run: npm ci
       - run: npm run check
       - run: npm run build

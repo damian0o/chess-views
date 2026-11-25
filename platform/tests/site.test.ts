@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync, mkdirSync } from 
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { assembleSite, POC_FILES } from '../scripts/assemble-site';
+import { assembleSite, pocFiles } from '../scripts/assemble-site';
 import { forwardOldLink } from '../src/app/forward';
 
 const REPO = join(process.cwd(), '..');
@@ -18,7 +18,7 @@ describe('assemble-site', () => {
     assembleSite({ repoRoot: REPO, appDist: app, out });
     expect(readFileSync(join(out, 'index.html'), 'utf8')).toContain('new');
     expect(existsSync(join(out, 'assets', 'a.js'))).toBe(true);
-    for (const f of POC_FILES) expect(existsSync(join(out, 'poc', f)), f).toBe(true);
+    for (const f of pocFiles(join(process.cwd(), '..'))) expect(existsSync(join(out, 'poc', f)), f).toBe(true);
     expect(sha(join(out, 'poc', 'engine', 'stockfish-19-lite-single.wasm'))).toBe('ee4f115bdb2d32cadf96cada104a05b5ec257d7ad6f57582190b49bc71f096de');
     expect(existsSync(join(out, '.nojekyll'))).toBe(true);
   });

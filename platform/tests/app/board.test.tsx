@@ -53,10 +53,13 @@ describe('Board', () => {
     fireEvent.click(cell('e4'));
     expect(on).toHaveBeenCalledWith('e4');
   });
-  test('keyboard: Enter on a focused cell calls onSquare', () => {
+  // Enter/Space reach onSquare through the button's native click (e2e "Enter on a board square" checks a real browser).
+  test('keyboard: Enter on a focused cell reports it once, through the click', () => {
     const on = vi.fn();
     render(<Board scene={scene(START, ['pieces'])} onSquare={on} />);
     fireEvent.keyDown(cell('g1'), { key: 'Enter' });
+    fireEvent.click(cell('g1'));
+    expect(on).toHaveBeenCalledTimes(1);
     expect(on).toHaveBeenCalledWith('g1');
   });
 });

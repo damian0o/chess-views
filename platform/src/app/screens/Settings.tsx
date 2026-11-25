@@ -50,7 +50,7 @@ export function Settings() {
           options={[{ value: 'light', label: t('modeLight') }, { value: 'dark', label: t('modeDark') }, { value: 'system', label: t('modeSystem') }]} />
         <div className="flex flex-wrap gap-3">
           <Button tone="quiet" onPress={() => void download()}>{t('exportProfile')}</Button>
-          <label className="inline-flex min-h-12 cursor-pointer items-center rounded-control bg-card px-5 font-bold ring-2 ring-ink/15">
+          <label className="inline-flex min-h-12 cursor-pointer items-center rounded-control bg-card px-5 font-bold ring-2 ring-ink/15 has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]">
             {t('importProfile')}
             <input type="file" accept="application/json,.json" className="sr-only" aria-label={t('importProfile')}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) void importPlayer(f); e.target.value = ''; }} />
