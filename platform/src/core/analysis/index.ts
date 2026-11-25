@@ -10,6 +10,7 @@ import { pins, type Pin } from './pins';
 import { crossings, rays, type Crossing, type Ray } from './roads';
 import { territory, type Territory } from './territory';
 import { diamondRows, type DiamondCell } from './diamond';
+import { pawnGuards, roadRings, type PawnGuard, type RoadRing } from './rings';
 
 export * from './board';
 export * from './attacks';
@@ -24,12 +25,13 @@ export * from './knight';
 export * from './pins';
 export * from './pawns';
 export * from './input';
+export * from './rings';
 
 /** What `analyse` computed, one field per layer; a field is present only when its layer was asked for. */
 export type LayerData = {
   territory?: Territory;
   reach?: Mobility;
-  roads?: { rays: Ray[]; crossings: Crossing[] };
+  roads?: { rays: Ray[]; crossings: Crossing[]; rings: RoadRing[]; pawnGuards: PawnGuard[] };
   kings?: KingHouses;
   shapes?: PieceGroup[];
   diamond?: DiamondCell[][];
@@ -41,7 +43,8 @@ export type LayerData = {
 /**
  * Computes the data the requested layers draw, and nothing else. Following the proof of concept's
  * views, `territory` also brings `safety` (the territory view marks hanging pieces) and `roads` also
- * brings `pins` (the roads view marks frozen pieces). Reach and king houses respect pins.
+ * brings `pins` (the roads view marks frozen pieces), and roads carry the rings on attacked pieces and
+ * the pawn-guarded road squares. Reach and king houses respect pins.
  * 'engine' and 'pieces' need no analysis and produce nothing.
  */
 export function analyse(fen: Fen, layers: readonly LayerKind[]): LayerData {
@@ -55,7 +58,7 @@ export function analyse(fen: Fen, layers: readonly LayerKind[]): LayerData {
   if (want.has('reach')) out.reach = mobility(board, { respectPins: true });
   if (want.has('roads')) {
     const r = rays(board);
-    out.roads = { rays: r, crossings: crossings(r) };
+    out.roads = { rays: r, crossings: crossings(r), rings: roadRings(board), pawnGuards: pawnGuards(board, r) };
     out.pins = pins(board);
   }
   if (want.has('kings')) out.kings = kingHouses(board, { respectPins: true });

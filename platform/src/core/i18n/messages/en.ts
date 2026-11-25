@@ -112,4 +112,9 @@ export const en = {
   pieceBK: "black king",
   somethingWrong: "Something went wrong on this page.",
   lessonNotHere: 'That lesson is not here',
+  loadUnknown: 'Could not read that as FEN, PGN or a lichess link.',
+  loadBadFen: 'That FEN is not a legal position.',
+  loadBadPgn: 'That PGN does not replay.',
+  loadLichessGame: 'Fetching the game from lichess…',
+  loadLichessFailed: 'Could not fetch that game from lichess; paste the PGN instead.',
 } satisfies Record<string, Message>;

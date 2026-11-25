@@ -113,4 +113,9 @@ export const pl: Record<keyof typeof en, Message> = {
   pieceBK: "czarny król",
   somethingWrong: "Coś poszło nie tak na tej stronie.",
   lessonNotHere: 'Nie ma tej lekcji',
+  loadUnknown: 'Nie umiem odczytać tego jako FEN, PGN ani linku z lichess.',
+  loadBadFen: 'Ten FEN nie jest poprawną pozycją.',
+  loadBadPgn: 'Tego PGN nie da się odtworzyć.',
+  loadLichessGame: 'Pobieram partię z lichess…',
+  loadLichessFailed: 'Nie udało się pobrać partii z lichess; wklej PGN.',
 };
