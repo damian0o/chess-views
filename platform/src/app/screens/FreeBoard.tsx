@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { Switch } from 'react-aria-components';
 import { sessionParams, sessionScene } from '@core/session';
@@ -60,15 +60,24 @@ export function FreeBoard() {
     if (cur && !search) return;
     store.getState().openBoard(new URLSearchParams(search));
   }, [search, store]);
+  // The board writes the address only when the board changes, and at most once per pause (Safari limits
+  // replaceState bursts); an address change alone never writes back.
+  const searchRef = useRef(search);
+  searchRef.current = search;
   useEffect(() => {
     if (!session) return;
     const p = sessionParams(session).toString();
-    if (p !== new URLSearchParams(search).toString()) navigate(`/board?${p}`, { replace: true });
-  }, [session, search, navigate]);
+    if (p === new URLSearchParams(searchRef.current).toString()) return;
+    const timer = setTimeout(() => {
+      if (p !== new URLSearchParams(searchRef.current).toString()) { try { navigate(`/board?${p}`, { replace: true }); } catch { /* address not updated */ } }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [session, navigate]);
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.closest?.('[role=grid],[role=listbox],[role=dialog],[role=slider]'))) return;
       if (e.key === 'ArrowLeft') store.getState().stepPly(-1);
       if (e.key === 'ArrowRight') store.getState().stepPly(1);
     };
@@ -81,7 +90,7 @@ export function FreeBoard() {
   const scene = sessionScene(session, view.layers);
   const s = store.getState();
   const copy = async () => {
-    const url = `${location.origin}${location.pathname}?${sessionParams(session).toString()}#/board`;
+    const url = `${location.origin}${location.pathname}#/board?${sessionParams(session).toString()}`;
     try { await navigator.clipboard.writeText(url); store.setState({ toast: t('linkCopied') }); } catch { /* clipboard blocked */ }
   };
 
@@ -127,7 +136,7 @@ export function FreeBoard() {
             const side = t(scene.fen.split(' ')[1] === 'b' ? 'toMoveBlack' : 'toMoveWhite');
             return st === 'mate' ? t('statusMate') : st === 'stalemate' ? t('statusStalemate') : st === 'check' ? `${t('statusCheck')} · ${side}` : side;
           })()}</p>
-          <MoveStrip moves={session.game.moves()} ply={session.ply} onPly={s.setPly} white={session.headers.White} black={session.headers.Black} />
+          <MoveStrip moves={session.game.moves()} ply={session.ply} onPly={s.setPly} white={session.headers.White} black={session.headers.Black} hideFromPly={session.solve ? session.ply : undefined} />
           <div className="flex flex-wrap items-center gap-2">
             <LoadDialog />
             <Button tone="quiet" onPress={() => s.toggleFlip()}>⟲ {t('flip')}</Button>

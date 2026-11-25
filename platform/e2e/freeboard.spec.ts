@@ -7,7 +7,7 @@ const q = (o: Record<string, string>) => new URLSearchParams(o).toString();
 test('the Opera game: step to the end, mate, flip, letters, every view draws', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', (e) => errors.push(String(e)));
   await addPlayer(page, 'Ola');
-  await page.goto(`./?${q({ pgn: OPERA, ply: '0' })}#/board`);
+  await page.goto(`./#/board?${q({ pgn: OPERA, ply: '0' })}`);
   await expect(page.getByText(/Morphy/)).toBeVisible();
   await page.getByRole('button', { name: 'Koniec' }).click();
   await expect(page.getByRole('status', { name: 'Stan partii' })).toHaveText('Mat');
@@ -38,7 +38,7 @@ test('lichess: a game link loads through the export URL', async ({ page }) => {
 test('the free board fits a phone', async ({ page }, info) => {
   test.skip(info.project.name !== 'phone', 'phone width only');
   await addPlayer(page, 'Ola');
-  await page.goto(`./?${q({ pgn: OPERA })}#/board`);
+  await page.goto(`./#/board?${q({ pgn: OPERA })}`);
   await expect(page.getByRole('grid')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await page.getByRole('button', { name: 'Wczytaj' }).click();

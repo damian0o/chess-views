@@ -95,7 +95,8 @@ export function createAppStore(deps: StoreDeps) {
           // An old #pos link: a library entry by id, in its own view unless the link says otherwise.
           const entry = deps.library[get().player?.locale ?? 'pl']?.find((e) => e.id === pos);
           const view = params.get('view') ?? (entry ? viewOf(entry.scene?.layers ?? ['pieces']).id : 'board');
-          const s = entry ? openSession(entry.source, { view, flip: params.get('flip') === '1', ...(params.has('ply') ? { ply: Number(params.get('ply')) } : {}) }) : null;
+          const solve = !!entry?.tags.includes('problem') || params.get('solve') === '1';
+          const s = entry ? openSession(entry.source, { view, flip: params.get('flip') === '1', solve, ...(params.has('ply') ? { ply: Number(params.get('ply')) } : {}) }) : null;
           if (!s || 'error' in s) { say('posNotFound'); set({ session: openSession({ kind: 'fen', fen: START_FEN }, { view }) as Session }); return; }
           set({ session: s });
           return;

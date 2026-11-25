@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Route, Router, Switch, useLocation } from 'wouter';
-import { useHashLocation } from 'wouter/use-hash-location';
+import { useHashRoute, useHashSearch } from './hashRoute';
 import { useStore } from 'zustand';
 import type { StorageLike } from '@core/storage/index';
 import { createAppStore } from './store';
@@ -59,7 +59,7 @@ export default function App({ storage }: AppProps) {
   return (
     <AppStoreProvider store={store}>
       <ThemeRoot profile={player}>
-        <EngineProvider><Router hook={useHashLocation}><ErrorBoundary><AppRoutes /></ErrorBoundary></Router></EngineProvider>
+        <EngineProvider><Router hook={useHashRoute} searchHook={useHashSearch}><ErrorBoundary><AppRoutes /></ErrorBoundary></Router></EngineProvider>
       </ThemeRoot>
     </AppStoreProvider>
   );

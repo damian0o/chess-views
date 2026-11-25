@@ -32,7 +32,7 @@ describe('forwardOldLink', () => {
     return { done, ...calls };
   };
   test('an old position link opens the free board with the same settings', () => {
-    expect(run('#fen=8%2F8+w+-+-+0+1&view=roads')).toEqual({ done: false, hash: 'url ?fen=8%2F8+w+-+-+0+1&view=roads#/board' });
+    expect(run('#fen=8%2F8+w+-+-+0+1&view=roads')).toEqual({ done: false, hash: '#/board?fen=8%2F8+w+-+-+0+1&view=roads' });   // the position stays in the hash
   });
   test('an old link the app cannot open goes to ./poc/ with the same hash', () => {
     expect(run('#lesson=recognise&seed=1')).toEqual({ done: true, replace: './poc/#lesson=recognise&seed=1' });

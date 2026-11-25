@@ -22,7 +22,7 @@ export function Library() {
   const shown = entries.filter((e) => (!tag || e.tags.includes(tag)) && (!q || `${e.id} ${e.name} ${tx(e.note)} ${e.tags.join(' ')}`.toLowerCase().includes(q)));
   const viewFor = (e: LibraryEntry) => viewOf(e.scene?.layers ?? ['pieces']).id;
   const open = (e: LibraryEntry) => {
-    const s = openSession(e.source, { view: viewFor(e) });
+    const s = openSession(e.source, { view: viewFor(e), solve: e.tags.includes('problem') });
     if (!('error' in s)) navigate(`/board?${sessionParams(s).toString()}`);
   };
 

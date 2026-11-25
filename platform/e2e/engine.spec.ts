@@ -7,7 +7,7 @@ const q = (o: Record<string, string>) => new URLSearchParams(o).toString();
 test('the real Stockfish evaluates the Scholar threat and grades a guess', async ({ page }) => {
   test.setTimeout(120_000);
   await addPlayer(page, 'Ola');
-  await page.goto(`./?${q({ fen: SCHOLAR, view: 'engine' })}#/board`);
+  await page.goto(`./#/board?${q({ fen: SCHOLAR, view: 'engine' })}`);
   await expect(page.locator('[data-arrow]').first()).toBeAttached({ timeout: 60_000 });   // a straight vertical arrow has zero width
   const arrows = await page.locator('[data-arrow]').evaluateAll((els) => els.map((e) => e.getAttribute('data-arrow')));
   expect(arrows.some((a) => ['d8e7', 'd8f6', 'g7g6', 'g8h6'].includes(a!))).toBe(true);   // the defences the lesson teaches
@@ -21,7 +21,7 @@ test('the real Stockfish evaluates the Scholar threat and grades a guess', async
 test('a blocked engine says so', async ({ page }) => {
   await page.route('**/engine/stockfish-19-lite-single.js', (r) => r.abort());
   await addPlayer(page, 'Ola');
-  await page.goto(`./?${q({ fen: SCHOLAR, view: 'engine' })}#/board`);
+  await page.goto(`./#/board?${q({ fen: SCHOLAR, view: 'engine' })}`);
   await expect(page.getByText('Silnik nie wystartował w tej przeglądarce')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: 'Spróbuj jeszcze raz' })).toBeVisible();
 });

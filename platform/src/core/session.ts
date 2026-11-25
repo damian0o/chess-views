@@ -6,9 +6,9 @@ import { analyse } from './analysis/index';
 import type { ResolvedScene } from './scene';
 import type { MessageKey } from './i18n/index';
 
-export type Session = { source: PositionSource; game: Game; ply: number; flip: boolean; view: string; headers: Record<string, string> };
+export type Session = { source: PositionSource; game: Game; ply: number; flip: boolean; view: string; headers: Record<string, string>; /** A problem: the moves after the current one stay hidden. */ solve?: boolean };
 export type SessionError = { error: MessageKey; detail?: string };
-export type SessionOptions = { ply?: number; flip?: boolean; view?: string };
+export type SessionOptions = { ply?: number; flip?: boolean; view?: string; solve?: boolean };
 
 const clampPly = (game: Game, ply: number): number => Math.max(0, Math.min(game.length, Math.trunc(ply) || 0));
 
@@ -42,7 +42,7 @@ export function openSession(input: string | PositionSource, opts: SessionOptions
   const ply = source.kind === 'pgn' ? clampPly(game, wantPly ?? game.length) : 0;
   return {
     source: source.kind === 'pgn' ? { ...source, ply } : source,
-    game, ply, flip: !!opts.flip, view: opts.view ?? 'board', headers: game.headers(),
+    game, ply, flip: !!opts.flip, view: opts.view ?? 'board', headers: game.headers(), ...(opts.solve ? { solve: true } : {}),
   };
 }
 
@@ -58,9 +58,9 @@ export const stepBy = (s: Session, n: number): Session => stepTo(s, s.ply + n);
 export function sessionScene(s: Session, layers: LayerKind[]): ResolvedScene {
   const fen = s.game.fen(s.ply);
   return {
-    fen, ply: s.ply, moves: s.game.moves(),
+    fen, ply: s.ply, moves: s.solve ? s.game.moves().slice(0, s.ply) : s.game.moves(),
     layers: layers.slice(), data: analyse(fen, layers),
-    focus: [], hideMoves: false, flip: s.flip,
+    focus: [], hideMoves: !!s.solve, flip: s.flip,
   };
 }
 
@@ -71,12 +71,13 @@ export function sessionParams(s: Session): URLSearchParams {
   else { p.set('pgn', s.source.pgn); p.set('ply', String(s.ply)); }
   if (s.view !== 'board') p.set('view', s.view);
   if (s.flip) p.set('flip', '1');
+  if (s.solve) p.set('solve', '1');
   return p;
 }
 
 /** The session a link names; null when the link carries neither a fen nor a pgn. */
 export function sessionFromParams(p: URLSearchParams): Session | SessionError | null {
-  const opts: SessionOptions = { flip: p.get('flip') === '1' };
+  const opts: SessionOptions = { flip: p.get('flip') === '1', ...(p.get('solve') === '1' ? { solve: true } : {}) };
   const view = p.get('view');
   if (view) opts.view = view;
   const fen = p.get('fen');

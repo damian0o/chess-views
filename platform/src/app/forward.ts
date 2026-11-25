@@ -12,7 +12,7 @@ export function forwardOldLink(hash: string, pocStepIds: Record<string, string[]
   const r = parseRoute(hash, pocStepIds);
   if (r.kind === 'poc') { nav.replace(`./poc/${r.hash}`); return true; }
   if (r.kind === 'lesson') nav.setHash(routeHash(r));
-  if (r.kind === 'board') nav.setUrl(`?${r.search}#/board`);
+  if (r.kind === 'board') nav.setHash(`#/board?${new URLSearchParams(r.search).toString()}`);
   return false;
 }
 

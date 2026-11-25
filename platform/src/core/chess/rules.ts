@@ -37,8 +37,11 @@ import { validatePlacement } from '../analysis/board';
  */
 function fromFen(fen: string): Chess {
   try { return new Chess(fen); } catch (e) {
-    const placement = fen.trim().split(/\s+/)[0] ?? '';
-    if (validatePlacement(placement) === null) {
+    const [placement = '', side, castle, ep, half, full] = fen.trim().split(/\s+/);
+    const wellFormed = validatePlacement(placement) === null && /^[wb]$/.test(side ?? '') && /^(-|[KQkq]{1,4})$/.test(castle ?? '')
+      && /^(-|[a-h][36])$/.test(ep ?? '') && /^\d+$/.test(half ?? '') && /^\d+$/.test(full ?? '')
+      && !/[pP]/.test(placement.split('/')[0] ?? '') && !/[pP]/.test(placement.split('/')[7] ?? '');
+    if (wellFormed) {
       try { return new Chess(fen, { skipValidation: true }); } catch { /* fall through */ }
     }
     throw new ChessError(`not a legal position: ${(e as Error).message}`);
@@ -75,10 +78,13 @@ export function loadGame(src: PositionSource): Game {
     moves: () => moves.slice(),
     headers: () => ({ ...headers }),
     fen: (n) => at(clamp(n)).fen() as Fen,
-    legalMoves: (fen, from) => fromFen(fen).moves({ verbose: true, ...(from ? { square: from } : {}) }).map(toMove),
+    legalMoves: (fen, from) => { try { return fromFen(fen).moves({ verbose: true, ...(from ? { square: from } : {}) }).map(toMove); } catch { return []; } },
     status: (n) => {
-      const c = at(clamp(n));
-      return c.isCheckmate() ? 'mate' : c.isStalemate() ? 'stalemate' : c.inCheck() ? 'check' : 'play';
+      try {
+        const c = at(clamp(n));
+        if (!c.board().flat().some((p) => p?.type === 'k')) return 'play';   // a board without kings has no game status
+        return c.isCheckmate() ? 'mate' : c.isStalemate() ? 'stalemate' : c.inCheck() ? 'check' : 'play';
+      } catch { return 'play'; }
     },
   };
 }
