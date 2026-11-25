@@ -45,8 +45,8 @@ test('Od nowa while the lesson is still in memory opens its first step', async (
   const card = page.getByRole('article', { name: /Mat Legala/ });
   await card.getByRole('button', { name: 'Od nowa' }).click();
   await pressNext(page);
-  await page.getByRole('button', { name: 'Start' }).click();
-  await page.goto('./#/room/games');
+  await page.getByRole('button', { name: 'Partie' }).click();      // ◀ back up from the lesson to its room
+  await expect(page).toHaveURL(/#\/room\/games$/);
   await page.getByRole('article', { name: /Mat Legala/ }).getByRole('button', { name: 'Od nowa' }).click();
   await expect(page).toHaveURL(/#\/lesson\/legal-mate\/s01-/);
   await expect(page.getByRole('grid')).toBeVisible();

@@ -34,7 +34,8 @@ test('a second position opens, and Back returns to its room', async ({ page }) =
   await page.getByRole('article').getByRole('button', { name: 'Otwórz' }).click();
   await expect(page).toHaveURL(/#\/board\?/);
   const first = page.url();
-  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await page.getByRole('button', { name: 'Końcówki', exact: true }).click();   // ◀ back to the room it came from
+  await expect(page).toHaveURL(/#\/room\/endgames$/);
   await page.goto('./#/room/patterns');
   await page.getByRole('searchbox', { name: 'Szukaj' }).fill('back-rank');
   await page.getByRole('article').getByRole('button', { name: 'Otwórz' }).click();

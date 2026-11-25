@@ -17,6 +17,8 @@ import { ViewPicker } from '../lesson/ViewPicker';
 import { LegendPopup } from '../lesson/LegendPopup';
 import { lessonViews, viewOf } from '../views';
 import { useSolve } from '../lesson/useSolve';
+import { roomOfLesson } from '@core/rooms';
+import { ROOM_NAME } from '../rooms/names';
 
 const HINT: Record<string, MessageKey> = { opponent: 'guessOpponent', empty: 'guessEmpty', illegal: 'guessIllegal', stuck: 'guessStuck' };
 
@@ -29,6 +31,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   const store = useAppStore();
   const report = useApp((s) => s.report);
   const player = useApp((s) => s.player);
+  const isRound = useApp((s) => s.round !== null);
   const scene = sceneOfRun(run);
   const q = run.step.question;
   const answering = run.gate?.kind === 'answer';
@@ -86,7 +89,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
 
   return (
     <>
-      <TopBar title={run.lesson.title} extra={<span className="font-bold text-ink-soft">{run.index + 1}/{run.total}</span>} />
+      <TopBar title={run.lesson.title} up={isRound ? undefined : { to: `/room/${roomOfLesson(run.lesson)}`, label: t(ROOM_NAME[roomOfLesson(run.lesson)]) }} extra={<span className="font-bold text-ink-soft">{run.index + 1}/{run.total}</span>} />
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
           <Board scene={boardScene} flip={scene.flip} squareNames={!!player && showsSquareNames(player)}

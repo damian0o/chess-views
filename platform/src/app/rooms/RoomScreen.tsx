@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { buildRooms, familiesIn, familyView } from '@core/rooms';
 import { ROOMS, type Family, type Room } from '@core/types';
-import { useApp } from '../appStore';
+import { useApp, useAppStore } from '../appStore';
 import { useT } from '../i18n';
 import { Button } from '../ui/Button';
 import { TopBar } from '../ui/TopBar';
@@ -18,6 +18,8 @@ export function RoomScreen({ id }: { id: string }) {
   const library = useApp((s) => s.libraryList)();
   const rooms = useMemo(() => buildRooms(lessons, library), [lessons, library]);
   const [family, setFamily] = useState<Family | null>(null);
+  const store = useAppStore();
+  useEffect(() => { store.setState({ boardFrom: `/room/${id}` }); }, [store, id]);   // a board opened from here comes back here
   const room = rooms.find((r) => r.id === id);
   if (!(ROOMS as readonly string[]).includes(id) || !room) return <><TopBar title={t('home')} /><main className="p-4"><p>{t('nothingFound')}</p></main></>;
   const view = familyView(rooms, id as Room, family);

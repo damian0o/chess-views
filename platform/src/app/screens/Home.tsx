@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { buildRooms, lastOpenLesson } from '@core/rooms';
-import { useApp } from '../appStore';
+import { useApp, useAppStore } from '../appStore';
 import { useT } from '../i18n';
 import { Button } from '../ui/Button';
 import { TopBar } from '../ui/TopBar';
@@ -19,6 +19,8 @@ export function Home() {
   const library = useApp((s) => s.libraryList)();
   const unlocked = useApp((s) => s.recogniseUnlocked)();
   const rooms = useMemo(() => buildRooms(lessons, library), [lessons, library]);
+  const store = useAppStore();
+  useEffect(() => { store.setState({ boardFrom: null }); }, [store]);   // a board opened from home comes back home
   const last = player ? lastOpenLesson(player, lessons) : null;
 
   return (

@@ -13,6 +13,7 @@ import { LegendPopup } from '../lesson/LegendPopup';
 import { TopBar } from '../ui/TopBar';
 import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
+import { ROOM_NAME } from '../rooms/names';
 import { VIEWS, type View } from '../views';
 import { useAnalysis } from '../board/useAnalysis';
 import { EnginePanel } from '../board/EnginePanel';
@@ -32,6 +33,7 @@ export function FreeBoard() {
   const store = useAppStore();
   const session = useApp((s) => s.session);
   const player = useApp((s) => s.player);
+  const boardFrom = useApp((s) => s.boardFrom);
   const [knight, setKnight] = useState<Square | undefined>(() => { const sq = new URLSearchParams(search).get('sq'); return sq && /^[a-h][1-8]$/.test(sq) ? sq as Square : undefined; });
   const fen = session?.game.fen(session.ply);
   const engineOn = session?.view === 'engine';
@@ -87,6 +89,8 @@ export function FreeBoard() {
   }, [store]);
 
   if (!session) return null;
+  const roomFrom = boardFrom?.match(/^\/room\/(\w+)$/)?.[1];
+  const upFrom = roomFrom && roomFrom in ROOM_NAME ? { to: boardFrom!, label: t(ROOM_NAME[roomFrom as keyof typeof ROOM_NAME]) } : undefined;
   const view: View = VIEWS.find((v) => v.id === session.view) ?? VIEWS[0]!;
   const scene = sessionScene(session, view.layers);
   const s = store.getState();
@@ -97,7 +101,7 @@ export function FreeBoard() {
 
   return (
     <>
-      <TopBar title={t('freeBoard')} />
+      <TopBar title={t('freeBoard')} up={upFrom} />
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
           <Board scene={scene} flip={session.flip} pieceStyle={player?.pieceStyle ?? 'images'} squareNames={!!player && showsSquareNames(player)} knightSquare={knight}
