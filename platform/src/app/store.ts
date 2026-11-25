@@ -48,6 +48,7 @@ export interface AppState {
   leave(): void;
   dismissToast(): void;
   lessonList(): Lesson[];
+  libraryList(): LibraryEntry[];
   recogniseUnlocked(): boolean;
   exportPlayer(): Promise<Blob | null>;
   importPlayer(file: Blob): Promise<void>;
@@ -214,6 +215,7 @@ export function createAppStore(deps: StoreDeps) {
       dismissToast() { set({ toast: null }); },
 
       lessonList() { return lessonsOf(get().player); },
+      libraryList() { return deps.library[get().player?.locale ?? 'pl'] ?? []; },
       recogniseUnlocked() {
         const p = get().player;
         if (!p) return false;

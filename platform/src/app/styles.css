@@ -32,3 +32,12 @@
 @keyframes cv-confetti { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(-120px) rotate(540deg); opacity: 0; } }
 .cv-pop { animation: cv-pop 450ms ease-out both; }
 .cv-confetti { animation: cv-confetti 900ms ease-out both; }
+
+/* Paper: only the print sheet, on one A4 page. */
+@page { size: A4 portrait; margin: 14mm; }
+@media print {
+  html, body { background: white !important; }
+  body * { visibility: hidden; }
+  #print-sheet, #print-sheet * { visibility: visible; }
+  #print-sheet { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0; break-inside: avoid; }
+}

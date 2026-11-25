@@ -127,6 +127,7 @@ export function FreeBoard() {
             <LoadDialog />
             <Button tone="quiet" onPress={() => s.toggleFlip()}>⟲ {t('flip')}</Button>
             <Button tone="quiet" onPress={() => void copy()}>{t('copyLink')}</Button>
+            <Button tone="quiet" onPress={() => navigate('/print')}>{t('print')}</Button>
             <Switch isSelected={player?.pieceStyle === 'letters'} onChange={(on) => void s.updatePlayer({ pieceStyle: on ? 'letters' : 'images' })}
               className="group flex min-h-12 cursor-pointer items-center gap-2 font-bold">
               <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent">

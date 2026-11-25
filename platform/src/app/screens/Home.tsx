@@ -49,6 +49,11 @@ export function Home() {
             </section>
           );
         })}
+        <article aria-label={t('library')} className="flex flex-col gap-2 rounded-card bg-card p-5 shadow-card">
+          <h2 className="text-2xl font-black">{t('library')}</h2>
+          <p className="text-ink-soft">{t('libraryAbout')}</p>
+          <div><Button onPress={() => navigate('/library')}>{t('open')}</Button></div>
+        </article>
         <article aria-label={t('freeBoard')} className="flex flex-col gap-2 rounded-card bg-accent-2 p-5 text-accent-2-ink shadow-card">
           <h2 className="text-2xl font-black">{t('freeBoard')}</h2>
           <p>{t('freeBoardAbout')}</p>
