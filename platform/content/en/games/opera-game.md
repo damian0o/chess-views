@@ -61,7 +61,7 @@ Another board.
 ## s05-board {scene: "board", pos: "opera-game", ply: 18, moment: "sacrifice", solve: "Find Morphy's sacrifice"}
 
 ::: kids
-Black's pawn b5 attacks the bishop. Morphy does not step back. Find his move, then press ▶.
+Black's pawn b5 attacks the bishop. Morphy does not step back. Find his move and play it on the board.
 :::
 
 ## s06-roads {scene: "board+roads", same: true, ply: 19, moment: "sacrifice"}
@@ -97,7 +97,7 @@ Another board.
 ## s09-board {scene: "board", pos: "opera-game", ply: 30, moment: "mate", solve: "Find the queen sacrifice"}
 
 ::: kids
-Morphy gives away his queen and mates next move. Find the queen move, then press ▶.
+Morphy gives away his queen and mates next move. Find the queen move and play it on the board.
 :::
 
 ## s10-houses {scene: "board+kings", same: true, ply: 33, moment: "mate"}

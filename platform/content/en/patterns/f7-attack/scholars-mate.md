@@ -82,7 +82,7 @@ Another board.
 ## s09-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#", ply: 6, moment: "mate", solve: "Find White's strike"}
 
 ::: kids
-Black played a careless move. Find the strike on the board or on paper, then press ▶.
+Black played a careless move. Find the strike and play it on the board.
 :::
 
 ## s10-houses {scene: "board+kings", same: true, ply: 7, moment: "mate"}
@@ -118,7 +118,7 @@ One more board.
 ## s13-territory {scene: "board+territory", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 g6", ply: 5, focus: "f7", moment: "defence", solve: "Stop the mate"}
 
 ::: kids
-Black to move. Give f7 a defender besides the king, or chase the queen away, then press ▶.
+Black to move. Give f7 a defender besides the king, or chase the queen away. Play your move on the board.
 :::
 
 ## s14-board {scene: "board", same: true, ply: 6, moment: "defence"}
@@ -148,7 +148,7 @@ Same shape, the queen only moved. Where does it point? f7 again.
 ## s17-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 g6 4. Qf3 Nf6", ply: 7, moment: "defence", solve: "Defend again"}
 
 ::: kids
-The king alone is not enough again: guard f7 with a piece, then press ▶. Keep watching f7 until you castle.
+The king alone is not enough again: guard f7 with a piece and play your move on the board. Keep watching f7 until you castle.
 :::
 
 ## s18-blocks {scene: "blocks", moment: "defence"}

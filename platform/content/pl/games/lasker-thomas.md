@@ -44,7 +44,7 @@ Hetman na h5 i dwa skoczki na e4 i e5 są blisko czarnego króla.
 ## s03-board {scene: "board", pos: "lasker-1912", ply: 20, moment: "gift", solve: "Znajdź dar hetmana Laskera"}
 
 ::: kids
-Białe oddają hetmana z szachem. Znajdź ten ruch, potem naciśnij ▶.
+Białe oddają hetmana z szachem. Znajdź ten ruch i zagraj go na planszy.
 :::
 
 ## s04-houses {scene: "board+kings", same: true, ply: 22, moment: "gift"}
@@ -116,7 +116,7 @@ Inna pozycja.
 ## s11-board {scene: "board", pos: "lasker-1912", ply: 34, moment: "mate", solve: "Znajdź mata"}
 
 ::: kids
-Król doszedł aż na g1, do rogu białych. Nawet biały król może pomóc. Znajdź mata, potem naciśnij ▶.
+Król doszedł aż na g1, do rogu białych. Nawet biały król może pomóc. Znajdź mata i zagraj go na planszy.
 :::
 
 ## s12-houses {scene: "board+kings", same: true, ply: 35, moment: "mate"}

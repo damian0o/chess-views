@@ -40,7 +40,7 @@ Droga białego hetmana biegnie kolumną d aż do d8, obok czarnego króla.
 ## s03-board {scene: "board", pos: "reti-1910", ply: 16, moment: "gift", solve: "Znajdź ruch hetmanem Rétiego"}
 
 ::: kids
-Białe oddają hetmana z szachem. Znajdź ten ruch, potem naciśnij ▶.
+Białe oddają hetmana z szachem. Znajdź ten ruch i zagraj go na planszy.
 :::
 
 ## s04-houses {scene: "board+kings", same: true, ply: 18, moment: "gift"}
@@ -70,7 +70,7 @@ Inna pozycja.
 ## s07-board {scene: "board", pos: "reti-1910", ply: 18, moment: "mate", solve: "Znajdź podwójny szach"}
 
 ::: kids
-Goniec z d2 odchodzi i dwie bierki dają szacha naraz. Znajdź to, potem naciśnij ▶.
+Goniec z d2 odchodzi i dwie bierki dają szacha naraz. Znajdź ten ruch i zagraj go na planszy.
 :::
 
 ## s08-roads {scene: "board+roads", same: true, ply: 21, moment: "mate"}

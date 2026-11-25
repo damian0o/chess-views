@@ -83,7 +83,7 @@ Inna pozycja.
 ## s09-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#", ply: 6, moment: "mate", solve: "Znajdź cios białych"}
 
 ::: kids
-Czarne zrobiły nieuważny ruch. Znajdź cios na szachownicy albo na kartce, potem naciśnij ▶.
+Czarne zrobiły nieuważny ruch. Znajdź cios i zagraj go na planszy.
 :::
 
 ## s10-houses {scene: "board+kings", same: true, ply: 7, moment: "mate"}
@@ -119,7 +119,7 @@ Jeszcze jedna pozycja.
 ## s13-territory {scene: "board+territory", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 g6", ply: 5, focus: "f7", moment: "defence", solve: "Zatrzymaj mata"}
 
 ::: kids
-Ruch czarnych. Daj polu f7 obrońcę oprócz króla albo przegoń hetmana, potem naciśnij ▶.
+Ruch czarnych. Daj polu f7 obrońcę oprócz króla albo przegoń hetmana. Zagraj ruch na planszy.
 :::
 
 ## s14-board {scene: "board", same: true, ply: 6, moment: "defence"}
@@ -149,7 +149,7 @@ Ten sam kształt, tylko hetman się przesunął. W co celuje? Znowu w f7.
 ## s17-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5 g6 4. Qf3 Nf6", ply: 7, moment: "defence", solve: "Obroń się jeszcze raz"}
 
 ::: kids
-Sam król znowu nie wystarczy: pilnuj f7 bierką, potem naciśnij ▶. Uważaj na f7, dopóki nie zrobisz roszady.
+Sam król znowu nie wystarczy: pilnuj f7 bierką i zagraj ruch na planszy. Uważaj na f7, dopóki nie zrobisz roszady.
 :::
 
 ## s18-blocks {scene: "blocks", moment: "defence"}

@@ -11,13 +11,24 @@ export async function addPlayer(page: Page, name: string, age: '8–12' | '12–
 
 export const nextButton = (page: Page) => page.getByRole('button', { name: /^(Dalej|Zakończ ✓)/ });
 
-/** Answer the current step the way a child might: play the hidden move, try choices or squares until Next opens. */
+/**
+ * Answer the current step the way a child might: on a find-the-move step tap squares until some move is
+ * played, then Show the answer if it was not right; try choices or squares until Next opens.
+ */
 export async function answerStep(page: Page) {
   const next = nextButton(page);
-  const play = page.getByRole('button', { name: /Zagraj ruch/ });
+  const showAnswer = page.getByRole('button', { name: 'Pokaż odpowiedź' });
+  const verdict = page.getByText(/^(Twój ruch |Tu silnik nie sprawdzi|Silnik myśli)/);
   const tapHint = page.getByText('Dotknij pola na szachownicy');
   for (let guard = 0; guard < 80 && await next.isDisabled(); guard++) {
-    if (await play.isVisible()) { await play.click(); continue; }
+    if (await showAnswer.isVisible()) { await showAnswer.click(); continue; }
+    if (await page.getByRole('gridcell').first().getAttribute('aria-disabled') !== 'true' && !(await tapHint.isVisible())) {
+      // A find-the-move step: the board takes taps. Tap through the squares until a move is played, then wait for the verdict.
+      const cells = page.getByRole('gridcell');
+      for (let i = 0; i < 64 && !(await verdict.isVisible()); i++) await cells.nth(i).click();
+      await expect.poll(async () => (await next.isEnabled()) || (await showAnswer.isVisible()), { timeout: 30_000 }).toBe(true);
+      continue;
+    }
     if (await tapHint.isVisible()) {
       const cells = page.getByRole('gridcell');
       for (let i = 0; i < 64 && await next.isDisabled(); i++) await cells.nth(i).click();

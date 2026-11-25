@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import type { LessonRun } from '@core/lessons/run';
 import { sceneOfRun, isBlocks } from '@core/scene';
-import type { Square } from '@core/types';
+import type { Fen, Square } from '@core/types';
+import { loadGame } from '@core/chess/rules';
+import { tapGuess, type GuessState } from '@core/guess';
+import type { MessageKey } from '@core/i18n/index';
 import { showsSquareNames } from '@core/storage/index';
 import { useApp, useAppStore } from '../appStore';
 import { useT } from '../i18n';
@@ -12,6 +15,9 @@ import { StepCard } from '../lesson/StepCard';
 import { ViewPicker } from '../lesson/ViewPicker';
 import { LegendPopup } from '../lesson/LegendPopup';
 import { lessonViews, viewOf } from '../views';
+import { useSolve } from '../lesson/useSolve';
+
+const HINT: Record<string, MessageKey> = { opponent: 'guessOpponent', empty: 'guessEmpty', illegal: 'guessIllegal', stuck: 'guessStuck' };
 
 /**
  * The screen of a running lesson or round: one board, the view dropdown with its legend, and the step card.
@@ -32,6 +38,38 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   const tapRight = q?.kind === 'tap' && run.answered ? (lastTap && q.squares.includes(lastTap) ? lastTap : q.squares[0]) : undefined;
   const tapWrong = q?.kind === 'tap' && run.lastAnswer === 'wrong' ? (run.wrong.at(-1) as Square | undefined) : undefined;
   const tapOpen = q?.kind === 'tap' && answering;
+  // A "find the move" step: the child plays the move on the board and the engine judges it.
+  const step = run.step;
+  const solveAt = useMemo(() => {
+    const pos = step.scene.position;
+    if (!step.solve) return null;
+    try {
+      const game = loadGame(pos);
+      const ply = pos.kind === 'pgn' ? pos.ply : 0;
+      const m = game.moves()[ply];
+      return { ply, fen: game.fen(ply), gameUci: m ? `${m.from}${m.to}${m.promotion ?? ''}` : null, gameSan: m?.san ?? null };
+    } catch { return null; }
+  }, [step]);
+  const solving = !!solveAt && run.gate?.kind === 'reveal';
+  const solve = useSolve(solveAt?.fen ?? null, solveAt?.gameUci ?? null);
+  const [pick, setPick] = useState<GuessState>({});
+  const [hint, setHint] = useState<MessageKey | null>(null);
+  useEffect(() => { setPick({}); setHint(null); }, [step.id]);
+  const onSolveTap = (sq: Square) => {
+    if (!solveAt || solve.state.kind === 'checking') return;
+    const r = tapGuess(pick, sq, solveAt.fen as Fen);
+    setPick(r.state);
+    if (r.result.kind === 'ignore') { setHint(HINT[r.result.reason]!); return; }
+    setHint(null);
+    if (r.result.kind !== 'guess') return;
+    void solve.submit({ move: r.result.move, san: r.result.san }).then((check) => {
+      if (check?.kind === 'right') report({ kind: 'ply', ply: solveAt.ply + 1 });
+    });
+  };
+  const judged = solve.state.kind === 'judged' ? solve.state : null;
+  const solveMarks = judged?.check.kind === 'right' && judged.check.game ? { right: judged.guess.move.to as Square }
+    : judged && judged.check.kind !== 'right' && solving ? { wrong: judged.guess.move.to as Square } : {};
+  const boardScene = solving && pick.from ? { ...scene, focus: [...scene.focus, pick.from] } : scene;
   const after = (move: () => Promise<void>) => async () => {
     await move();
     const r = store.getState().run;
@@ -43,9 +81,9 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
       <TopBar title={run.lesson.title} extra={<span className="font-bold text-ink-soft">{run.index + 1}/{run.total}</span>} />
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
-          <Board scene={scene} flip={scene.flip} squareNames={!!player && showsSquareNames(player)}
-            onSquare={tapOpen ? (sq) => { setLastTap(sq); report({ kind: 'answer', value: sq }); } : undefined}
-            tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}) }} />
+          <Board scene={boardScene} flip={scene.flip} squareNames={!!player && showsSquareNames(player)}
+            onSquare={tapOpen ? (sq) => { setLastTap(sq); report({ kind: 'answer', value: sq }); } : solving ? onSolveTap : undefined}
+            tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}), ...solveMarks }} />
           <div className="flex flex-wrap items-center gap-2">
             <ViewPicker views={views} selected={view.id} allowed={run.allowedLayers} disabled={answering && isBlocks(run.step)}
               onChange={(v) => report({ kind: 'layers', on: v.layers })} />
@@ -53,8 +91,9 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
           </div>
         </div>
         <StepCard run={run}
+          solve={{ state: solve.state, tries: solve.tries, hint, solving, gameSan: solveAt?.gameSan ?? null }}
           onAnswer={(v) => report({ kind: 'answer', value: v })}
-          onReveal={() => report({ kind: 'ply', ply: run.ply + 1 })}
+          onReveal={() => { setPick({}); report({ kind: 'ply', ply: (solveAt?.ply ?? run.ply) + 1 }); }}
           onBack={() => void after(() => store.getState().back())()}
           onNext={() => void after(() => store.getState().next())()} />
       </main>

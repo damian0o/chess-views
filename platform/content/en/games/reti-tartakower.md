@@ -39,7 +39,7 @@ The white queen's road runs down the d-file all the way to d8, next to the black
 ## s03-board {scene: "board", pos: "reti-1910", ply: 16, moment: "gift", solve: "Find Réti's queen move"}
 
 ::: kids
-White gives the queen away with check. Find the move, then press ▶.
+White gives the queen away with check. Find the move and play it on the board.
 :::
 
 ## s04-houses {scene: "board+kings", same: true, ply: 18, moment: "gift"}
@@ -69,7 +69,7 @@ Another board.
 ## s07-board {scene: "board", pos: "reti-1910", ply: 18, moment: "mate", solve: "Find the double check"}
 
 ::: kids
-The bishop on d2 steps away and two pieces give check at once. Find it, then press ▶.
+The bishop on d2 steps away and two pieces give check at once. Find the move and play it on the board.
 :::
 
 ## s08-roads {scene: "board+roads", same: true, ply: 21, moment: "mate"}

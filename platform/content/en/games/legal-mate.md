@@ -39,7 +39,7 @@ The bishop's road runs g4, f3, e2, d1: through the knight to the queen.
 ## s03-board {scene: "board", pos: "legal-1750", ply: 8, moment: "gift", solve: "Find Légal's surprise"}
 
 ::: kids
-White moves the pinned knight anyway. Find the move, then press ▶.
+White moves the pinned knight anyway. Find the move and play it on the board.
 :::
 
 ## s04-blocks {scene: "blocks", moment: "gift"}
@@ -63,7 +63,7 @@ Another board.
 ## s06-board {scene: "board", pos: "legal-1750", ply: 10, moment: "mate", solve: "Find the mate in two"}
 
 ::: kids
-Black took the queen. Now White mates in two moves. Find the first one, then press ▶.
+Black took the queen. Now White mates in two moves. Find the first move and play it on the board.
 :::
 
 ## s07-houses {scene: "board+kings", same: true, ply: 13, moment: "mate"}

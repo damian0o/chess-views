@@ -40,7 +40,7 @@ Droga gońca biegnie g4, f3, e2, d1: przez skoczka do hetmana.
 ## s03-board {scene: "board", pos: "legal-1750", ply: 8, moment: "gift", solve: "Znajdź niespodziankę Légala"}
 
 ::: kids
-Białe i tak ruszają związanym skoczkiem. Znajdź ten ruch, potem naciśnij ▶.
+Białe i tak ruszają związanym skoczkiem. Znajdź ten ruch i zagraj go na planszy.
 :::
 
 ## s04-blocks {scene: "blocks", moment: "gift"}
@@ -64,7 +64,7 @@ Inna pozycja.
 ## s06-board {scene: "board", pos: "legal-1750", ply: 10, moment: "mate", solve: "Znajdź mata w dwóch"}
 
 ::: kids
-Czarne zbiły hetmana. Teraz białe dają mata w dwóch ruchach. Znajdź pierwszy, potem naciśnij ▶.
+Czarne zbiły hetmana. Teraz białe dają mata w dwóch ruchach. Znajdź pierwszy ruch i zagraj go na planszy.
 :::
 
 ## s07-houses {scene: "board+kings", same: true, ply: 13, moment: "mate"}

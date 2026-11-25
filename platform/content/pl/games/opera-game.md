@@ -62,7 +62,7 @@ Inna pozycja.
 ## s05-board {scene: "board", pos: "opera-game", ply: 18, moment: "sacrifice", solve: "Znajdź poświęcenie Morphy'ego"}
 
 ::: kids
-Czarny pionek b5 atakuje gońca. Morphy się nie cofa. Znajdź jego ruch, potem naciśnij ▶.
+Czarny pionek b5 atakuje gońca. Morphy się nie cofa. Znajdź jego ruch i zagraj go na planszy.
 :::
 
 ## s06-roads {scene: "board+roads", same: true, ply: 19, moment: "sacrifice"}
@@ -98,7 +98,7 @@ Inna pozycja.
 ## s09-board {scene: "board", pos: "opera-game", ply: 30, moment: "mate", solve: "Znajdź poświęcenie hetmana"}
 
 ::: kids
-Morphy oddaje hetmana i w następnym ruchu daje mata. Znajdź ruch hetmanem, potem naciśnij ▶.
+Morphy oddaje hetmana i w następnym ruchu daje mata. Znajdź ruch hetmanem i zagraj go na planszy.
 :::
 
 ## s10-houses {scene: "board+kings", same: true, ply: 33, moment: "mate"}

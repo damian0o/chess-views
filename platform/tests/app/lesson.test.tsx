@@ -66,13 +66,15 @@ describe('lesson screen', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Zamknij' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
-  test('▶ reveals a solve step and opens Next', async () => {
-    const id = stepWith((s) => !!s.solve);
+  test("playing the game's move solves a find-the-move step at once, even while the engine is silent", async () => {
+    const id = stepWith((s) => !!s.solve);        // s09: find Qxf7#
     const store = await withPlayer();
     mount(<AppRoutes />, { store, path: `/lesson/scholars-mate/${id}` });
-    await screen.findByRole('button', { name: /Zagraj ruch/ });
+    await screen.findByText('Dotknij bierki, potem pola, na które idzie');
     expect(next().disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: /Zagraj ruch/ }));
+    fireEvent.click(screen.getByRole('gridcell', { name: /^h5\b/ }));
+    fireEvent.click(screen.getByRole('gridcell', { name: /^f7\b/ }));
+    expect(await screen.findByText('Twój ruch Hxf7#: Dobrze, tak zagrano w partii!')).toBeTruthy();
     await waitFor(() => expect(next().disabled).toBe(false));
   });
   // Review Focus 4

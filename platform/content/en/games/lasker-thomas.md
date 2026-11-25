@@ -43,7 +43,7 @@ The queen on h5 and the two knights on e4 and e5 are close to Black's king.
 ## s03-board {scene: "board", pos: "lasker-1912", ply: 20, moment: "gift", solve: "Find Lasker's queen gift"}
 
 ::: kids
-White gives the queen away with check. Find the move, then press ▶.
+White gives the queen away with check. Find the move and play it on the board.
 :::
 
 ## s04-houses {scene: "board+kings", same: true, ply: 22, moment: "gift"}
@@ -115,7 +115,7 @@ Another board.
 ## s11-board {scene: "board", pos: "lasker-1912", ply: 34, moment: "mate", solve: "Find the mate"}
 
 ::: kids
-The king has reached g1, White's own corner. Even White's king can help. Find the mate, then press ▶.
+The king has reached g1, White's own corner. Even White's king can help. Find the mate and play it on the board.
 :::
 
 ## s12-houses {scene: "board+kings", same: true, ply: 35, moment: "mate"}

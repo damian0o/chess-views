@@ -22,3 +22,19 @@ test('a reload mid-lesson reopens the same step with the question asked again', 
   await expect(page.getByText('Dotknij pola na szachownicy')).toBeVisible();
   await expect(nextButton(page)).toBeDisabled();
 });
+
+test('a find-the-move step is judged by the real engine: a6 allows mate, Qe7 also stops it', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await page.goto('./#/lesson/scholars-mate/s13-territory');
+  const cell = (sq: string) => page.getByRole('gridcell', { name: new RegExp(`^${sq}\\b`) });
+  await expect(page.getByText('Dotknij bierki, potem pola, na które idzie')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pokaż odpowiedź' })).toHaveCount(0);
+  await cell('a7').click(); await cell('a6').click();
+  await expect(page.getByText('Twój ruch a6: Ojej, to pozwala na mata w 1')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('button', { name: 'Pokaż odpowiedź' })).toBeVisible();
+  await expect(nextButton(page)).toBeDisabled();
+  await cell('d8').click(); await cell('e7').click();
+  await expect(page.getByText(/^Twój ruch He7: (Najlepszy!|Równie dobry|Dobry)$/)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('W partii: g6')).toBeVisible();
+  await expect(nextButton(page)).toBeEnabled();
+});

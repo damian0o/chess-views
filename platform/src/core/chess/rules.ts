@@ -106,3 +106,14 @@ export function isJudgeable(fen: Fen): boolean {
   } catch { return false; }
   return c.moves().length > 0;
 }
+
+/** The position after one move given as UCI (e2e4, e7e8q) and its status; null for an illegal move or a bad FEN. */
+export function playMove(fen: Fen, uci: string): { fen: Fen; status: Status } | null {
+  if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) return null;
+  try {
+    const c = new Chess(fen);
+    c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), ...(uci[4] ? { promotion: uci[4] } : {}) });
+    const status: Status = c.isCheckmate() ? 'mate' : c.isStalemate() ? 'stalemate' : c.inCheck() ? 'check' : 'play';
+    return { fen: c.fen() as Fen, status };
+  } catch { return null; }
+}
