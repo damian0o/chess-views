@@ -81,14 +81,15 @@ describe('store', () => {
     expect(s.getState().run?.step.question?.kind).toBe('choice');
   });
   // Review Focus 3
-  test('POC progress is migrated into the first player once', async () => {
+  test("the first player starts at zero; the old app's progress is not carried over", async () => {
     const storage = memory({ 'chess-views:lessons': JSON.stringify({ 'scholars-mate': { step: 7, done: false } }) });
     const s = make(storage);
     await s.getState().loadPlayers();
     await s.getState().addPlayer({ name: 'Ola' });
-    expect(s.getState().player?.progress['scholars-mate']?.reachedStep).toBe(stepIds['scholars-mate']![6]);
-    await s.getState().addPlayer({ name: 'Kuba' });
     expect(s.getState().player?.progress).toEqual({});
+    expect(storage.data['chess-views:poc-migrated']).toBeUndefined();
+    // The old app's own saving is left alone for /poc/.
+    expect(storage.data['chess-views:lessons']).toBeDefined();
   });
   test('updatePlayer saves; removePlayer forgets', async () => {
     const storage = memory();

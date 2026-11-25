@@ -55,8 +55,8 @@ decides what is on it; the POC stays reachable under `/poc/`.
    share links, lessons with questions and moments, Recognise, the Engine
    view and the evaluation, problems with hidden moves.
 10. **Old links keep working:** `#fen=`, `#pgn=`, `#pos=`, `#lesson=` …
-    open the same thing in the new app; the POC's saved lesson progress
-    moves once into the first player (`migratePocProgress`).
+    open the same thing in the new app. The POC's saved lesson progress is
+    not carried over (decided 2026-11-25): every new player starts at zero.
 11. **Publishing:** Pages is served from the GitHub Actions build: the
     platform at the root from its first release, the POC under `/poc/`
     (see "Settled after the builder check").

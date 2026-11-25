@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createLocalProfileStore, defaultProfile, migratePocProgress, type StorageLike } from '@core/storage/index';
+import { createLocalProfileStore, defaultProfile, type StorageLike } from '@core/storage/index';
 import { ProfileSchema } from '@core/types';
 
 const memory = (init: Record<string, string> = {}): StorageLike & { data: Record<string, string> } => {
@@ -75,17 +75,3 @@ describe('LocalProfileStore', () => {
   });
 });
 
-describe('migratePocProgress', () => {
-  // Review Focus 5
-  const ids25 = Array.from({ length: 25 }, (_, i) => `step-${i + 1}`);
-  test('step numbers become step ids, done is kept, unknown lessons are dropped', () => {
-    expect(migratePocProgress({ 'scholars-mate': { step: 17, done: true }, gone: { step: 1, done: false } }, { 'scholars-mate': ids25 }))
-      .toEqual({ 'scholars-mate': { reachedStep: 'step-17', done: true } });
-  });
-  test('a step past the end maps to the last step; garbage gives nothing', () => {
-    expect(migratePocProgress({ 'scholars-mate': { step: 40, done: false } }, { 'scholars-mate': ids25 }))
-      .toEqual({ 'scholars-mate': { reachedStep: 'step-25', done: false } });
-    expect(migratePocProgress('nope', { 'scholars-mate': ids25 })).toEqual({});
-    expect(migratePocProgress({ 'scholars-mate': { step: 'x' } }, { 'scholars-mate': ids25 })).toEqual({});
-  });
-});

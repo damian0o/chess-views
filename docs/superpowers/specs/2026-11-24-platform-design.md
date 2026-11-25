@@ -450,9 +450,10 @@ then the POC stays live.
 - The new platform is built in the same repository on a branch; the POC
   stays live until the platform reaches parity, then the Pages source
   switches to the Actions build.
-- Existing on-device progress (`chess-views:lessons`) is read once and
-  migrated into the first profile (by lesson id; step numbers map to the
-  new step ids through a table written during conversion).
+- Existing on-device progress (`chess-views:lessons`) stays with the POC
+  and is not carried over (decided 2026-11-25): every new player starts at
+  zero. The step-id table written during conversion still maps old
+  `#lesson=` links.
 - Existing links (`#fen=`, `#pgn=`, `#pos=`, `#lesson=`) keep working
   through a compatibility route.
 

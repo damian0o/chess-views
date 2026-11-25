@@ -5,7 +5,7 @@
  */
 import { createStore } from 'zustand/vanilla';
 import type { AgeBand, Avatar, Lesson, LessonId, LibraryEntry, Locale, Profile } from '@core/types';
-import { createLocalProfileStore, defaultProfile, migratePocProgress, type ProfileSummary, type StorageLike } from '@core/storage/index';
+import { createLocalProfileStore, defaultProfile, type ProfileSummary, type StorageLike } from '@core/storage/index';
 import { startLesson, type LessonEvent, type LessonRun } from '@core/lessons/run';
 import { recordStep, finishLesson, resumeStepId } from '@core/lessons/progress';
 import { buildRound, roundUnlocked, type Round } from '@core/recognition';
@@ -15,8 +15,6 @@ import { parseInput } from '@core/analysis';
 import { START_FEN } from '@core/chess/rules';
 import { viewOf } from './views';
 
-export const POC_KEY = 'chess-views:lessons';
-const MIGRATED_KEY = 'chess-views:poc-migrated';
 /** The player last chosen on this device, so a reload keeps them signed in. */
 const CURRENT_KEY = 'chess-views:current-player';
 export const ROUND_LESSON_ID = 'recognise';
@@ -148,13 +146,8 @@ export function createAppStore(deps: StoreDeps) {
       },
 
       async addPlayer(opts) {
-        let p = defaultProfile(opts);
-        const raw = read(POC_KEY);
-        if (raw && !read(MIGRATED_KEY) && (await profiles.list()).length === 0) {
-          try { p = { ...p, progress: migratePocProgress(JSON.parse(raw), deps.pocStepIds) }; } catch { /* unreadable: start fresh */ }
-          write(MIGRATED_KEY, '1');
-        }
-        await savePlayer(p);
+        // Every new player starts at zero; the old app's progress stays with the old app (/poc/).
+        await savePlayer(defaultProfile(opts));
       },
 
       async pickPlayer(id) {
