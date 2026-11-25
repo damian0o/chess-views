@@ -108,7 +108,7 @@ describe('I3: a language change mid-lesson', () => {
 describe('I4: legends describe only what is drawn', () => {
   test.each([['pl', pl], ['en', en]] as const)('%s', (_l, cat) => {
     expect(cat.legendBoard).not.toMatch(/Dotknij|Tap/);
-    expect(cat.legendRoads).not.toMatch(/Kropkowan|Krzyżyk|dotted|cross|defended|broniona/i);
+    // Roads draws rings with defenders and pawn crosses since release 2 (tests/app/views2.test.tsx).
     expect(cat.legendTerritory).not.toMatch(/Pierścień|ring/i);
     expect(cat.legendKings).not.toMatch(/wejść|step/i);
   });
