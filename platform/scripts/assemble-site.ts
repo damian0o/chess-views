@@ -20,6 +20,8 @@ export function assembleSite({ repoRoot, appDist, out }: { repoRoot: string; app
     mkdirSync(dirname(dest), { recursive: true });
     cpSync(join(repoRoot, f), dest);
   }
+  // The new app's engine: the same vendored files, at the site root.
+  for (const f of POC_FILES.filter((x) => x.startsWith('engine/'))) cpSync(join(repoRoot, f), join(out, f));
   writeFileSync(join(out, '.nojekyll'), '');   // serve files as they are
 }
 

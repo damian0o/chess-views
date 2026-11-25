@@ -60,3 +60,15 @@ describe('forwarding while the app is open', () => {
     expect(calls).toEqual(['replace ./poc/#pos=lucena', 'hash #/lesson/scholars-mate/s01-board']);
   });
 });
+
+describe('engine files in the site', () => {
+  test('assemble-site copies engine/ to the root with the pinned wasm hash', () => {
+    const app = mkdtempSync(join(tmpdir(), 'cv-app-'));
+    writeFileSync(join(app, 'index.html'), 'x');
+    const out = join(mkdtempSync(join(tmpdir(), 'cv-site-')), 'site');
+    assembleSite({ repoRoot: REPO, appDist: app, out });
+    expect(sha(join(out, 'engine', 'stockfish-19-lite-single.wasm'))).toBe('ee4f115bdb2d32cadf96cada104a05b5ec257d7ad6f57582190b49bc71f096de');
+    expect(sha(join(out, 'engine', 'stockfish-19-lite-single.js'))).toBe('ccb130d7ff29408531c47d859a49f91d59d4f482d05a53eb1a3231a4f624c91a');
+    expect(existsSync(join(out, 'engine', 'COPYING.txt'))).toBe(true);
+  });
+});
