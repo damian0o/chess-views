@@ -9,7 +9,10 @@ import { createLocalProfileStore, defaultProfile, migratePocProgress, type Profi
 import { startLesson, type LessonEvent, type LessonRun } from '@core/lessons/run';
 import { recordStep, finishLesson, resumeStepId } from '@core/lessons/progress';
 import { buildRound, roundUnlocked, type Round } from '@core/recognition';
-import { t } from '@core/i18n/index';
+import { t, type MessageKey } from '@core/i18n/index';
+import { openSession, sessionFromParams, stepTo, type Session } from '@core/session';
+import { parseInput } from '@core/analysis';
+import { START_FEN } from '@core/chess/rules';
 
 export const POC_KEY = 'chess-views:lessons';
 const MIGRATED_KEY = 'chess-views:poc-migrated';
@@ -23,6 +26,14 @@ export interface AppState {
   run: LessonRun | null;
   round: Round | null;
   toast: string | null;
+  /** The free board's position and settings. */
+  session: Session | null;
+  openBoard(params: URLSearchParams): void;
+  loadBoardText(text: string): Promise<MessageKey | null>;
+  setPly(ply: number): void;
+  stepPly(by: number): void;
+  setView(view: string): void;
+  toggleFlip(): void;
   loadPlayers(): Promise<void>;
   restore(): Promise<void>;
   addPlayer(opts: { name?: string; age?: AgeBand; locale?: Locale; avatar?: Avatar }): Promise<void>;
@@ -47,6 +58,8 @@ export interface StoreDeps {
   /** Ignore a second Next/Back within this many ms of a step change (a double tap). Default 300. */
   minStepMs?: number;
   now?: () => number;
+  /** For lichess imports (tests pass a fake). */
+  fetch?: typeof fetch;
   lessons: Record<Locale, Lesson[]>;
   library: Record<Locale, LibraryEntry[]>;
   pocStepIds: Record<string, string[]>;
@@ -72,7 +85,41 @@ export function createAppStore(deps: StoreDeps) {
     const savePlayer = async (p: Profile) => { await profiles.save(p); write(CURRENT_KEY, p.id); set({ player: p, players: await profiles.list() }); };
 
     return {
-      players: [], player: null, run: null, round: null, toast: null,
+      players: [], player: null, run: null, round: null, toast: null, session: null,
+
+      openBoard(params) {
+        const s = sessionFromParams(params);
+        if (s && 'error' in s) say(s.error);
+        const ok = s && !('error' in s) ? s : null;
+        set({ session: ok ?? (openSession({ kind: 'fen', fen: START_FEN }, { view: params.get('view') ?? 'board' }) as Session) });
+      },
+
+      async loadBoardText(text) {
+        const view = get().session?.view ?? 'board';
+        const parsed = parseInput(text);
+        if (parsed.kind === 'lichess-game') {
+          const doFetch = deps.fetch ?? globalThis.fetch.bind(globalThis);
+          let pgn: string;
+          try {
+            const res = await doFetch(`https://lichess.org/game/export/${parsed.gameId}?clocks=false&evals=false`, { headers: { Accept: 'application/x-chess-pgn' } });
+            if (!res.ok) return 'loadLichessFailed';
+            pgn = await res.text();
+          } catch { return 'loadLichessFailed'; }
+          const s = openSession({ kind: 'pgn', pgn, ply: parsed.ply ?? Number.MAX_SAFE_INTEGER }, { view });
+          if ('error' in s) return 'loadLichessFailed';
+          set({ session: stepTo(s, parsed.ply ?? s.game.length) });
+          return null;
+        }
+        const s = openSession(text, { view });
+        if ('error' in s) return s.error;
+        set({ session: s });
+        return null;
+      },
+
+      setPly(ply) { const s = get().session; if (s) set({ session: stepTo(s, ply) }); },
+      stepPly(by) { const s = get().session; if (s) set({ session: stepTo(s, s.ply + by) }); },
+      setView(view) { const s = get().session; if (s) set({ session: { ...s, view } }); },
+      toggleFlip() { const s = get().session; if (s) set({ session: { ...s, flip: !s.flip } }); },
 
       async loadPlayers() { set({ players: await profiles.list() }); },
 

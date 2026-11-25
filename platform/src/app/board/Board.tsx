@@ -4,7 +4,7 @@
  * cells take no focus. It decides nothing about chess.
  */
 import { useRef, useState, type KeyboardEvent } from 'react';
-import { boardFromFen, defaultKnightSquare, diamondRows, knightDistances, squareIndex, squareName, type Cell } from '@core/analysis';
+import { boardFromFen, defaultKnightSquare, diamondRows, knightDistances, squareIndex, squareName, symbol, type Cell } from '@core/analysis';
 import type { ResolvedScene } from '@core/scene';
 import type { Square } from '@core/types';
 import type { MessageKey } from '@core/i18n/index';
@@ -24,9 +24,11 @@ export interface BoardProps {
   tapMarks?: { right?: Square; wrong?: Square };
   /** The square the knight view counts jumps from (default: the POC's choice for the side to move). */
   knightSquare?: Square | undefined;
+  /** 'letters' draws the paper symbols (K, Q', o, x …) instead of piece images. */
+  pieceStyle?: 'images' | 'letters';
 }
 
-export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare }: BoardProps) {
+export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images' }: BoardProps) {
   const t = useT();
   const board = boardFromFen(scene.fen);
   const showPieces = scene.layers.includes('pieces');
@@ -86,7 +88,8 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare }:
             (focus.has(sq) || kFrom === sq) ? 'outline outline-4 -outline-offset-4 outline-[var(--board-focus)]' : '',
             tapMarks?.right === sq ? 'shadow-[inset_0_0_0_5px_var(--board-good)]' : tapMarks?.wrong === sq ? 'shadow-[inset_0_0_0_5px_var(--board-bad)]' : '',
           ].join(' ')}>
-          {piece && showPieces && <img src={PIECES[`${piece.color}${piece.type.toUpperCase()}`]} alt={t(pieceKey(piece))} className="relative z-10 h-[88%] w-[88%]" draggable={false} />}
+          {piece && showPieces && pieceStyle === 'letters' && <span aria-hidden="true" className="relative z-10 font-mono text-[min(5vw,1.6rem)] font-black text-board-ink">{symbol(piece, sq)}</span>}
+          {piece && showPieces && pieceStyle !== 'letters' && <img src={PIECES[`${piece.color}${piece.type.toUpperCase()}`]} alt={t(pieceKey(piece))} className="relative z-10 h-[88%] w-[88%]" draggable={false} />}
           {piece && showBlocks && <Block cell={piece} />}
           {reach?.has(sq) && <span data-reach={reach.get(sq)} className="absolute right-0.5 top-0.5 z-20 rounded-full bg-board-ink px-1.5 text-xs font-black text-white">{reach.get(sq)}</span>}
           {dist && (dist[row]?.[col] ?? -1) > 0 && <span data-dist={dist[row]![col]} className="absolute bottom-0.5 left-0.5 z-20 text-sm font-black text-board-ink">{dist[row]![col]}</span>}

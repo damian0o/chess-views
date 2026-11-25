@@ -11,6 +11,7 @@ import { Players } from './screens/Players';
 import { Home } from './screens/Home';
 import { Settings } from './screens/Settings';
 import { LessonScreen, RecogniseScreen } from './screens/Lesson';
+import { FreeBoard } from './screens/FreeBoard';
 import { Toast } from './ui/Toast';
 import { useT } from './i18n';
 import { Button } from './ui/Button';
@@ -32,6 +33,7 @@ export function AppRoutes() {
         <Route path="/"><Players /></Route>
         <Route path="/home"><Home /></Route>
         <Route path="/settings"><Settings /></Route>
+        <Route path="/board"><FreeBoard /></Route>
         <Route path="/lesson/:id/:step?">{(p) => <LessonScreen id={p.id} stepId={p.step} />}</Route>
         <Route path="/recognise/:seed/:n">{(p) => <RecogniseScreen seed={Number(p.seed)} n={Number(p.n)} />}</Route>
         <Route><NotFound /></Route>

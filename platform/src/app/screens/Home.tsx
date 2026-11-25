@@ -49,6 +49,11 @@ export function Home() {
             </section>
           );
         })}
+        <article aria-label={t('freeBoard')} className="flex flex-col gap-2 rounded-card bg-accent-2 p-5 text-accent-2-ink shadow-card">
+          <h2 className="text-2xl font-black">{t('freeBoard')}</h2>
+          <p>{t('freeBoardAbout')}</p>
+          <div><Button tone="quiet" onPress={() => navigate('/board')}>{t('start')}</Button></div>
+        </article>
         <article aria-label={t('recognise')} className="flex flex-col gap-2 rounded-card bg-accent p-5 text-accent-ink shadow-card">
           <h2 className="text-2xl font-black">{t('recognise')}</h2>
           <p>{unlocked ? t('recogniseAbout') : t('recogniseLocked')}</p>
