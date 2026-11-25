@@ -153,6 +153,7 @@ export const en = {
   printLegend: "Capitals are pieces; ' means black. o is a white pawn, x a black pawn. a1 is a dark square.",
   printCopy: "Copy the position here:",
   nothingFound: "Nothing found",
+  posNotFound: "That position is not in the library",
   lessonNotHere: 'That lesson is not here',
   loadUnknown: 'Could not read that as FEN, PGN or a lichess link.',
   loadBadFen: 'That FEN is not a legal position.',

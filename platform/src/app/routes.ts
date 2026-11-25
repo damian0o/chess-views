@@ -5,6 +5,7 @@ export type Route =
   | { kind: 'lesson'; id: string; stepId?: string }
   | { kind: 'recognise'; seed: number; step: number }
   | { kind: 'settings' }
+  | { kind: 'board'; search: string }
   | { kind: 'poc'; hash: string }
   | { kind: 'notFound' };
 
@@ -29,6 +30,8 @@ export function parseRoute(hash: string, pocStepIds: Record<string, string[]>): 
   const ids = lesson ? pocStepIds[lesson] : undefined;
   const step = Number(p.get('step') ?? '1');
   if (ids?.length && Number.isInteger(step) && step >= 1) return { kind: 'lesson', id: lesson!, stepId: ids[Math.min(step, ids.length) - 1]! };
+  // A position link (FEN, PGN or a library entry) opens the free board with the same settings.
+  if (!lesson && (p.has('fen') || p.has('pgn') || p.has('pos'))) return { kind: 'board', search: h };
   return { kind: 'poc', hash: `#${h}` };
 }
 
@@ -39,6 +42,7 @@ export function routeHash(r: Route): string {
     case 'settings': return '#/settings';
     case 'lesson': return r.stepId ? `#/lesson/${r.id}/${r.stepId}` : `#/lesson/${r.id}`;
     case 'recognise': return `#/recognise/${r.seed}/${r.step}`;
+    case 'board': return '#/board';
     case 'poc': return r.hash;
     case 'notFound': return '#/';
   }

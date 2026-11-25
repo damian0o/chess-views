@@ -22,7 +22,16 @@ describe('routes', () => {
     expect(parseRoute('#lesson=scholars-mate&step=99', IDS)).toEqual({ kind: 'lesson', id: 'scholars-mate', stepId: 's25-x' });
     expect(parseRoute('#lesson=scholars-mate&step=2&view=roads', IDS)).toEqual({ kind: 'lesson', id: 'scholars-mate', stepId: 's02-x' });
   });
-  test.each(['#fen=8%2F8%2F8%2F8%2F8%2F8%2F8%2FK6k+w+-+-+0+1&view=roads', '#pgn=1.+e4&ply=1', '#pos=lucena', '#lesson=nope&step=1', '#view=roads', '#lesson=recognise&seed=5&step=1'])('old link %s goes to the POC with the same hash', (hash) => {
+  // Review Focus 3 (release 2): old position links open the free board with the same settings
+  test.each([
+    ['#fen=8%2F8%2F8%2F8%2F8%2F8%2F8%2FK6k+w+-+-+0+1&view=roads&flip=1', 'fen=8%2F8%2F8%2F8%2F8%2F8%2F8%2FK6k+w+-+-+0+1&view=roads&flip=1'],
+    ['#pgn=1.+e4+e5&ply=1', 'pgn=1.+e4+e5&ply=1'],
+    ['#pos=lucena', 'pos=lucena'],
+    ['#pos=nope&view=kings', 'pos=nope&view=kings'],
+  ])('old link %s opens the free board', (hash, search) => {
+    expect(parseRoute(hash, IDS)).toEqual({ kind: 'board', search });
+  });
+  test.each(['#lesson=nope&step=1', '#lesson=recognise&seed=5&step=1', '#view=roads'])('old link %s still goes to the POC', (hash) => {
     expect(parseRoute(hash, IDS)).toEqual({ kind: 'poc', hash });
   });
   test.each(['#/nope', '#/recognise/abc/1', '#/recognise/-1/1', '#/recognise/5/0', '#/lesson/', '#garbage'])('%s is not found', (hash) => {

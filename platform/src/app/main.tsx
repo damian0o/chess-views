@@ -8,12 +8,14 @@ import './styles.css';
 const leaving = forwardOldLink(location.hash, POC_STEP_IDS, {
   replace: (url) => location.replace(url),
   setHash: (h) => history.replaceState(null, '', h),
+  setUrl: (u) => history.replaceState(null, '', u),
 });
 const nav = {
   get hash() { return location.hash; },
   onHashChange: (fn: () => void) => window.addEventListener('hashchange', fn),
   replace: (url: string) => location.replace(url),
   setHash: (h: string) => { history.replaceState(null, '', h); window.dispatchEvent(new HashChangeEvent('hashchange')); },
+  setUrl: (u: string) => { history.replaceState(null, '', u); window.dispatchEvent(new HashChangeEvent('hashchange')); window.dispatchEvent(new PopStateEvent('popstate')); },
 };
 if (!leaving) {
   watchOldLinks(POC_STEP_IDS, nav);

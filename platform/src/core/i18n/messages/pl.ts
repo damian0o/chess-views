@@ -154,6 +154,7 @@ export const pl: Record<keyof typeof en, Message> = {
   printLegend: "Wielkie litery to bierki; ' znaczy czarne. o to biały pionek, x czarny pionek. a1 to ciemne pole.",
   printCopy: "Przerysuj pozycję tutaj:",
   nothingFound: "Nic nie znaleziono",
+  posNotFound: "Nie ma takiej pozycji w bibliotece",
   lessonNotHere: 'Nie ma tej lekcji',
   loadUnknown: 'Nie umiem odczytać tego jako FEN, PGN ani linku z lichess.',
   loadBadFen: 'Ten FEN nie jest poprawną pozycją.',

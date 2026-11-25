@@ -13,6 +13,7 @@ import { t, type MessageKey } from '@core/i18n/index';
 import { openSession, sessionFromParams, stepTo, type Session } from '@core/session';
 import { parseInput } from '@core/analysis';
 import { START_FEN } from '@core/chess/rules';
+import { viewOf } from './views';
 
 export const POC_KEY = 'chess-views:lessons';
 const MIGRATED_KEY = 'chess-views:poc-migrated';
@@ -89,6 +90,16 @@ export function createAppStore(deps: StoreDeps) {
       players: [], player: null, run: null, round: null, toast: null, session: null,
 
       openBoard(params) {
+        const pos = params.get('pos');
+        if (pos !== null && !params.has('fen') && !params.has('pgn')) {
+          // An old #pos link: a library entry by id, in its own view unless the link says otherwise.
+          const entry = deps.library[get().player?.locale ?? 'pl']?.find((e) => e.id === pos);
+          const view = params.get('view') ?? (entry ? viewOf(entry.scene?.layers ?? ['pieces']).id : 'board');
+          const s = entry ? openSession(entry.source, { view, flip: params.get('flip') === '1', ...(params.has('ply') ? { ply: Number(params.get('ply')) } : {}) }) : null;
+          if (!s || 'error' in s) { say('posNotFound'); set({ session: openSession({ kind: 'fen', fen: START_FEN }, { view }) as Session }); return; }
+          set({ session: s });
+          return;
+        }
         const s = sessionFromParams(params);
         if (s && 'error' in s) say(s.error);
         const ok = s && !('error' in s) ? s : null;

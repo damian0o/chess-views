@@ -28,11 +28,14 @@ describe('forwardOldLink', () => {
   const ids = { 'scholars-mate': ['s01-board', 's02-houses'] };
   const run = (hash: string) => {
     const calls: { replace?: string; hash?: string } = {};
-    const done = forwardOldLink(hash, ids, { replace: (u) => { calls.replace = u; }, setHash: (h) => { calls.hash = h; } });
+    const done = forwardOldLink(hash, ids, { replace: (u) => { calls.replace = u; }, setHash: (h) => { calls.hash = h; }, setUrl: (u) => { calls.hash = `url ${u}`; } });
     return { done, ...calls };
   };
-  test('an old link the app cannot open yet goes to ./poc/ with the same hash', () => {
-    expect(run('#fen=8%2F8+w+-+-+0+1&view=roads')).toEqual({ done: true, replace: './poc/#fen=8%2F8+w+-+-+0+1&view=roads' });
+  test('an old position link opens the free board with the same settings', () => {
+    expect(run('#fen=8%2F8+w+-+-+0+1&view=roads')).toEqual({ done: false, hash: 'url ?fen=8%2F8+w+-+-+0+1&view=roads#/board' });
+  });
+  test('an old link the app cannot open goes to ./poc/ with the same hash', () => {
+    expect(run('#lesson=recognise&seed=1')).toEqual({ done: true, replace: './poc/#lesson=recognise&seed=1' });
   });
   test('an old lesson link becomes the new address', () => {
     expect(run('#lesson=scholars-mate&step=2')).toEqual({ done: false, hash: '#/lesson/scholars-mate/s02-houses' });
@@ -54,10 +57,11 @@ describe('forwarding while the app is open', () => {
       onHashChange: (fn) => listeners.push(fn),
       replace: (u) => calls.push(`replace ${u}`),
       setHash: (h) => calls.push(`hash ${h}`),
+      setUrl: (u) => calls.push(`url ${u}`),
     });
-    hash = '#pos=lucena'; listeners.forEach((f) => f());
+    hash = '#lesson=recognise&seed=2'; listeners.forEach((f) => f());
     hash = '#lesson=scholars-mate&step=1'; listeners.forEach((f) => f());
-    expect(calls).toEqual(['replace ./poc/#pos=lucena', 'hash #/lesson/scholars-mate/s01-board']);
+    expect(calls).toEqual(['replace ./poc/#lesson=recognise&seed=2', 'hash #/lesson/scholars-mate/s01-board']);
   });
 });
 

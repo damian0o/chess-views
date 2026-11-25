@@ -94,3 +94,23 @@ describe('free board', () => {
     expect(String((write.mock.calls[0] as unknown[])[0])).toMatch(/#\/board/);
   });
 });
+
+describe('library entries by id (old #pos links)', () => {
+  test('pos=lucena opens that position', async () => {
+    const store = await withPlayer();
+    store.getState().openBoard(new URLSearchParams('pos=lucena'));
+    expect(store.getState().session?.source.kind).toBe('fen');
+    expect(store.getState().session?.game.fen()).toContain('1K1k4');
+  });
+  test('pos=opera-game opens the PGN at its ply in its view', async () => {
+    const store = await withPlayer();
+    store.getState().openBoard(new URLSearchParams('pos=opera-game'));
+    expect([store.getState().session?.game.length, store.getState().session?.ply, store.getState().session?.view]).toEqual([33, 23, 'roads']);
+  });
+  test('pos=nope says so and opens the start position', async () => {
+    const store = await withPlayer();
+    store.getState().openBoard(new URLSearchParams('pos=nope'));
+    expect(store.getState().toast).toBe('Nie ma takiej pozycji w bibliotece');
+    expect(store.getState().session?.game.fen()).toMatch(/^rnbqkbnr\/pppppppp/);
+  });
+});
