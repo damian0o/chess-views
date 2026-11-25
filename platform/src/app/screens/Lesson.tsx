@@ -11,6 +11,7 @@ import { useApp, useAppStore } from '../appStore';
 import { useT } from '../i18n';
 import { Board } from '../board/Board';
 import { TopBar } from '../ui/TopBar';
+import { Button } from '../ui/Button';
 import { StepCard } from '../lesson/StepCard';
 import { ViewPicker } from '../lesson/ViewPicker';
 import { LegendPopup } from '../lesson/LegendPopup';
@@ -51,6 +52,13 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
     } catch { return null; }
   }, [step]);
   const solving = !!solveAt && run.gate?.kind === 'reveal';
+  // A step from a game can be played on through the game with ◀ ▶, but not while a question or task is open.
+  const gameLength = useMemo(() => {
+    const pos = step.scene.position;
+    if (pos.kind !== 'pgn') return 0;
+    try { return loadGame({ ...pos, ply: 0 }).length; } catch { return 0; }
+  }, [step]);
+  const movesLocked = !!run.gate;
   const solve = useSolve(solveAt?.fen ?? null, solveAt?.gameUci ?? null);
   const [pick, setPick] = useState<GuessState>({});
   const [hint, setHint] = useState<MessageKey | null>(null);
@@ -89,6 +97,13 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
               onChange={(v) => report({ kind: 'layers', on: v.layers })} />
             <LegendPopup view={view} />
           </div>
+          {gameLength > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button tone="quiet" aria-label={t('prevMove')} isDisabled={movesLocked || run.ply <= 0} onPress={() => report({ kind: 'ply', ply: run.ply - 1 })}>◀</Button>
+              <Button tone="quiet" aria-label={t('nextMove')} isDisabled={movesLocked || run.ply >= gameLength} onPress={() => report({ kind: 'ply', ply: run.ply + 1 })}>▶</Button>
+              <span className="font-bold text-ink-soft">{t('moveOfTotal', { n: run.ply, total: gameLength })}</span>
+            </div>
+          )}
         </div>
         <StepCard run={run}
           solve={{ state: solve.state, tries: solve.tries, hint, solving, gameSan: solveAt?.gameSan ?? null }}

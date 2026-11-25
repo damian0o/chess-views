@@ -74,6 +74,10 @@ describe('LessonRun', () => {
     r = r.report({ kind: 'ply', ply: 7 });
     expect(r.gate).toBeNull();
   });
+  test('once the hidden move is revealed, stepping back keeps it revealed', () => {
+    const r = goto('find').report({ kind: 'ply', ply: 7 }).report({ kind: 'ply', ply: 6 });
+    expect([r.ply, r.gate]).toEqual([6, null]);
+  });
   test('a step for kids only is skipped for an adult', () => {
     expect(startLesson(LESSON, adult).total).toBe(5);
     const r = startLesson(LESSON, adult, 'ask').report({ kind: 'answer', value: 1 }).next();
