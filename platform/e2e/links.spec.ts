@@ -7,10 +7,22 @@ test('an old lesson link opens the same step after picking a player', async ({ p
   await page.goto('./#lesson=scholars-mate&step=7');
   await expect(page).toHaveURL(/#\/lesson\/scholars-mate\/s07-/);
 });
-test('an old position link goes to the POC under /poc/', async ({ page }) => {
-  await page.goto('./#fen=r1bqkbnr%2Fpppp1ppp%2F2n5%2F4p2Q%2F2B1P3%2F8%2FPPPP1PPP%2FRNB1K1NR+b+KQkq+-+3+3&view=roads');
-  await expect(page).toHaveURL(/\/poc\/#fen=/);
-  await expect(page.locator('.board .sq').first()).toBeVisible();
+// Review Focus 3 (release 2): old position links open in the new app
+test('an old FEN link opens the free board with its view and flip', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await page.goto('./#fen=r1bqkbnr%2Fpppp1ppp%2F2n5%2F4p2Q%2F2B1P3%2F8%2FPPPP1PPP%2FRNB1K1NR+b+KQkq+-+3+3&view=roads&flip=1');
+  await expect(page).toHaveURL(/#\/board$/);
+  await expect(page.getByRole('button', { name: /Widok/ })).toContainText('Drogi');
+  await expect(page.getByRole('gridcell').first()).toHaveAttribute('aria-label', /^h1/);
+});
+test('an old #pos link opens the library entry', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await page.goto('./#pos=opera-game');
+  await expect(page.getByText(/Morphy/)).toBeVisible();
+});
+test('an old Recognise link still goes to the POC', async ({ page }) => {
+  await page.goto('./#lesson=recognise&seed=5&step=1');
+  await expect(page).toHaveURL(/\/poc\/#lesson=recognise/);
 });
 test('the POC works by itself under /poc/', async ({ page }) => {
   await page.goto('./poc/');

@@ -122,6 +122,11 @@ export function FreeBoard() {
             <ViewPicker views={VIEWS} selected={view.id} allowed={ALL} disabled={false} onChange={(v) => s.setView(v.id)} />
             <LegendPopup view={view} />
           </div>
+          <p role="status" aria-label={t('gameStatus')} className="text-lg font-black">{(() => {
+            const st = session.game.status(session.ply);
+            const side = t(scene.fen.split(' ')[1] === 'b' ? 'toMoveBlack' : 'toMoveWhite');
+            return st === 'mate' ? t('statusMate') : st === 'stalemate' ? t('statusStalemate') : st === 'check' ? `${t('statusCheck')} · ${side}` : side;
+          })()}</p>
           <MoveStrip moves={session.game.moves()} ply={session.ply} onPly={s.setPly} white={session.headers.White} black={session.headers.Black} />
           <div className="flex flex-wrap items-center gap-2">
             <LoadDialog />

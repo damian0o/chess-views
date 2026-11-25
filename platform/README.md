@@ -5,7 +5,18 @@ UI-free TypeScript library with every rule of the app, the lesson content as Mar
 in CI. There are no screens yet; the proof of concept stays live until the platform matches it.
 Design: `../docs/superpowers/specs/2026-11-24-platform-design.md`.
 
-## The app (release 1)
+## The app
+
+Release 2 adds the free board (`#/board`, with `?fen=…|pgn=…&ply=&view=&flip=1` in the address: load FEN,
+PGN or a lichess link, the move strip with player names, replay with ◀ ▶ and the arrow keys, flip,
+letters for paper, a share link, the game status, all nine views), the library (`#/library`: search,
+tags, open in the free board), the print sheet (`#/print`, one A4 page), the views Zasięg, Skoczek,
+Romb and Silnik (evaluation bar and best-move arrows from the vendored Stockfish, guess-the-move with a
+grade), and Roads at the proof of concept's level (solid / dashed / dotted rings by defenders, a cross
+where an enemy pawn guards). Old `#fen=`, `#pgn=` and `#pos=` links open in the free board; only old
+Recognise links still go to `/poc/`.
+
+### Release 1
 
 `src/app/` is the React app on top of the core: players ("Kto gra?"), home, the lesson screen
 (one board, a view dropdown with only the lesson's views, the "Co widzę?" legend, the step card with

@@ -114,3 +114,16 @@ describe('library entries by id (old #pos links)', () => {
     expect(store.getState().session?.game.fen()).toMatch(/^rnbqkbnr\/pppppppp/);
   });
 });
+
+describe('game status (POC parity)', () => {
+  test('whose move, check, mate', async () => {
+    const store = await withPlayer();
+    mount(<AppRoutes />, { store, path: `/board?${q({ pgn: OPERA, ply: '0' })}` });
+    expect(await screen.findByRole('status', { name: 'Stan partii' })).toHaveProperty('textContent', 'Ruch białych');
+    fireEvent.click(screen.getByRole('button', { name: 'Koniec' }));
+    expect(screen.getByRole('status', { name: 'Stan partii' }).textContent).toBe('Mat');
+    fireEvent.click(screen.getByRole('button', { name: 'Poprzedni ruch' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Poprzedni ruch' }));
+    expect(screen.getByRole('status', { name: 'Stan partii' }).textContent).toBe('Szach · Ruch czarnych');
+  });
+});
