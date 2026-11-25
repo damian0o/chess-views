@@ -33,7 +33,7 @@ describe('LocalProfileStore', () => {
   test.each([
     ['not json', 'not json'],
     ['an older version', JSON.stringify({ profiles: { a: { version: 0, id: 'a' } } })],
-    ['a bad age', JSON.stringify({ profiles: { a: { ...defaultProfile(), id: 'a', age: 'toddler' } } })],
+    ['no id', JSON.stringify({ profiles: { a: { ...defaultProfile(), id: '' } } })],
     ['a wrong shape', JSON.stringify([1, 2, 3])],
   ])('%s: load gives null and list skips it, without throwing', async (_name, raw) => {
     const s = createLocalProfileStore(memory({ [KEY]: raw }));
@@ -41,11 +41,23 @@ describe('LocalProfileStore', () => {
     await expect(s.list()).resolves.toEqual([]);
   });
 
-  test('a throwing storage behaves as empty and drops writes', async () => {
+  test('a throwing storage reads as empty, and a save says it failed', async () => {
     const s = createLocalProfileStore(throwing);
     await expect(s.list()).resolves.toEqual([]);
-    await expect(s.save(defaultProfile())).resolves.toBeUndefined();
+    await expect(s.save(defaultProfile())).rejects.toThrow();
     await expect(s.load('x')).resolves.toBeNull();
+  });
+
+  test('one bad field does not hide the player: it falls back to its default and the rest is kept', async () => {
+    const p = { ...defaultProfile({ name: 'Ola' }), id: 'a', age: 'toddler', theme: { family: 'kids', mode: 'neon' },
+      progress: { 'scholars-mate': { reachedStep: 's05', done: false } } };
+    const s = createLocalProfileStore(memory({ [KEY]: JSON.stringify({ profiles: { a: p } }) }));
+    const loaded = await s.load('a');
+    expect(loaded).not.toBeNull();
+    expect([loaded!.name, loaded!.age, loaded!.theme.mode]).toEqual(['Ola', 'kids', 'system']);
+    expect(loaded!.progress['scholars-mate']?.reachedStep).toBe('s05');
+    expect(ProfileSchema.safeParse(loaded).success).toBe(true);
+    expect((await s.list()).map((x) => x.name)).toEqual(['Ola']);
   });
 
   test('one bad profile does not hide the good ones', async () => {

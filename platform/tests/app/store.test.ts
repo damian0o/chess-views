@@ -91,6 +91,25 @@ describe('store', () => {
     // The old app's own saving is left alone for /poc/.
     expect(storage.data['chess-views:lessons']).toBeDefined();
   });
+  test('when saving fails the player is told once, and play goes on', async () => {
+    let full = true;
+    const storage = memory();
+    const set = storage.setItem;
+    storage.setItem = (k, v) => { if (full && k === 'chess-views:profiles') throw new Error('QuotaExceededError'); set(k, v); };
+    const s = make(storage);
+    await s.getState().addPlayer({ name: 'Ola' });
+    expect(s.getState().player?.name).toBe('Ola');
+    expect(s.getState().toast).toBe('Nie udało się zapisać postępów: pamięć przeglądarki jest pełna albo wyłączona');
+    s.setState({ toast: null });
+    await s.getState().updatePlayer({ age: 'teens' });
+    expect(s.getState().player?.age).toBe('teens');
+    expect(s.getState().toast).toBeNull();          // not again while it keeps failing
+    full = false;
+    await s.getState().updatePlayer({ age: 'adults' });
+    full = true;
+    await s.getState().updatePlayer({ age: 'kids' });
+    expect(s.getState().toast).not.toBeNull();      // told again after a save had worked
+  });
   test('updatePlayer saves; removePlayer forgets', async () => {
     const storage = memory();
     const s = make(storage);

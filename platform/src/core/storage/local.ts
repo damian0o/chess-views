@@ -52,7 +52,8 @@ export function createLocalProfileStore(storage: StorageLike, key = 'chess-views
     async load(id) { return valid(read().profiles[id]); },
     async save(profile) {
       const p = ProfileSchema.parse(profile);
-      const data = read(); data.profiles[p.id] = p; write(data);
+      // Unlike other writes, a failed save is reported (storage full or blocked): the caller tells the player.
+      const data = read(); data.profiles[p.id] = p; storage.setItem(key, JSON.stringify(data));
     },
     async remove(id) { const data = read(); delete data.profiles[id]; write(data); },
     async export(id) {

@@ -84,7 +84,15 @@ export function createAppStore(deps: StoreDeps) {
 
   return createStore<AppState>()((set, get) => {
     const say = (key: Parameters<typeof t>[1]) => set({ toast: t(get().player?.locale ?? 'pl', key) });
-    const savePlayer = async (p: Profile) => { await profiles.save(p); write(CURRENT_KEY, p.id); set({ player: p, players: await profiles.list() }); };
+    // A failed save (storage full or blocked) is said once, until a save works again; play goes on in memory.
+    let saveFailing = false;
+    const savePlayer = async (p: Profile) => {
+      try { await profiles.save(p); saveFailing = false; } catch { if (!saveFailing) say('saveFailed'); saveFailing = true; }
+      write(CURRENT_KEY, p.id);
+      const listed = await profiles.list();
+      const players = listed.some((x) => x.id === p.id) ? listed : [...listed, { id: p.id, ...(p.name ? { name: p.name } : {}), age: p.age, avatar: p.avatar }];
+      set({ player: p, players });
+    };
 
     return {
       players: [], player: null, run: null, round: null, toast: null, session: null,
