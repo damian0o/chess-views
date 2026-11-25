@@ -2,9 +2,9 @@ name: platform
 
 on:
   push:
-    paths: ['platform/**', '.github/workflows/platform.yml']
+    paths: ['platform/**', '.github/workflows/platform.yml', 'lessons.js', 'positions.json']   # the conversion tests read these POC files
   pull_request:
-    paths: ['platform/**', '.github/workflows/platform.yml']
+    paths: ['platform/**', '.github/workflows/platform.yml', 'lessons.js', 'positions.json']   # the conversion tests read these POC files
 
 jobs:
   check:

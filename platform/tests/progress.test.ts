@@ -21,7 +21,10 @@ describe('profile version 2', () => {
     expect(migrateProfile({ ...v1, version: 3 })).toBeNull();
     expect(migrateProfile('nope')).toBeNull();
     expect(migrateProfile(null)).toBeNull();
-    expect(migrateProfile({ ...v1, age: 'toddler' })).toBeNull();
+  });
+  test('migrateProfile: a version 1 profile with a bad age keeps the rest and gets the default age', () => {
+    const p = migrateProfile({ ...v1, age: 'toddler' });
+    expect([p?.version, p?.id, p?.age]).toEqual([2, v1.id, 'kids']);
   });
   test('LocalProfileStore: a stored version 1 profile loads as version 2', async () => {
     const data: Record<string, string> = { 'chess-views:profiles': JSON.stringify({ profiles: { kid: v1 } }) };

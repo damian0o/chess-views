@@ -27,6 +27,11 @@ export default tseslint.config(
   },
   {
     files: ['src/content/**/*.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [{ group: UI, message: 'content must not depend on UI code' }] }] },
+    // The content compiler reads lesson files into core types: no UI, no app, no build scripts.
+    rules: { 'no-restricted-imports': ['error', { patterns: [
+      { group: UI, message: 'content must not depend on UI code' },
+      { group: ['**/app/**', '**/app'], message: 'content must not depend on the app' },
+      { group: ['**/scripts/**'], message: 'content must not depend on the build scripts' },
+    ] }] },
   },
 );
