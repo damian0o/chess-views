@@ -13,6 +13,9 @@ import { LegendPopup } from '../lesson/LegendPopup';
 import { TopBar } from '../ui/TopBar';
 import { Button } from '../ui/Button';
 import { VIEWS, type View } from '../views';
+import { useAnalysis } from '../board/useAnalysis';
+import { EnginePanel } from '../board/EnginePanel';
+import { Arrows } from '../board/Arrows';
 
 const ALL = VIEWS.flatMap((v) => v.layers);
 
@@ -25,6 +28,9 @@ export function FreeBoard() {
   const session = useApp((s) => s.session);
   const player = useApp((s) => s.player);
   const [knight, setKnight] = useState<Square | undefined>(undefined);
+  const fen = session?.game.fen(session.ply);
+  const engineOn = session?.view === 'engine';
+  const { state: analysis, retry } = useAnalysis((fen ?? '') as never, !!session && engineOn);
 
   // The address opens a session only when it differs from the board on screen (one owner, no loop).
   useEffect(() => {
@@ -64,7 +70,9 @@ export function FreeBoard() {
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
           <Board scene={scene} flip={session.flip} pieceStyle={player?.pieceStyle ?? 'images'} knightSquare={knight}
-            onSquare={view.id === 'knight' ? setKnight : undefined} />
+            onSquare={view.id === 'knight' ? setKnight : undefined}
+            overlay={analysis.kind === 'done' && analysis.fen === scene.fen ? <Arrows lines={analysis.analysis.lines} flip={session.flip} /> : undefined} />
+          <EnginePanel state={analysis} turn={(scene.fen.split(' ')[1] ?? 'w') as 'w' | 'b'} onRetry={retry} />
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button tone="quiet" aria-label={t('firstMove')} onPress={() => s.setPly(0)}>⏮</Button>
             <Button tone="quiet" aria-label={t('prevMove')} onPress={() => s.stepPly(-1)}>◀</Button>

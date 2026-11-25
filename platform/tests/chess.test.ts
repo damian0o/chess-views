@@ -52,3 +52,14 @@ describe('formatSan', () => {
     for (const m of ['Nf3', 'Qxf7#', 'O-O', 'exd8=Q+', 'Bd8#']) expect(formatSan(m, 'en')).toBe(m);
   });
 });
+
+describe('viewing positions that are not legal games', () => {
+  test('a FEN without kings loads for viewing (the POC shows such boards)', () => {
+    const g = loadGame({ kind: 'fen', fen: '8/8/8/3N4/8/8/8/8 w - - 0 1' as Fen });
+    expect(g.fen()).toBe('8/8/8/3N4/8/8/8/8 w - - 0 1');
+    expect(g.status()).toBe('play');
+  });
+  test('a malformed FEN still throws', () => {
+    expect(() => loadGame({ kind: 'fen', fen: '9/8/8/8/8/8/8/8 w - - 0 1' as Fen })).toThrow(ChessError);
+  });
+});

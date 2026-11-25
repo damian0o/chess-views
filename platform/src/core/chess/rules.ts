@@ -29,8 +29,20 @@ export interface Game {
 const toMove = (m: { from: string; to: string; san: string; promotion?: string }): Move =>
   ({ from: m.from as Square, to: m.to as Square, san: m.san, ...(m.promotion ? { promotion: m.promotion } : {}) });
 
+import { validatePlacement } from '../analysis/board';
+
+/**
+ * A position from a FEN. A legal position loads as a game; a well-formed one that is not a legal game
+ * (no kings, say) still loads for viewing; the engine refuses such positions (judgeable). Malformed text throws.
+ */
 function fromFen(fen: string): Chess {
-  try { return new Chess(fen); } catch (e) { throw new ChessError(`not a legal position: ${(e as Error).message}`); }
+  try { return new Chess(fen); } catch (e) {
+    const placement = fen.trim().split(/\s+/)[0] ?? '';
+    if (validatePlacement(placement) === null) {
+      try { return new Chess(fen, { skipValidation: true }); } catch { /* fall through */ }
+    }
+    throw new ChessError(`not a legal position: ${(e as Error).message}`);
+  }
 }
 
 export function loadGame(src: PositionSource): Game {

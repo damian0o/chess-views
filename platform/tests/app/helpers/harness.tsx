@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import type { ReactNode } from 'react';
 import { createAppStore, type AppStore } from '../../../src/app/store';
 import { AppStoreProvider } from '../../../src/app/appStore';
+import { EngineProvider } from '../../../src/app/engine';
 import { compileContent } from '../../../src/content/compile';
 import stepIds from '../../../content/poc-step-ids.json';
 import type { StorageLike } from '@core/storage/index';
@@ -22,6 +23,8 @@ export const makeStore = (storage = memory(), opts: { minStepMs?: number; fetch?
 export function mount(ui: ReactNode, { store = makeStore(), path = '/' }: { store?: AppStore; path?: string } = {}) {
   const [p, q] = path.split('?');
   const loc = memoryLocation({ path: p!, ...(q ? { searchPath: q } : {}), record: true });
-  const result = render(<AppStoreProvider store={store}><Router hook={loc.hook}>{ui}</Router></AppStoreProvider>);
+  // A quiet engine by default (never answers); tests of the engine wrap their own provider inside.
+  const quiet = () => ({ onmessage: null, onerror: null, postMessage() {}, terminate() {} });
+  const result = render(<AppStoreProvider store={store}><EngineProvider workerFactory={quiet}><Router hook={loc.hook}>{ui}</Router></EngineProvider></AppStoreProvider>);
   return { ...result, store, history: loc.history!, navigate: loc.navigate };
 }

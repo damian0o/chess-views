@@ -16,6 +16,7 @@ import { Toast } from './ui/Toast';
 import { useT } from './i18n';
 import { Button } from './ui/Button';
 import { ErrorBoundary } from './ui/ErrorBoundary';
+import { EngineProvider } from './engine';
 
 function NotFound() {
   const t = useT(); const [, navigate] = useLocation();
@@ -54,7 +55,7 @@ export default function App({ storage }: AppProps) {
   return (
     <AppStoreProvider store={store}>
       <ThemeRoot profile={player}>
-        <Router hook={useHashLocation}><ErrorBoundary><AppRoutes /></ErrorBoundary></Router>
+        <EngineProvider><Router hook={useHashLocation}><ErrorBoundary><AppRoutes /></ErrorBoundary></Router></EngineProvider>
       </ThemeRoot>
     </AppStoreProvider>
   );

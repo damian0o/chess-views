@@ -3,7 +3,7 @@
  * With `onSquare` the board takes one tab stop and arrow keys move between squares; without it the
  * cells take no focus. It decides nothing about chess.
  */
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { boardFromFen, defaultKnightSquare, diamondRows, knightDistances, squareIndex, squareName, symbol, type Cell } from '@core/analysis';
 import type { ResolvedScene } from '@core/scene';
 import type { Square } from '@core/types';
@@ -26,9 +26,11 @@ export interface BoardProps {
   knightSquare?: Square | undefined;
   /** 'letters' draws the paper symbols (K, Q', o, x …) instead of piece images. */
   pieceStyle?: 'images' | 'letters';
+  /** Extra marks drawn over the board in its 8×8 coordinates (engine arrows). */
+  overlay?: ReactNode;
 }
 
-export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images' }: BoardProps) {
+export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images', overlay }: BoardProps) {
   const t = useT();
   const board = boardFromFen(scene.fen);
   const showPieces = scene.layers.includes('pieces');
@@ -115,6 +117,9 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
           </div>
         ))}
       </div>
+      )}
+      {overlay && !diamond && (
+        <svg viewBox="0 0 8 8" className="pointer-events-none absolute inset-0 z-30 h-full w-full" aria-hidden="true">{overlay}</svg>
       )}
       {roads && !diamond && (
         <svg viewBox="0 0 8 8" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">

@@ -38,7 +38,7 @@ test('openSession on a lichess game link asks the app to fetch it', () => {
 
 test('openSession errors', () => {
   expect(openSession('hello there')).toMatchObject({ error: 'loadUnknown' });
-  expect(openSession('8/8/8/8/8/8/8/8 w - - 0 1')).toMatchObject({ error: 'loadBadFen' });   // no kings
+  expect('error' in openSession('8/8/8/8/8/8/8/8 w - - 0 1')).toBe(false);   // no kings: shown for viewing (POC parity)
   expect(openSession('rnbqkbnr/ppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')).toMatchObject({ error: 'loadBadFen' });   // rank of 7
   expect(openSession('1. e4 e5 2. Ke3 Ke6 3. Qxh8')).toMatchObject({ error: 'loadBadPgn' });
   expect(openSession({ kind: 'pgn', pgn: '1. e5', ply: 0 })).toMatchObject({ error: 'loadBadPgn' });
