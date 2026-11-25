@@ -45,9 +45,9 @@ export function compareLocales(
         errors.push({ file, line: (at && origin.steps.get(at)?.line) || 1, message: `step ids differ from ${REFERENCE}: ${a.join(', ')} vs ${b.join(', ')}` });
         continue;
       }
-      const lessonShape = (l: Lesson) => JSON.stringify([l.group, l.experience, !!l.game, l.moments.map((m) => [m.id, m.board, m.looksLike ?? []])]);
+      const lessonShape = (l: Lesson) => JSON.stringify([l.group, l.experience, !!l.game, l.moments.map((m) => [m.id, m.board, m.looksLike ?? []]), l.library ?? null, l.family ?? []]);
       if (lessonShape(base) !== lessonShape(lesson)) {
-        errors.push({ file, line: 1, message: `the lesson's group, experience, game or moments differ from ${REFERENCE}` });
+        errors.push({ file, line: 1, message: `the lesson's group, experience, game, moments, board or families differ from ${REFERENCE}` });
       }
       lesson.steps.forEach((s, k) => {
         const r = base.steps[k]!;

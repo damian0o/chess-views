@@ -8,7 +8,11 @@ test('every lesson can be walked to the end and shows as finished', async ({ pag
   test.setTimeout(600_000);
   await addPlayer(page, 'Ola');
   for (const id of LESSONS) await walkLesson(page, id);
-  await expect(page.getByText(/Ukończone ✓/)).toHaveCount(LESSONS.length);
+  // Lessons live in their rooms now: two pattern lessons and four game lessons, all finished.
+  await page.goto('./#/room/patterns');
+  await expect(page.getByText(/Ukończone ✓/)).toHaveCount(2);
+  await page.goto('./#/room/games');
+  await expect(page.getByText(/Ukończone ✓/)).toHaveCount(4);
 });
 
 // Review Focus 4

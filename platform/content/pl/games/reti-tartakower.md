@@ -7,6 +7,7 @@ title: Réti kontra Tartakower
 about: "Wiedeń 1910: ofiara hetmana na d8, podwójny szach i mat gońcem."
 game: Réti – Tartakower
 experience: basic
+library: reti-1910
 moments:
   gift:
     name: dar hetmana

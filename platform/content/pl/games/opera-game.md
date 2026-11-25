@@ -7,6 +7,7 @@ title: Partia w operze
 about: "Morphy, Paryż 1858: szybki start, poświęcenie skoczka i mat wieżą na d8."
 game: Partia w operze
 experience: basic
+library: opera-game
 moments:
   start:
     name: szybki start

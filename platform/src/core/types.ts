@@ -108,6 +108,15 @@ export const MomentSchema = z.object({
 });
 export type Moment = z.infer<typeof MomentSchema>;
 
+/** The rooms of the home screen, in order: everything about one topic together. */
+export const ROOMS = ['patterns', 'games', 'endgames', 'openings'] as const;
+export const RoomSchema = z.enum(ROOMS);
+export type Room = z.infer<typeof RoomSchema>;
+/** Pattern families: lessons and positions about one idea, filtered together. Names are in the messages. */
+export const FAMILIES = ['f7-attack'] as const;
+export const FamilySchema = z.enum(FAMILIES);
+export type Family = z.infer<typeof FamilySchema>;
+
 export const LessonSchema = z.object({
   id: LessonIdSchema,
   group: z.object({ kind: z.enum(['pattern', 'strategy', 'game']), id: z.string().regex(SLUG) }),
@@ -117,6 +126,10 @@ export const LessonSchema = z.object({
   experience: ExperienceSchema,
   moments: z.array(MomentSchema),
   steps: z.array(StepSchema).min(1),
+  /** The library entry that is this lesson's board (a game): shown on the lesson's card. */
+  library: z.string().regex(SLUG).optional(),
+  /** Families besides the one a pattern lesson's group gives it. */
+  family: z.array(FamilySchema).optional(),
 });
 export type Lesson = z.infer<typeof LessonSchema>;
 
@@ -127,6 +140,8 @@ export const LibraryEntrySchema = z.object({
   note: AgedTextSchema,
   source: PositionSourceSchema,
   scene: SceneSchema.partial().optional(),
+  room: RoomSchema,
+  family: z.array(FamilySchema).optional(),
 });
 export type LibraryEntry = z.infer<typeof LibraryEntrySchema>;
 
@@ -146,6 +161,8 @@ const profileFields = {
   pieceStyle: z.enum(['images', 'letters']),
   /** Names on every board square; unset means the age default (on for 8–12). */
   squareNames: z.boolean().optional(),
+  /** The lesson opened last, for Kontynuuj on the home screen. */
+  lastLesson: z.string().optional(),
   progress: z.record(z.string(), z.object({ reachedStep: z.string(), done: z.boolean() })),
   unlockedLayers: z.array(LayerKindSchema),
 };

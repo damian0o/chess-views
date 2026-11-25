@@ -193,7 +193,7 @@ export function createAppStore(deps: StoreDeps) {
         if (!player || !lesson) { set({ run: null, round: null }); say('lessonNotHere'); return; }
         const run = startLesson(lesson, player, stepId ?? resumeStepId(player, lesson));
         if (!run) { set({ run: null, round: null }); say('lessonNotHere'); return; }   // no step for this age
-        const saved = recordStep(player, run);
+        const saved = { ...recordStep(player, run), lastLesson: lesson.id };
         set({ run: run.withProfile(saved), round: null });
         await savePlayer(saved);
       },

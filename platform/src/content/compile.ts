@@ -8,7 +8,7 @@ import { join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { loadGame, ChessError } from '@core/chess/rules';
 import {
-  ANSWER_MAX, LOCALES, LessonSchema, LibraryEntrySchema, StepSchema, PositionSourceSchema,
+  ANSWER_MAX, FAMILIES, LOCALES, ROOMS, LessonSchema, LibraryEntrySchema, StepSchema, PositionSourceSchema,
   type AgedText, type Lesson, type LibraryEntry, type Locale, type Moment, type PositionSource, type Question, type Step,
 } from '@core/types';
 import { parseLesson, type RawLesson, type RawQuestion, type RawStep } from './parse';
@@ -89,7 +89,7 @@ function compileLibrary(root: string, errors: ContentError[]): { positions: Libr
   const read = readYaml(file, errors);
   if (!read) return { positions, entries };
   if (!Array.isArray(read.data)) { errors.push({ file, line: 1, message: 'library.yaml must be a list of entries (- id: …)' }); return { positions, entries }; }
-  const shared: { id: string; tags: string[]; scene?: unknown }[] = [];
+  const shared: { id: string; tags: string[]; scene?: unknown; room: unknown; family?: unknown }[] = [];
   for (const raw of read.data as Record<string, unknown>[]) {
     const id = String(raw?.id ?? '');
     const line = lineIn(read.text, new RegExp(`^-\\s+id:\\s*${esc(id)}\\s*$`));
@@ -97,8 +97,12 @@ function compileLibrary(root: string, errors: ContentError[]): { positions: Libr
     const src = PositionSourceSchema.safeParse(raw?.source);
     if (!src.success) { errors.push({ file, line, message: `${id}: ${zodMessage(src.error.issues)}` }); continue; }
     try { loadGame(src.data); } catch (e) { errors.push({ file, line, message: `${id}: ${(e as Error).message}` }); continue; }
+    if (raw.room === undefined) { errors.push({ file, line, message: `${id}: needs a room (one of ${ROOMS.join(', ')})` }); continue; }
+    if (!(ROOMS as readonly unknown[]).includes(raw.room)) { errors.push({ file, line, message: `${id}: unknown room "${String(raw.room)}" (use ${ROOMS.join(', ')})` }); continue; }
+    const badFamily = asList(raw.family).find((f) => !(FAMILIES as readonly string[]).includes(f));
+    if (badFamily !== undefined) { errors.push({ file, line, message: `${id}: unknown family "${badFamily}" (known: ${FAMILIES.join(', ')})` }); continue; }
     positions.set(id, src.data);
-    shared.push({ id, tags: raw.tags as string[], ...(raw.scene ? { scene: raw.scene } : {}) });
+    shared.push({ id, tags: raw.tags as string[], ...(raw.scene ? { scene: raw.scene } : {}), room: raw.room, ...(raw.family !== undefined ? { family: asList(raw.family) } : {}) });
   }
   for (const locale of LOCALES) {
     const wfile = join(root, locale, 'library.yaml');
@@ -111,7 +115,7 @@ function compileLibrary(root: string, errors: ContentError[]): { positions: Libr
     for (const e of shared) {
       const w = words[e.id];
       if (!w) { errors.push({ file: wfile, line: 1, message: `no name and note for library entry "${e.id}"` }); continue; }
-      const parsed = LibraryEntrySchema.safeParse({ id: e.id, tags: e.tags, name: w.name, note: aged(w.note), source: positions.get(e.id), ...(e.scene ? { scene: e.scene } : {}) });
+      const parsed = LibraryEntrySchema.safeParse({ id: e.id, tags: e.tags, name: w.name, note: aged(w.note), source: positions.get(e.id), ...(e.scene ? { scene: e.scene } : {}), room: e.room, ...(e.family ? { family: e.family } : {}) });
       if (parsed.success) entries[locale].push(parsed.data);
       else errors.push({ file: wfile, line: wread ? lineIn(wread.text, new RegExp(`^${esc(e.id)}:`)) : 1, message: `${e.id}: ${zodMessage(parsed.error.issues)}` });
     }
@@ -217,10 +221,14 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
     moments.push({ id: id as never, name, board, ...(mm.looksLike ? { looksLike: asList(mm.looksLike) as never } : {}) });
   }
 
+  if (m.library !== undefined && !library.has(String(m.library))) errors.push({ file, line: raw.metaLine('library'), message: `no library entry "${String(m.library)}" for this lesson's board` });
+  const badFamily = asList(m.family).find((f) => !(FAMILIES as readonly string[]).includes(f));
+  if (badFamily !== undefined) errors.push({ file, line: raw.metaLine('family'), message: `unknown family "${badFamily}" (known: ${FAMILIES.join(', ')})` });
   if (errors.length > before) return { lesson: null, origin };
   const parsed = LessonSchema.safeParse({
     id: m.id, group: m.group, title: m.title, about: aged(m.about), ...(m.game ? { game: m.game } : {}),
     experience: m.experience ?? 'basic', moments, steps,
+    ...(m.library !== undefined ? { library: String(m.library) } : {}), ...(m.family !== undefined ? { family: asList(m.family) } : {}),
   });
   if (!parsed.success) { errors.push({ file, line: 1, message: zodMessage(parsed.error.issues) }); return { lesson: null, origin }; }
   return { lesson: parsed.data, origin };

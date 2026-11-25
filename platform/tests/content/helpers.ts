@@ -15,6 +15,8 @@ export function tree(files: Record<string, string>): string {
 
 export const LIBRARY = `- id: scholar-threat
   tags: [opening]
+  room: patterns
+  family: [f7-attack]
   source: { kind: fen, fen: "r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3" }
 `;
 export const LIB_WORDS = (name: string) => `scholar-threat:

@@ -7,6 +7,7 @@ title: Opera game
 about: "Morphy, Paris 1858: a fast start, a knight sacrifice and a rook mate on d8."
 game: Opera game
 experience: basic
+library: opera-game
 moments:
   start:
     name: the fast start

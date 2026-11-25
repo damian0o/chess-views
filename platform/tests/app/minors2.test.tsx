@@ -47,13 +47,13 @@ describe('switches show keyboard focus', () => {
 describe('library', () => {
   test('mini boards are hidden from assistive tech and tags are in Polish', async () => {
     const store = await withPlayer();
-    mount(<AppRoutes />, { store, path: '/library' });
+    mount(<AppRoutes />, { store, path: '/room/endgames' });
     await screen.findByRole('searchbox', { name: 'Szukaj' });
     expect(screen.queryAllByRole('gridcell')).toHaveLength(0);
-    expect(screen.getByRole('button', { name: 'końcówka' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'endgame' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'końcówka' }));
-    expect(screen.getAllByRole('article')).toHaveLength(6);
+    expect(screen.getByRole('button', { name: 'studium' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'study' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'studium' }));
+    expect(screen.getAllByRole('article')).toHaveLength(3);
   });
 });
 

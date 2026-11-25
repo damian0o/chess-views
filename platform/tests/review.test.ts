@@ -92,7 +92,7 @@ describe('I5: the library is checked', () => {
   test('an error points at the entry\'s line', () => {
     const shared = `${LIBRARY}- id: bad\n  tags: [x]\n  source: { kind: pgn, pgn: "1. e4", ply: 5 }\n`;
     const e = lib(shared, `${LIB_WORDS('G')}bad:\n  name: B\n  note: n\n`).find((x) => /beyond/.test(x.message));
-    expect(e?.line).toBe(4);
+    expect(e?.line).toBe(LIBRARY.split('\n').length);   // the line right after the shared entry
   });
 });
 

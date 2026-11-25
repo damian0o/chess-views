@@ -41,10 +41,12 @@ test('a link before any player shows Kto gra? first, then the asked-for lesson',
 test('Od nowa while the lesson is still in memory opens its first step', async ({ page }) => {
   await addPlayer(page, 'Ola');
   await walkLesson(page, 'legal-mate');
+  await page.goto('./#/room/games');
   const card = page.getByRole('article', { name: /Mat Legala/ });
   await card.getByRole('button', { name: 'Od nowa' }).click();
   await pressNext(page);
   await page.getByRole('button', { name: 'Start' }).click();
+  await page.goto('./#/room/games');
   await page.getByRole('article', { name: /Mat Legala/ }).getByRole('button', { name: 'Od nowa' }).click();
   await expect(page).toHaveURL(/#\/lesson\/legal-mate\/s01-/);
   await expect(page.getByRole('grid')).toBeVisible();

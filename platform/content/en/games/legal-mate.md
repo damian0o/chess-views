@@ -7,6 +7,8 @@ title: Légal's mate
 about: "Paris 1750: White gives the queen away, and three small pieces mate."
 game: Légal's mate
 experience: basic
+library: legal-1750
+family: [f7-attack]
 moments:
   gift:
     name: the queen gift

@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-libra
 import { Players } from '../../src/app/screens/Players';
 import { Home } from '../../src/app/screens/Home';
 import { Settings } from '../../src/app/screens/Settings';
+import { AppRoutes } from '../../src/app/App';
 import { LESSONS, makeStore, memory, mount } from './helpers/harness';
 
 afterEach(cleanup);
@@ -32,17 +33,18 @@ describe('Players', () => {
 });
 
 describe('Home', () => {
-  test('groups lessons and shows progress', async () => {
+  test('rooms show lessons with their progress', async () => {
     const store = makeStore();
     await store.getState().addPlayer({ name: 'Ola' });
     const last = LESSONS.pl.find((l) => l.id === 'legal-mate')!.steps.at(-1)!.id;
     await store.getState().openLesson('legal-mate', last); await store.getState().next();
     await store.getState().openLesson('scholars-mate', 's07-blocks'); store.getState().leave();
-    mount(<Home />, { store });
-    for (const g of ['Wzory', 'Partie']) expect(screen.getByRole('heading', { name: g })).toBeTruthy();
-    const legal = screen.getByRole('article', { name: /Mat Legala/ });
+    mount(<AppRoutes />, { store, path: '/room/games' });
+    const legal = await screen.findByRole('article', { name: /Mat Legala/ });
     expect(within(legal).getByText(/Ukończone/)).toBeTruthy();
-    const scholar = screen.getByRole('article', { name: /Mat szkolny/ });
+    cleanup();
+    mount(<AppRoutes />, { store, path: '/room/patterns' });
+    const scholar = await screen.findByRole('article', { name: /Mat szkolny/ });
     expect(within(scholar).getByText('Krok 7 z 25')).toBeTruthy();
   });
   test('Recognise card is locked until two game lessons are finished', async () => {
@@ -56,8 +58,8 @@ describe('Home', () => {
   test('opening a lesson navigates to it', async () => {
     const store = makeStore();
     await store.getState().addPlayer({ name: 'Ola' });
-    const { history } = mount(<Home />, { store });
-    fireEvent.click(within(screen.getByRole('article', { name: /Mat szkolny/ })).getByRole('button', { name: 'Zacznij' }));
+    const { history } = mount(<AppRoutes />, { store, path: '/room/patterns' });
+    fireEvent.click(within(await screen.findByRole('article', { name: /Mat szkolny/ })).getByRole('button', { name: 'Zacznij' }));
     expect(history.at(-1)).toBe('/lesson/scholars-mate');
   });
 });

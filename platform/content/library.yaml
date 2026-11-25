@@ -1,4 +1,5 @@
 - id: start
+  room: openings
   tags:
     - start
   source:
@@ -9,6 +10,8 @@
     layers: &a6
       - pieces
 - id: italian-opening
+  room: openings
+  family: [f7-attack]
   tags:
     - opening
   source:
@@ -20,6 +23,7 @@
       - pieces
       - roads
 - id: london-system
+  room: openings
   tags:
     - opening
     - structure
@@ -32,6 +36,8 @@
     base: board
     layers: *a1
 - id: scholars-mate-threat
+  room: patterns
+  family: [f7-attack]
   tags:
     - opening
     - tactic
@@ -45,6 +51,7 @@
       - pieces
       - territory
 - id: alapin-structure
+  room: openings
   tags:
     - structure
     - exercise
@@ -56,6 +63,7 @@
     layers:
       - shapes
 - id: isolated-queen-pawn
+  room: openings
   tags:
     - structure
   source:
@@ -65,6 +73,7 @@
     base: board
     layers: *a1
 - id: french-chain
+  room: openings
   tags:
     - structure
     - opening
@@ -75,6 +84,7 @@
     base: board
     layers: *a1
 - id: carlsbad
+  room: openings
   tags:
     - structure
   source:
@@ -84,6 +94,7 @@
     base: board
     layers: *a2
 - id: double-fianchetto
+  room: openings
   tags:
     - king safety
     - structure
@@ -96,6 +107,7 @@
       - pieces
       - kings
 - id: king-trap-study
+  room: patterns
   tags:
     - study
     - king safety
@@ -106,6 +118,7 @@
     base: board
     layers: *a3
 - id: back-rank
+  room: patterns
   tags:
     - mate
     - king safety
@@ -116,6 +129,7 @@
     base: board
     layers: *a3
 - id: queen-mate
+  room: endgames
   tags:
     - endgame
     - mate
@@ -126,6 +140,7 @@
     base: board
     layers: *a2
 - id: rook-mate
+  room: endgames
   tags:
     - endgame
     - mate
@@ -136,6 +151,7 @@
     base: board
     layers: *a2
 - id: king-in-front
+  room: endgames
   tags:
     - endgame
   source:
@@ -147,6 +163,7 @@
       - pieces
       - reach
 - id: stalemate-corner
+  room: endgames
   tags:
     - endgame
     - study
@@ -157,6 +174,7 @@
     base: board
     layers: *a4
 - id: stalemate-trap
+  room: endgames
   tags:
     - endgame
     - mate
@@ -168,6 +186,7 @@
     base: board
     layers: *a4
 - id: lucena
+  room: endgames
   tags:
     - endgame
     - study
@@ -178,6 +197,7 @@
     base: board
     layers: *a1
 - id: knight-fork
+  room: patterns
   tags:
     - tactic
     - knight
@@ -190,6 +210,7 @@
       - pieces
       - knight
 - id: bishop-pin
+  room: patterns
   tags:
     - tactic
   source:
@@ -199,6 +220,7 @@
     base: board
     layers: *a4
 - id: knight-corner
+  room: endgames
   tags:
     - knight
     - exercise
@@ -209,6 +231,7 @@
     base: board
     layers: *a5
 - id: mate-in-three
+  room: patterns
   tags:
     - problem
     - mate
@@ -225,6 +248,7 @@
     base: board
     layers: *a6
 - id: opera-game
+  room: games
   tags:
     - game
     - tactic
@@ -244,6 +268,8 @@
     base: board
     layers: *a1
 - id: legal-1750
+  room: games
+  family: [f7-attack]
   tags:
     - game
     - mate
@@ -259,6 +285,7 @@
     base: board
     layers: *a6
 - id: reti-1910
+  room: games
   tags:
     - game
     - mate
@@ -277,6 +304,7 @@
     base: board
     layers: *a6
 - id: lasker-1912
+  room: games
   tags:
     - game
     - mate

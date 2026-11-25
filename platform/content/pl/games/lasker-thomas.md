@@ -7,6 +7,7 @@ title: Lasker poluje na króla
 about: "Londyn 1912: ofiara hetmana ciągnie czarnego króla przez całą szachownicę."
 game: Lasker – Thomas
 experience: basic
+library: lasker-1912
 moments:
   gift:
     name: dar hetmana

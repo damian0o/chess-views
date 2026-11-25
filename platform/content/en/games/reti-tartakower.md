@@ -7,6 +7,7 @@ title: Réti vs Tartakower
 about: "Vienna 1910: a queen sacrifice on d8, a double check and a bishop mate."
 game: Réti's game
 experience: basic
+library: reti-1910
 moments:
   gift:
     name: the queen gift

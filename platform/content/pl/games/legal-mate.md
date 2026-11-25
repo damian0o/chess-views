@@ -7,6 +7,8 @@ title: Mat Legala
 about: "Paryż 1750: białe oddają hetmana, a trzy lekkie figury dają mata."
 game: Mat Legala
 experience: basic
+library: legal-1750
+family: [f7-attack]
 moments:
   gift:
     name: dar hetmana

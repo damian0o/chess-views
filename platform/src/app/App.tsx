@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Route, Router, Switch, useLocation } from 'wouter';
+import { Redirect, Route, Router, Switch, useLocation } from 'wouter';
 import { useHashRoute, useHashSearch } from './hashRoute';
 import { useStore } from 'zustand';
 import type { StorageLike } from '@core/storage/index';
@@ -12,7 +12,7 @@ import { Home } from './screens/Home';
 import { Settings } from './screens/Settings';
 import { LessonScreen, RecogniseScreen } from './screens/Lesson';
 import { FreeBoard } from './screens/FreeBoard';
-import { Library } from './screens/Library';
+import { RoomScreen } from './rooms/RoomScreen';
 import { Print } from './screens/Print';
 import { Toast } from './ui/Toast';
 import { useT } from './i18n';
@@ -37,7 +37,8 @@ export function AppRoutes() {
         <Route path="/home"><Home /></Route>
         <Route path="/settings"><Settings /></Route>
         <Route path="/board"><FreeBoard /></Route>
-        <Route path="/library"><Library /></Route>
+        <Route path="/library"><Redirect to="/home" replace /></Route>
+        <Route path="/room/:id">{(p) => <RoomScreen id={p.id} />}</Route>
         <Route path="/print"><Print /></Route>
         <Route path="/lesson/:id/:step?">{(p) => <LessonScreen id={p.id} stepId={p.step} />}</Route>
         <Route path="/recognise/:seed/:n">{(p) => <RecogniseScreen seed={Number(p.seed)} n={Number(p.n)} />}</Route>

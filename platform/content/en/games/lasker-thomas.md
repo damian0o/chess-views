@@ -7,6 +7,7 @@ title: Lasker's king hunt
 about: "London 1912: a queen sacrifice drags the black king across the whole board."
 game: Lasker's game
 experience: basic
+library: lasker-1912
 moments:
   gift:
     name: the queen gift

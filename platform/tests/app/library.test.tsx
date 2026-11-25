@@ -7,29 +7,29 @@ import { makeStore, mount } from './helpers/harness';
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const withPlayer = async () => { const s = makeStore(); await s.getState().addPlayer({ name: 'Ola' }); return s; };
 
-describe('library', () => {
-  test('25 entries; a search for lucena leaves one', async () => {
+describe('positions in a room (the library, now by room)', () => {
+  test('Końcówki has its 7 positions; a search for lucena leaves one', async () => {
     const store = await withPlayer();
-    mount(<AppRoutes />, { store, path: '/library' });
-    expect(await screen.findAllByRole('article')).toHaveLength(25);
+    mount(<AppRoutes />, { store, path: '/room/endgames' });
+    expect(await screen.findAllByRole('article')).toHaveLength(7);
     fireEvent.change(screen.getByRole('searchbox', { name: 'Szukaj' }), { target: { value: 'lucena' } });
     await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(1));
   });
   test('a tag chip filters, and again shows all', async () => {
     const store = await withPlayer();
-    mount(<AppRoutes />, { store, path: '/library' });
+    mount(<AppRoutes />, { store, path: '/room/endgames' });
     await screen.findAllByRole('article');
-    fireEvent.click(screen.getByRole('button', { name: 'końcówka', pressed: false }));
+    fireEvent.click(screen.getByRole('button', { name: 'studium', pressed: false }));
     const n = screen.getAllByRole('article').length;
-    expect(n).toBeGreaterThan(0); expect(n).toBeLessThan(25);
-    fireEvent.click(screen.getByRole('button', { name: 'końcówka', pressed: true }));
-    expect(screen.getAllByRole('article')).toHaveLength(25);
+    expect(n).toBeGreaterThan(0); expect(n).toBeLessThan(7);
+    fireEvent.click(screen.getByRole('button', { name: 'studium', pressed: true }));
+    expect(screen.getAllByRole('article')).toHaveLength(7);
   });
-  test('Otwórz opens the free board at the entry with its view', async () => {
+  test("Plansza on the Opera lesson opens the free board at the game with its view", async () => {
     const store = await withPlayer();
-    const { history } = mount(<AppRoutes />, { store, path: '/library' });
-    const card = (await screen.findAllByRole('article')).find((a) => a.getAttribute('aria-label') === 'Opera — Morphy' || /Morphy/.test(a.getAttribute('aria-label') ?? ''))!;
-    fireEvent.click(within(card).getByRole('button', { name: 'Otwórz' }));
+    const { history } = mount(<AppRoutes />, { store, path: '/room/games' });
+    const card = (await screen.findAllByRole('article')).find((a) => /operze/i.test(a.getAttribute('aria-label') ?? ''))!;
+    fireEvent.click(within(card).getByRole('button', { name: 'Plansza' }));
     await waitFor(() => expect(store.getState().session?.game.length).toBe(33));
     expect(store.getState().session?.view).toBe('roads');
     expect(history.at(-1)).toMatch(/^\/board/);

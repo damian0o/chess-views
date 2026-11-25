@@ -27,7 +27,7 @@ for (const look of ['Kolorowy', 'Spokojny', 'Prosty']) for (const mode of ['Jasn
     await addPlayer(page, 'Ola');
     await pick(page, look, mode);
     await page.goto('./#/home');
-    expect(await page.evaluate(`(${CONTRAST})('main h3')`)).toBeGreaterThanOrEqual(4.5);
+    expect(await page.evaluate(`(${CONTRAST})('main h2')`)).toBeGreaterThanOrEqual(4.5);
     expect(await page.evaluate(`(${CONTRAST})('main article button')`)).toBeGreaterThanOrEqual(4.5);
     await page.goto('./#/lesson/scholars-mate/s02-houses');
     await expect(page.getByRole('gridcell').first()).toBeVisible();

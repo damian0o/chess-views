@@ -36,7 +36,7 @@ describe('compileContent: a valid lesson', () => {
     expect(by.strike!.solve).toEqual({ task: { kids: 'Find the strike' } });
   });
   test('library: shared positions, words per locale', () => {
-    expect(out.library.pl).toEqual([{ id: 'scholar-threat', tags: ['opening'], name: 'Groźba', note: { kids: 'Qxf7 is coming.' }, source: { kind: 'fen', fen: SCHOLAR5 } }]);
+    expect(out.library.pl).toEqual([{ id: 'scholar-threat', tags: ['opening'], name: 'Groźba', note: { kids: 'Qxf7 is coming.' }, source: { kind: 'fen', fen: SCHOLAR5 }, room: 'patterns', family: ['f7-attack'] }]);
     expect(out.library.en[0]?.name).toBe('Threat');
   });
 });
@@ -115,6 +115,37 @@ describe('compileContent: errors with file and line', () => {
   });
   test('a round answer of up to 40 characters is fine', () => {
     expect(broken({ 'game: Mat szkolny': 'game: Partia w operze', 'name: atak, ply: 5': 'name: poświęcenie skoczka, ply: 5' })).toEqual([]);   // 36
+  });
+});
+
+describe('rooms and families in content', () => {
+  test('a library entry carries its room and families; a lesson its board and families', () => {
+    const out = compileContent(valid({}));
+    expect(out.errors).toEqual([]);
+    expect(out.library.pl[0]).toMatchObject({ id: 'scholar-threat', room: 'patterns', family: ['f7-attack'] });
+    const linked = compileContent(tree({
+      'library.yaml': LIBRARY, 'pl/library.yaml': LIB_WORDS('Groźba'), 'en/library.yaml': LIB_WORDS('Threat'),
+      'pl/patterns/f7-attack/mini.md': lesson('pl', { 'experience: basic': 'experience: basic\nlibrary: scholar-threat\nfamily: [f7-attack]' }),
+      'en/patterns/f7-attack/mini.md': lesson('en', { 'experience: basic': 'experience: basic\nlibrary: scholar-threat\nfamily: [f7-attack]' }),
+    }));
+    expect(linked.errors).toEqual([]);
+    expect(linked.lessons.pl[0]).toMatchObject({ library: 'scholar-threat', family: ['f7-attack'] });
+  });
+  test.each([
+    ['no room', '  room: patterns\n', '', /room/],
+    ['an unknown room', 'room: patterns', 'room: kitchen', /room "kitchen"/],
+    ['an unknown family', 'family: [f7-attack]', 'family: [f9-attack]', /family "f9-attack"/],
+  ])('library: %s is an error', (_n, a, b, message) => {
+    const errs = compileContent(valid({ 'library.yaml': LIBRARY.replace(a, b) })).errors;
+    expect(errs.map((e) => e.message)).toContainEqual(expect.stringMatching(message));
+  });
+  test('a lesson naming a board that is not in the library is an error', () => {
+    const swap = { 'experience: basic': 'experience: basic\nlibrary: nowhere' };
+    expect(broken(swap, swap).map((e) => e.message)).toContainEqual(expect.stringMatching(/library entry "nowhere"/));
+  });
+  test('a lesson whose board or families differ between languages is an error', () => {
+    const errs = broken({ 'experience: basic': 'experience: basic\nlibrary: scholar-threat' });
+    expect(errs.map((e) => e.message)).toContainEqual(expect.stringMatching(/differ/));
   });
 });
 
