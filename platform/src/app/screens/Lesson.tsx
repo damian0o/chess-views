@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import type { LessonRun } from '@core/lessons/run';
 import { sceneOfRun, isBlocks } from '@core/scene';
 import type { Square } from '@core/types';
+import { showsSquareNames } from '@core/storage/index';
 import { useApp, useAppStore } from '../appStore';
 import { useT } from '../i18n';
 import { Board } from '../board/Board';
@@ -20,6 +21,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   const t = useT();
   const store = useAppStore();
   const report = useApp((s) => s.report);
+  const player = useApp((s) => s.player);
   const scene = sceneOfRun(run);
   const q = run.step.question;
   const answering = run.gate?.kind === 'answer';
@@ -41,7 +43,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
       <TopBar title={run.lesson.title} extra={<span className="font-bold text-ink-soft">{run.index + 1}/{run.total}</span>} />
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
-          <Board scene={scene} flip={scene.flip}
+          <Board scene={scene} flip={scene.flip} squareNames={!!player && showsSquareNames(player)}
             onSquare={tapOpen ? (sq) => { setLastTap(sq); report({ kind: 'answer', value: sq }); } : undefined}
             tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}) }} />
           <div className="flex flex-wrap items-center gap-2">

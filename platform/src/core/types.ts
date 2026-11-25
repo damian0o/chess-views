@@ -144,6 +144,8 @@ const profileFields = {
   locale: LocaleSchema,
   theme: z.object({ family: AgeBandSchema, mode: z.enum(['light', 'dark', 'system']) }),
   pieceStyle: z.enum(['images', 'letters']),
+  /** Names on every board square; unset means the age default (on for 8–12). */
+  squareNames: z.boolean().optional(),
   progress: z.record(z.string(), z.object({ reachedStep: z.string(), done: z.boolean() })),
   unlockedLayers: z.array(LayerKindSchema),
 };

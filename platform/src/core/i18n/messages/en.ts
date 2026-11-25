@@ -121,6 +121,7 @@ export const en = {
   loadPrompt: "Paste a FEN, a PGN or a lichess link",
   flip: "Turn the board",
   letters: "Letters for paper",
+  squareNames: "Square names on the board",
   copyLink: "Copy link",
   linkCopied: "Link copied",
   firstMove: "Start",

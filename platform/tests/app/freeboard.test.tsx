@@ -76,7 +76,7 @@ describe('free board', () => {
     fireEvent.click(await screen.findByRole('switch', { name: 'Litery do druku' }));
     await waitFor(() => expect(store.getState().player?.pieceStyle).toBe('letters'));
     expect(screen.queryAllByRole('img', { name: /biał|czarn/ })).toHaveLength(0);
-    expect(document.querySelector('[data-square="e1"]')?.textContent).toBe('K');
+    expect(document.querySelector('[data-square="e1"] span:not([data-square-name])')?.textContent).toBe('K');
   });
   test('all nine views in the dropdown', async () => {
     const store = await withPlayer();

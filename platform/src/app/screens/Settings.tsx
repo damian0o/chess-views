@@ -6,9 +6,11 @@ import { useApp } from '../appStore';
 import { useT } from '../i18n';
 import { Button } from '../ui/Button';
 import { Choice } from '../ui/Choice';
+import { Toggle } from '../ui/Toggle';
+import { showsSquareNames } from '@core/storage/index';
 import { TopBar } from '../ui/TopBar';
 
-/** The player's settings: name, age band, language, look, light/dark, save/load to a file, remove. */
+/** The player's settings: name, age band, language, look, light/dark, square names, save/load to a file, remove. */
 export function Settings() {
   const t = useT();
   const [, navigate] = useLocation();
@@ -48,6 +50,7 @@ export function Settings() {
           options={[{ value: 'kids', label: t('lookKids') }, { value: 'teens', label: t('lookTeens') }, { value: 'adults', label: t('lookAdults') }]} />
         <Choice label={t('themeMode')} value={player.theme.mode} onChange={(mode: Profile['theme']['mode']) => void update({ theme: { ...player.theme, mode } })}
           options={[{ value: 'light', label: t('modeLight') }, { value: 'dark', label: t('modeDark') }, { value: 'system', label: t('modeSystem') }]} />
+        <Toggle isSelected={showsSquareNames(player)} onChange={(on) => void update({ squareNames: on })}>{t('squareNames')}</Toggle>
         <div className="flex flex-wrap gap-3">
           <Button tone="quiet" onPress={() => void download()}>{t('exportProfile')}</Button>
           <label className="inline-flex min-h-12 cursor-pointer items-center rounded-control bg-card px-5 font-bold ring-2 ring-ink/15 has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]">

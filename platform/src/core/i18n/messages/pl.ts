@@ -122,6 +122,7 @@ export const pl: Record<keyof typeof en, Message> = {
   loadPrompt: "Wklej FEN, PGN albo link z lichess",
   flip: "Obróć szachownicę",
   letters: "Litery do druku",
+  squareNames: "Nazwy pól na planszy",
   copyLink: "Kopiuj link",
   linkCopied: "Link skopiowany",
   firstMove: "Początek",

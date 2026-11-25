@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
-import { Switch } from 'react-aria-components';
 import { sessionParams, sessionScene } from '@core/session';
 import type { Square } from '@core/types';
+import { showsSquareNames } from '@core/storage/index';
 import { useApp, useAppStore } from '../appStore';
 import { useT } from '../i18n';
 import { Board } from '../board/Board';
@@ -12,6 +12,7 @@ import { ViewPicker } from '../lesson/ViewPicker';
 import { LegendPopup } from '../lesson/LegendPopup';
 import { TopBar } from '../ui/TopBar';
 import { Button } from '../ui/Button';
+import { Toggle } from '../ui/Toggle';
 import { VIEWS, type View } from '../views';
 import { useAnalysis } from '../board/useAnalysis';
 import { EnginePanel } from '../board/EnginePanel';
@@ -99,19 +100,14 @@ export function FreeBoard() {
       <TopBar title={t('freeBoard')} />
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
-          <Board scene={scene} flip={session.flip} pieceStyle={player?.pieceStyle ?? 'images'} knightSquare={knight}
+          <Board scene={scene} flip={session.flip} pieceStyle={player?.pieceStyle ?? 'images'} squareNames={!!player && showsSquareNames(player)} knightSquare={knight}
             onSquare={view.id === 'knight' ? setKnight : engineOn && guessing ? onGuessTap : undefined}
             tapMarks={pick.from ? { right: pick.from } : {}}
             overlay={analysis.kind === 'done' && analysis.fen === scene.fen && (!guessing || revealed) ? <Arrows lines={analysis.analysis.lines} flip={session.flip} /> : undefined} />
           {(!guessing || analysis.kind !== 'thinking') && <EnginePanel state={guessing && !revealed && analysis.kind === 'done' ? { kind: 'off' } : analysis} turn={(scene.fen.split(' ')[1] ?? 'w') as 'w' | 'b'} onRetry={retry} />}
           {engineOn && (
             <div className="flex flex-col gap-2 rounded-card bg-card p-3 shadow-card">
-              <Switch isSelected={guessing} onChange={(on) => { setGuessing(on); resetGuess(); }} className="group flex min-h-12 cursor-pointer items-center gap-2 font-bold">
-                <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent group-data-[focus-visible]:outline group-data-[focus-visible]:outline-3 group-data-[focus-visible]:outline-offset-2 group-data-[focus-visible]:outline-[var(--focus)]">
-                  <span className="block h-5 w-5 rounded-full bg-card shadow transition group-data-[selected]:translate-x-5" />
-                </span>
-                {t('guessMode')}
-              </Switch>
+              <Toggle isSelected={guessing} onChange={(on) => { setGuessing(on); resetGuess(); }}>{t('guessMode')}</Toggle>
               {guessing && fen && <GuessPanel fen={fen as Fen} analysis={analysis} hint={hint} guess={guess} revealed={revealed} onReveal={() => setRevealed(true)} onAgain={resetGuess} />}
             </div>
           )}
@@ -143,13 +139,7 @@ export function FreeBoard() {
             <Button tone="quiet" onPress={() => s.toggleFlip()}>⟲ {t('flip')}</Button>
             <Button tone="quiet" onPress={() => void copy()}>{t('copyLink')}</Button>
             <Button tone="quiet" onPress={() => navigate('/print')}>{t('print')}</Button>
-            <Switch isSelected={player?.pieceStyle === 'letters'} onChange={(on) => void s.updatePlayer({ pieceStyle: on ? 'letters' : 'images' })}
-              className="group flex min-h-12 cursor-pointer items-center gap-2 font-bold">
-              <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent group-data-[focus-visible]:outline group-data-[focus-visible]:outline-3 group-data-[focus-visible]:outline-offset-2 group-data-[focus-visible]:outline-[var(--focus)]">
-                <span className="block h-5 w-5 rounded-full bg-card shadow transition group-data-[selected]:translate-x-5" />
-              </span>
-              {t('letters')}
-            </Switch>
+            <Toggle isSelected={player?.pieceStyle === 'letters'} onChange={(on) => void s.updatePlayer({ pieceStyle: on ? 'letters' : 'images' })}>{t('letters')}</Toggle>
           </div>
         </div>
       </main>

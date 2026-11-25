@@ -26,11 +26,13 @@ export interface BoardProps {
   knightSquare?: Square | undefined;
   /** 'letters' draws the paper symbols (K, Q', o, x …) instead of piece images. */
   pieceStyle?: 'images' | 'letters';
+  /** Show each square's name ("e4") small in its top-left corner. */
+  squareNames?: boolean | undefined;
   /** Extra marks drawn over the board in its 8×8 coordinates (engine arrows). */
   overlay?: ReactNode;
 }
 
-export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images', overlay }: BoardProps) {
+export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images', squareNames = false, overlay }: BoardProps) {
   const t = useT();
   const board = boardFromFen(scene.fen);
   const showPieces = scene.layers.includes('pieces');
@@ -49,6 +51,8 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
   const kFrom = scene.layers.includes('knight') ? (knightSquare ?? (defaultKnightSquare(board, turn) as Square | null)) : null;
   const dist = kFrom ? knightDistances(kFrom) : null;
   const diamond = scene.layers.includes('diamond');
+  // The diamond's cells are too small for a name, and its empty squares have no background to read it on.
+  const names = squareNames && !diamond;
 
   // Roving focus: one cell is the tab stop; arrows move it (in screen order, so a flipped board still feels right).
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
@@ -92,6 +96,8 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
           {piece && showPieces && pieceStyle === 'letters' && <span aria-hidden="true" className="relative z-10 font-mono text-[min(5vw,1.6rem)] font-black text-board-ink">{symbol(piece, sq)}</span>}
           {piece && showPieces && pieceStyle !== 'letters' && <img src={PIECES[`${piece.color}${piece.type.toUpperCase()}`]} alt={t(pieceKey(piece))} className="relative z-10 h-[88%] w-[88%]" draggable={false} />}
           {piece && showBlocks && <Block cell={piece} />}
+          {names && <span aria-hidden="true" data-square-name
+            className={`pointer-events-none absolute left-0.5 top-0 z-20 text-[clamp(8px,2.2vw,11px)] font-bold leading-tight text-board-ink/70`}>{sq}</span>}
           {reach?.has(sq) && <span data-reach={reach.get(sq)} className="absolute right-0.5 top-0.5 z-20 rounded-full bg-board-ink px-1.5 text-xs font-black text-white">{reach.get(sq)}</span>}
           {dist && (dist[row]?.[col] ?? -1) > 0 && <span data-dist={dist[row]![col]} className="absolute bottom-0.5 left-0.5 z-20 text-sm font-black text-board-ink">{dist[row]![col]}</span>}
         </button>
@@ -105,7 +111,7 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
   )) : null;
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[min(92vw,34rem)] select-none overflow-hidden rounded-card shadow-card">
+    <div data-square-names={names ? 'true' : undefined} className={`relative mx-auto aspect-square w-full max-w-[min(92vw,34rem)] select-none overflow-hidden shadow-card ${names ? 'rounded-lg' : 'rounded-card'}`}>
       {diamond ? (
         <div role="grid" aria-label={t('viewBoard')} className="flex h-full w-full flex-col">{diamondRowsUi}</div>
       ) : (

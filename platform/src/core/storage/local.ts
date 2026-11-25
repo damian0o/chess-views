@@ -26,6 +26,11 @@ export function defaultProfile(opts: { name?: string; age?: AgeBand; locale?: Lo
   };
 }
 
+/** Whether boards show each square's name: the player's choice, else on for 8–12. */
+export function showsSquareNames(p: Pick<Profile, 'age' | 'squareNames'>): boolean {
+  return p.squareNames ?? p.age === 'kids';
+}
+
 export function createLocalProfileStore(storage: StorageLike, key = 'chess-views:profiles'): ProfileStore {
   const read = (): Record_ => {
     try {
