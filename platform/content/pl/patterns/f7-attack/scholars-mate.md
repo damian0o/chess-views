@@ -173,8 +173,11 @@ Jeszcze jedna pozycja.
 ## s20-shapes {scene: "blocks", pgn: "1. e4 e5 2. Qh5 Nc6 3. Bc4", ply: 5}
 
 ::: kids
-Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Pokaż bierki, potem Dalej.
+Same bloki. Szukaj kształtu mata: duży i mały blok celują w jedno pole obok króla.
 :::
+
+? W które pole uderza kształt? Dotknij go. {tap: f7}
+! Tak: f7, obok czarnego króla.
 
 ## s21-territory {scene: "board+territory", same: true, focus: "f7"}
 
@@ -185,8 +188,11 @@ Tak: ten sam kształt, tylko inną drogą. Znowu f7.
 ## s22-shapes {scene: "blocks", pgn: "1. e4 e5 2. Nf3 Bc5 3. Nxe5 Qh4", ply: 6}
 
 ::: kids
-Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Pokaż bierki, potem Dalej.
+Znowu same bloki. Tym razem patrz na oba króle.
 :::
+
+? W które pole uderza kształt? Dotknij go. {tap: f2}
+! Tak: f2, obok białego króla.
 
 ## s23-roads {scene: "board+roads", same: true}
 
@@ -197,8 +203,13 @@ Tak, i to na ciebie: hetman h4 i goniec c5 celują w f2, a Qxf2 byłoby szach-ma
 ## s24-shapes {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Nf3", ply: 5}
 
 ::: kids
-Czy jest tu kształt mata? Powiedz, w które pole uderza, naciśnij Pokaż bierki, potem Dalej.
+Ostatnie bloki. Policz, ile bloków celuje w pole obok króla.
 :::
+
+? Czy jest tu kształt mata?
+- Tak
+- [x] Nie
+! Dobrze: w f7 celuje tylko jeden blok.
 
 ## s25-roads {scene: "board+roads", same: true}
 

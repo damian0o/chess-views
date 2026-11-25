@@ -21,6 +21,10 @@ const walk = (d: string): string[] => readdirSync(d).flatMap((n) => { const p = 
 describe('converted content', () => {
   test('compiles without errors', () => expect(out.errors).toEqual([]));
 
+  // Steps changed on purpose after parity (2026-11-25): the child taps the square or answers instead of saying it aloud.
+  const CHANGED: Record<string, Record<number, object>> = {
+    'scholars-mate': { 20: { kind: 'tap', squares: ['f7'] }, 22: { kind: 'tap', squares: ['f2'] }, 24: { kind: 'choice', choices: ['Yes', 'No'], answer: 1 } },
+  };
   test('English lessons match the proof of concept step by step', () => {
     for (const poc of POC.lessons) {
       const L = out.lessons.en.find((l: Lesson) => l.id === poc.id);
@@ -32,7 +36,9 @@ describe('converted content', () => {
         const pocFen = raw.recall ? fenOf((resolveMoments(poc, POC.positions) as { id: string; source: PositionSource }[]).find((m) => m.id === raw.moment)!.source) : fenOf(steps[i]!.source);
         expect(fenOf(s.scene.position), `${poc.id} step ${i + 1}`).toBe(pocFen);
         const q = s.question;
-        if (raw.recall) expect(q).toMatchObject({ kind: 'recall', answer: 'yes' });
+        const changed = CHANGED[poc.id]?.[i + 1];
+        if (changed) expect(q, `${poc.id} step ${i + 1}`).toMatchObject(changed);
+        else if (raw.recall) expect(q).toMatchObject({ kind: 'recall', answer: 'yes' });
         else if (raw.ask?.tap) expect(q).toMatchObject({ kind: 'tap', squares: raw.ask.tap });
         else if (raw.ask?.choices && raw.blocks && raw.moment && raw.ask.choices.join() === 'Yes,No') expect(q).toMatchObject({ kind: 'recall', answer: raw.ask.answer === 0 ? 'yes' : 'no' });
         else if (raw.ask?.choices) expect(q).toMatchObject({ kind: 'choice', choices: raw.ask.choices, answer: raw.ask.answer });

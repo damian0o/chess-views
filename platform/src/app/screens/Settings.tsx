@@ -19,6 +19,7 @@ export function Settings() {
   const remove = useApp((s) => s.removePlayer);
   const exportPlayer = useApp((s) => s.exportPlayer);
   const importPlayer = useApp((s) => s.importPlayer);
+  const returnTo = useApp((s) => s.returnTo);
   const [confirm, setConfirm] = useState(false);
   const [name, setName] = useState(player?.name ?? '');
   if (!player) return null;
@@ -37,6 +38,7 @@ export function Settings() {
     <>
       <TopBar title={t('settings')} />
       <main className="mx-auto flex max-w-2xl flex-col gap-6 p-4">
+        <div><Button tone="quiet" onPress={() => navigate(returnTo ?? '/home')}>◀ {t('back')}</Button></div>
         <TextField value={name} onChange={setName} onBlur={() => { if (name.trim()) void update({ name: name.trim() }); }} className="flex flex-col gap-1">
           <Label className="font-bold">{t('playerName')}</Label>
           <Input className="rounded-control bg-card px-4 py-3 text-lg ring-2 ring-ink/15" />

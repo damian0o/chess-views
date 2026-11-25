@@ -172,8 +172,11 @@ One more board.
 ## s20-shapes {scene: "blocks", pgn: "1. e4 e5 2. Qh5 Nc6 3. Bc4", ply: 5}
 
 ::: kids
-Is the mate shape here? Say which square it strikes, press Reveal pieces, then Next.
+Blocks only. Look for the mate shape: a big and a small block aiming at one square next to the king.
 :::
+
+? Which square does the shape strike? Tap it. {tap: f7}
+! Yes: f7, next to the black king.
 
 ## s21-territory {scene: "board+territory", same: true, focus: "f7"}
 
@@ -184,8 +187,11 @@ Yes: the same shape by another road. f7 again.
 ## s22-shapes {scene: "blocks", pgn: "1. e4 e5 2. Nf3 Bc5 3. Nxe5 Qh4", ply: 6}
 
 ::: kids
-Is the mate shape here? Say which square it strikes, press Reveal pieces, then Next.
+Blocks only again. This time look at both kings.
 :::
+
+? Which square does the shape strike? Tap it. {tap: f2}
+! Yes: f2, next to the white king.
 
 ## s23-roads {scene: "board+roads", same: true}
 
@@ -196,8 +202,13 @@ Yes, and it is coming at you: queen h4 and bishop c5 both point at f2, and Qxf2 
 ## s24-shapes {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Nf3", ply: 5}
 
 ::: kids
-Is the mate shape here? Say which square it strikes, press Reveal pieces, then Next.
+Last blocks. Count how many blocks aim at a square next to a king.
 :::
+
+? Is the mate shape here?
+- Yes
+- [x] No
+! Right: only one block aims at f7.
 
 ## s25-roads {scene: "board+roads", same: true}
 

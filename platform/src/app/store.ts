@@ -25,6 +25,8 @@ export interface AppState {
   run: LessonRun | null;
   round: Round | null;
   toast: string | null;
+  /** Where Settings' Back returns to: the screen the ⚙ button was pressed on (memory only). */
+  returnTo: string | null;
   /** The free board's position and settings. */
   session: Session | null;
   openBoard(params: URLSearchParams): void;
@@ -95,7 +97,7 @@ export function createAppStore(deps: StoreDeps) {
     };
 
     return {
-      players: [], player: null, run: null, round: null, toast: null, session: null,
+      players: [], player: null, run: null, round: null, toast: null, returnTo: null, session: null,
 
       openBoard(params) {
         const pos = params.get('pos');

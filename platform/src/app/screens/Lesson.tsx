@@ -96,6 +96,11 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
             <ViewPicker views={views} selected={view.id} allowed={run.allowedLayers} disabled={answering && isBlocks(run.step)}
               onChange={(v) => report({ kind: 'layers', on: v.layers })} />
             <LegendPopup view={view} />
+            {isBlocks(run.step) && !answering && (
+              <Button tone="quiet" onPress={() => report({ kind: 'layers', on: run.layersOn.includes('pieces') ? run.layersOn.filter((l) => l !== 'pieces') : [...run.layersOn, 'pieces'] })}>
+                {t(run.layersOn.includes('pieces') ? 'hidePieces' : 'showPieces')}
+              </Button>
+            )}
           </div>
           {gameLength > 0 && (
             <div className="flex flex-wrap items-center gap-2">
