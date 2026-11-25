@@ -57,7 +57,7 @@ describe('recognition', () => {
   test('buildRound: every question has 3 or 4 distinct choices, the right one included, no looksLike pair together', () => {
     const d = done('ga', 'gb', 'gc');
     for (let seed = 0; seed < 30; seed++) {
-      const r = buildRound(RL, d, seed);
+      const r = buildRound(RL, d, seed, { locale: 'en' });
       if (!r) throw new Error('locked');
       expect(r.seed).toBe(seed);
       expect(r.steps.length).toBe(Math.min(ROUND_SIZE, usableMoments(RL, d).length));
@@ -95,4 +95,11 @@ describe('recognition', () => {
     expect(q?.choices.every((c) => c.startsWith('Partia '))).toBe(true);
     expect(r?.steps[0]?.explain.kids).toMatch(/^Pozycja 1 z /);
   });
+});
+
+test('a round without a locale is in Polish, the app\'s first language', () => {
+  const d = done('ga', 'gb', 'gc');
+  const pl = buildRound(RL, d, 7, { locale: 'pl' });
+  expect(buildRound(RL, d, 7)).toEqual(pl);
+  expect(buildRound(RL, d, 7, { locale: 'en' })).not.toEqual(pl);
 });

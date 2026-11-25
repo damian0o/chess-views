@@ -23,7 +23,7 @@ const LESSON: Lesson = {
 };
 const kid = { ...defaultProfile(), age: 'kids' as const };
 const adult = { ...defaultProfile(), age: 'adults' as const };
-const goto = (id: string, profile = kid) => startLesson(LESSON, profile, id);
+const goto = (id: string, profile = kid) => startLesson(LESSON, profile, id)!;
 
 describe('sceneFor', () => {
   test('a plain step: position, moves, ply and the requested layer data', () => {
@@ -49,9 +49,9 @@ describe('sceneFor', () => {
 
 describe('LessonRun', () => {
   test('starts at the first step; an unknown step id starts at the first step too', () => {
-    expect(startLesson(LESSON, kid).step.id).toBe('look');
-    expect(startLesson(LESSON, kid, 'no-such-id').step.id).toBe('look');
-    expect(startLesson(LESSON, kid).total).toBe(6);
+    expect(startLesson(LESSON, kid)!.step.id).toBe('look');
+    expect(startLesson(LESSON, kid, 'no-such-id')!.step.id).toBe('look');
+    expect(startLesson(LESSON, kid)!.total).toBe(6);
   });
   test('a wrong choice is remembered and keeps the gate; the right one opens it', () => {
     let r = goto('ask');
@@ -78,9 +78,21 @@ describe('LessonRun', () => {
     const r = goto('find').report({ kind: 'ply', ply: 7 }).report({ kind: 'ply', ply: 6 });
     expect([r.ply, r.gate]).toEqual([6, null]);
   });
+  test('a lesson with no step for the player\'s age gives no run instead of throwing', () => {
+    const kidsOnly = { ...LESSON, steps: [step('only', { audience: { ages: ['kids'] } })] } as Lesson;
+    expect(startLesson(kidsOnly, adult)).toBeNull();
+  });
+  test('an answer is not taken while the hidden move is still to be revealed', () => {
+    const both = { ...LESSON, steps: [{ ...step('find-ask', { solve: { task: { kids: 'Find it' } }, question: { kind: 'choice', prompt: { kids: 'Which?' }, choices: ['a', 'b'], answer: 0 } }), scene: { position: at(6), base: 'board', layers: ['pieces'] } }] } as Lesson;
+    let r = startLesson(both, kid)!;
+    r = r.report({ kind: 'answer', value: 0 });
+    expect([r.answered, r.gate]).toEqual([false, { kind: 'reveal' }]);
+    r = r.report({ kind: 'ply', ply: 7 }).report({ kind: 'answer', value: 0 });
+    expect([r.answered, r.gate]).toEqual([true, null]);
+  });
   test('a step for kids only is skipped for an adult', () => {
-    expect(startLesson(LESSON, adult).total).toBe(5);
-    const r = startLesson(LESSON, adult, 'ask').report({ kind: 'answer', value: 1 }).next();
+    expect(startLesson(LESSON, adult)!.total).toBe(5);
+    const r = startLesson(LESSON, adult, 'ask')!.report({ kind: 'answer', value: 1 }).next();
     expect(r.step.id).toBe('find');
   });
   test('recall: 0 is Yes, 1 is No', () => {
@@ -95,7 +107,7 @@ describe('LessonRun', () => {
     const r = goto('ask').report({ kind: 'layers', on: ['pieces', 'roads', 'kings'] });
     expect(r.layersOn).toEqual(['pieces', 'roads']);
     const p = { ...kid, unlockedLayers: ['pieces' as const, 'kings' as const] };
-    expect(startLesson(LESSON, p, 'ask').report({ kind: 'layers', on: ['kings'] }).layersOn).toEqual(['kings']);
+    expect(startLesson(LESSON, p, 'ask')!.report({ kind: 'layers', on: ['kings'] }).layersOn).toEqual(['kings']);
   });
   test('the last step: Next stays, done is true once ungated', () => {
     const r = goto('tap').report({ kind: 'answer', value: 'f7' as Square });

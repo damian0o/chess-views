@@ -40,7 +40,7 @@ describe('profile version 2', () => {
 });
 
 describe('progress', () => {
-  const at = (id: string) => startLesson(LESSON, defaultProfile(), id);
+  const at = (id: string) => startLesson(LESSON, defaultProfile(), id)!;
   test('recordStep never moves progress backwards', () => {
     let p = recordStep(defaultProfile(), at('s05'));
     p = recordStep(p, at('s03'));

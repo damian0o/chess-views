@@ -69,7 +69,7 @@ function make(s: State): LessonRun {
         const on = e.on.filter((l) => allowed.has(l));
         return make({ ...s, layersOn: s.answered ? on : whileOpen(step, on) });
       }
-      if (s.answered || !step.question) return run;
+      if (s.answered || !step.question || gate?.kind === 'reveal') return run;   // reveal the hidden move first
       const back = [...new Set<LayerKind>([...s.layersOn, ...step.scene.layers, ...(isBlocks(step) ? ['pieces' as const] : [])])];
       return isRight(step, e.value)
         ? make({ ...s, answered: true, lastAnswer: 'right', layersOn: back })
@@ -81,11 +81,13 @@ function make(s: State): LessonRun {
   return run;
 }
 
-export function startLesson(lesson: Lesson, profile: Profile, at?: string): LessonRun {
+/** The lesson for this profile, at step `at` if given; null when none of its steps is for this profile. */
+export function startLesson(lesson: Lesson, profile: Profile, at?: string): LessonRun | null {
   const steps = lesson.steps.filter((st) => {
     const a = st.audience;
     return (!a?.ages || a.ages.includes(profile.age)) && (!a?.experience || a.experience.includes(profile.experience));
   });
+  if (!steps.length) return null;
   const found = at ? steps.findIndex((st) => st.id === at) : -1;
   return make(fresh({ lesson, profile, steps, index: Math.max(0, found) }));
 }

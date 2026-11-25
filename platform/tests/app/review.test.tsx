@@ -84,7 +84,7 @@ describe('I2: the view dropdown only offers what the lesson allows', () => {
   test('core: withProfile refreshes what a run allows', () => {
     const L = LESSONS.pl.find((l) => l.id === 'eyes-on-f7')!;
     const p = defaultProfile();
-    const run = startLesson(L, p, 's05-territory');
+    const run = startLesson(L, p, 's05-territory')!;
     expect(run.allowedLayers).not.toContain('roads');
     const fresh = run.withProfile({ ...p, unlockedLayers: ['pieces', 'roads'] });
     expect(fresh.allowedLayers).toContain('roads');

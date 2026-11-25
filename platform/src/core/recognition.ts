@@ -64,7 +64,7 @@ export function roundUnlocked(lessons: Lesson[], done: Set<LessonId>): boolean {
 
 export function buildRound(lessons: Lesson[], done: Set<LessonId>, seed: number, opts: { size?: number; locale?: Locale } = {}): Round | null {
   if (!roundUnlocked(lessons, done)) return null;
-  const locale = opts.locale ?? 'en';
+  const locale = opts.locale ?? 'pl';
   const rand = seeded(seed);
   const all = finishedMoments(lessons, done);
   const picked = shuffle(usableMoments(lessons, done), rand).slice(0, opts.size ?? ROUND_SIZE);

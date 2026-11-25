@@ -29,7 +29,7 @@ describe('I1: a blocks step without a question stays blocks', () => {
 
 describe('I2: layers during an open blocks question', () => {
   test('pieces cannot be turned on while the question is open, and the run and the scene agree', () => {
-    const run = startLesson(LESSON, defaultProfile(), 'r').report({ kind: 'layers', on: ['shapes', 'pieces'] });
+    const run = startLesson(LESSON, defaultProfile(), 'r')!.report({ kind: 'layers', on: ['shapes', 'pieces'] });
     expect(run.layersOn).toEqual(['shapes']);
     expect(sceneOfRun(run).layers).toEqual(['shapes']);
     const answered = run.report({ kind: 'answer', value: 0 });
@@ -37,7 +37,7 @@ describe('I2: layers during an open blocks question', () => {
   });
   test('locked layers are not on at the start of an open question', () => {
     const s: Step = { id: 'q', scene: { position: at(5), base: 'board', layers: ['pieces', 'roads'], lockedLayers: ['roads'] }, explain: { kids: 'x' }, question: { kind: 'tap', prompt: { kids: 't' }, squares: ['f7' as never] } };
-    const run = startLesson({ ...LESSON, steps: [s] }, defaultProfile());
+    const run = startLesson({ ...LESSON, steps: [s] }, defaultProfile())!;
     expect(run.layersOn).toEqual(['pieces']);
   });
 });
