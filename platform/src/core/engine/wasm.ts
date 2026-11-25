@@ -96,6 +96,7 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
       if (!isJudgeable(fen)) return unjudgeable();
       return serial(async (): Promise<Analysis> => {
         await readyP;
+        if (signal?.aborted) throw new Error('engine: search aborted');   // aborted while it waited its turn: send nothing
         if (multipv !== multiPV) { send(`setoption name MultiPV value ${multipv}`); multiPV = multipv; }
         send(`position fen ${fen}`);
         const lines = await search(movetimeMs ? `go movetime ${movetimeMs}` : `go depth ${depth}`, signal, onProgress && ((ls) => onProgress(analysisFromLines(ls))));
@@ -106,6 +107,7 @@ export function createWasmStockfish({ workerFactory, timeoutMs = 10000 }: { work
       if (!isJudgeable(fen)) return unjudgeable();
       return serial(async () => {
         await readyP;
+        if (signal?.aborted) throw new Error('engine: search aborted');
         const o = LEVELS[level];
         if (o.skill !== skill) { send(`setoption name Skill Level value ${o.skill}`); skill = o.skill; }
         send('ucinewgame'); send('isready'); await waitFor('readyok', timeoutMs, signal);

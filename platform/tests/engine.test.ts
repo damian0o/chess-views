@@ -97,6 +97,42 @@ describe('WasmStockfish', () => {
     await eng.analyse(START, { depth: 10 }); await eng.analyse(START, { depth: 10 });
     expect(w.sent.filter((c) => c.startsWith('go')).length).toBe(2);
   });
+  test('a search aborted while it waits in the queue is never sent to the engine', async () => {
+    const w = fakeWorker(basic);
+    const eng = createWasmStockfish({ workerFactory: () => w });
+    const first = eng.analyse(START, { depth: 10 });
+    const ctrl = new AbortController();
+    const second = eng.analyse(OTHER, { depth: 10 }, ctrl.signal);
+    ctrl.abort();
+    await first;
+    await expect(second).rejects.toThrow(/aborted/);
+    expect(w.sent.filter((c) => c.startsWith('position')).length).toBe(1);
+    expect(w.sent).not.toContain('stop');
+  });
+  test('two identical requests at the same time search once', async () => {
+    const w = fakeWorker(basic);
+    const eng = cachedEngine(createWasmStockfish({ workerFactory: () => w }));
+    const [a, b] = await Promise.all([eng.analyse(START, { depth: 10 }), eng.analyse(START, { depth: 10 })]);
+    expect(a).toEqual(b);
+    expect(w.sent.filter((c) => c.startsWith('go')).length).toBe(1);
+  });
+  test('callers get their own copy of a cached result', async () => {
+    const eng = cachedEngine(createWasmStockfish({ workerFactory: () => fakeWorker(basic) }));
+    const a = await eng.analyse(START, { depth: 10 });
+    a.lines.pop();
+    const b = await eng.analyse(START, { depth: 10 });
+    expect(b.lines).toHaveLength(2);
+  });
+  test('when the first of two identical requests is aborted, the second still gets its answer', async () => {
+    const w = fakeWorker(basic);
+    const eng = cachedEngine(createWasmStockfish({ workerFactory: () => w }));
+    const ctrl = new AbortController();
+    const a = eng.analyse(START, { depth: 10 }, ctrl.signal);
+    const b = eng.analyse(START, { depth: 10 });
+    ctrl.abort();
+    await expect(a).rejects.toThrow(/aborted/);
+    await expect(b).resolves.toMatchObject({ depth: 10 });
+  });
   test('a worker error fails ready and pending calls', async () => {
     const eng = createWasmStockfish({ workerFactory: () => { const w = fakeWorker(() => []); setTimeout(() => w.onerror?.({ message: 'boom' }), 0); return w; }, timeoutMs: 500 });
     await expect(eng.ready()).rejects.toThrow(/worker failed/);

@@ -47,10 +47,12 @@ describe('Silnik view', () => {
   });
   test('moving the ply asks for the new position and ignores the stale answer', async () => {
     const OPERA = '1. e4 e5 2. Nf3 d6';
-    let calls = 0;
+    // Answers by position: the old one (after 1. e4 e5) says a2a3, the new one (after 2. Nf3) says g1f3.
+    let pos = '';
     const answer = (cmd: string) => {
       if (cmd === 'uci') return ['uciok']; if (cmd === 'isready') return ['readyok'];
-      if (cmd.startsWith('go')) { calls++; return calls === 1 ? ['info depth 10 multipv 1 score cp 900 pv a2a3', 'bestmove a2a3'] : ['info depth 10 multipv 1 score cp 0 pv g1f3', 'bestmove g1f3']; }
+      if (cmd.startsWith('position')) { pos = cmd; return undefined; }
+      if (cmd.startsWith('go')) return pos.includes('5N2') ? ['info depth 10 multipv 1 score cp 0 pv g1f3', 'bestmove g1f3'] : ['info depth 10 multipv 1 score cp 900 pv a2a3', 'bestmove a2a3'];
       return undefined;
     };
     const store = await withPlayer();
