@@ -84,7 +84,7 @@ export const en = {
   pieceArt: "Piece images: cburnett set by Colin M.L. Burnett, CC BY-SA 3.0.",
   legendBoard: "The pieces as they stand on the board.",
   legendTerritory: "Each square takes the colour of the side that guards it more cheaply. Squares in yellow are contested.",
-  legendRoads: "The lines a piece can move along, up to the first piece in the way. A ring on a piece: a road runs into it. A thick solid ring: more attackers than defenders. Dashed: defended, but not enough. Dotted: well defended. A cross: an enemy pawn guards that square.",
+  legendRoads: "The lines a piece can move along, up to the first piece in the way. A dashed line: a piece standing behind its own piece on the same line, ready to follow it. A ring on a piece: a road runs into it. A thick solid ring: more attackers than defenders. Dashed: defended, but not enough. Dotted: well defended. A cross: an enemy pawn guards that square.",
   legendKings: "The outlined squares around each king are its house.",
   legendShapes: "Only blocks: big blocks are big pieces, small blocks small ones. Look for the shape, not the pieces.",
   importFailed: "This file is not a Chess Views profile",

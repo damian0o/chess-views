@@ -85,7 +85,7 @@ export const pl: Record<keyof typeof en, Message> = {
   pieceArt: "Grafiki bierek: zestaw cburnett, Colin M.L. Burnett, CC BY-SA 3.0.",
   legendBoard: "Bierki tak, jak stoją na szachownicy.",
   legendTerritory: "Każde pole ma kolor strony, która pilnuje go taniej. Pola na żółto są sporne.",
-  legendRoads: "Linie, po których bierka może iść, aż do pierwszej bierki na drodze. Pierścień na bierce: celuje w nią czyjaś droga. Gruby pełny: więcej atakujących niż obrońców. Przerywany: broniona, ale za słabo. Kropkowany: dobrze broniona. Krzyżyk: tego pola pilnuje pionek przeciwnika.",
+  legendRoads: "Linie, po których bierka może iść, aż do pierwszej bierki na drodze. Linia przerywana: bierka stoi za swoją bierką na tej samej linii i pójdzie za nią. Pierścień na bierce: celuje w nią czyjaś droga. Gruby pełny: więcej atakujących niż obrońców. Przerywany: broniona, ale za słabo. Kropkowany: dobrze broniona. Krzyżyk: tego pola pilnuje pionek przeciwnika.",
   legendKings: "Obrysowane pola wokół każdego króla to jego domek.",
   legendShapes: "Same bloki: duże bloki to duże bierki, małe to małe. Szukaj kształtu, nie bierek.",
   importFailed: "To nie jest plik profilu Chess Views",

@@ -96,7 +96,7 @@ Board 5 of 10. Blocks only: look at the square next to each king.
 ## s11-roads {scene: "board+roads", same: true}
 
 ::: kids
-Queen b3 behind bishop c4 on one road: two attackers lined up. If the bishop takes on f7, the queen follows.
+Queen b3 stands behind bishop c4 on one road (the dashed line): two pieces aim at f7. The bishop takes on f7 with check and nothing can take it back. The king cannot, because the queen on b3 guards f7 from behind the bishop.
 :::
 
 ## s12-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qe2", ply: 5}

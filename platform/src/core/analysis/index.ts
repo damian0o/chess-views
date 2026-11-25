@@ -7,7 +7,7 @@ import { mobility, type Mobility } from './mobility';
 import { pieceGroups, type PieceGroup } from './shapes';
 import { pieceSafety, type PieceSafety } from './safety';
 import { pins, type Pin } from './pins';
-import { crossings, rays, type Crossing, type Ray } from './roads';
+import { batteryRays, crossings, rays, type BatteryRay, type Crossing, type Ray } from './roads';
 import { territory, type Territory } from './territory';
 import { diamondRows, type DiamondCell } from './diamond';
 import { pawnGuards, roadRings, type PawnGuard, type RoadRing } from './rings';
@@ -31,7 +31,7 @@ export * from './rings';
 export type LayerData = {
   territory?: Territory;
   reach?: Mobility;
-  roads?: { rays: Ray[]; crossings: Crossing[]; rings: RoadRing[]; pawnGuards: PawnGuard[] };
+  roads?: { rays: Ray[]; batteries: BatteryRay[]; crossings: Crossing[]; rings: RoadRing[]; pawnGuards: PawnGuard[] };
   kings?: KingHouses;
   shapes?: PieceGroup[];
   diamond?: DiamondCell[][];
@@ -58,7 +58,7 @@ export function analyse(fen: Fen, layers: readonly LayerKind[]): LayerData {
   if (want.has('reach')) out.reach = mobility(board, { respectPins: true });
   if (want.has('roads')) {
     const r = rays(board);
-    out.roads = { rays: r, crossings: crossings(r), rings: roadRings(board), pawnGuards: pawnGuards(board, r) };
+    out.roads = { rays: r, batteries: batteryRays(board), crossings: crossings(r), rings: roadRings(board), pawnGuards: pawnGuards(board, r) };
     out.pins = pins(board);
   }
   if (want.has('kings')) out.kings = kingHouses(board, { respectPins: true });

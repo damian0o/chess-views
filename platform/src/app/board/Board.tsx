@@ -128,7 +128,7 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
       )}
       {roads && !diamond && (
         <svg viewBox="0 0 8 8" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-          <Roads rays={roads.rays} rings={roads.rings} guards={roads.pawnGuards} xy={xy} />
+          <Roads rays={roads.rays} batteries={roads.batteries} rings={roads.rings} guards={roads.pawnGuards} xy={xy} />
         </svg>
       )}
     </div>

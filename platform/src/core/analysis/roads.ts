@@ -87,6 +87,46 @@ export function rays(board: Board): Ray[] {
   return out;
 }
 
+export type BatteryRay = Ray & { through: Square[] };
+
+/** Whether a piece of this type moves along a direction: bishops and queens diagonally, rooks and queens straight. */
+export function movesAlong(type: PieceType, [dr, dc]: Coord): boolean {
+  return dr !== 0 && dc !== 0 ? type === 'b' || type === 'q' : type === 'r' || type === 'q';
+}
+
+/**
+ * Battery roads: a rook, bishop or queen standing behind its own piece that moves the same way (a
+ * queen behind a bishop on a diagonal, doubled rooks) reaches on through it. `through` lists those
+ * own pieces; `squares` are the squares after the last of them, up to and including the enemy piece
+ * it hits. Batteries that hit no enemy piece are left out.
+ */
+export function batteryRays(board: Board): BatteryRay[] {
+  const out: BatteryRay[] = [];
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const p = cellAt(board, row, col);
+    const dirs = p ? RAY_DIRS[p.type] : undefined;
+    if (!p || !dirs) continue;
+    for (const dir of dirs) {
+      const through: Square[] = [];
+      let squares: Square[] = [];
+      let end: RayEnd = 'edge';
+      let hit: Square | null = null;
+      for (let r = row + dir[0], c = col + dir[1]; onBoard(r, c); r += dir[0], c += dir[1]) {
+        const q = cellAt(board, r, c);
+        if (q && q.color === p.color) {
+          if (movesAlong(q.type, dir)) { through.push(q.square); squares = []; continue; }
+          end = 'own'; break;
+        }
+        squares.push(squareName(r, c));
+        if (q) { end = 'enemy'; hit = q.square; break; }
+      }
+      // Only a battery that ends on an enemy piece matters; one running into empty squares is clutter.
+      if (through.length && end === 'enemy') out.push({ from: p.square, piece: p, dir, squares, end, hit, through });
+    }
+  }
+  return out;
+}
+
 /** Squares where two or more roads of one side meet: [{ square, color, from, count, hit }], enemy squares first. */
 export function crossings(rayList: readonly Ray[]): Crossing[] {
   type Seen = { square: Square; color: Color; from: Set<Square>; hit: boolean };

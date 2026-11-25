@@ -97,7 +97,7 @@ Pozycja 5 z 10. Tylko bloki: patrz na pole obok każdego króla.
 ## s11-roads {scene: "board+roads", same: true}
 
 ::: kids
-Hetman b3 za gońcem c4 na jednej drodze: dwie bierki w rzędzie. Jeśli goniec zbije na f7, hetman pójdzie za nim.
+Hetman b3 stoi za gońcem c4 na jednej drodze (linia przerywana): dwie bierki celują w f7. Goniec bije na f7 z szachem i nikt nie może go zabić. Król nie może, bo hetman z b3 pilnuje f7 zza gońca.
 :::
 
 ## s12-blocks {scene: "blocks", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qe2", ply: 5}

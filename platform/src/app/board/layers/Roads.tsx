@@ -1,4 +1,4 @@
-import type { PawnGuard, Ray, RoadRing } from '@core/analysis';
+import type { BatteryRay, PawnGuard, Ray, RoadRing } from '@core/analysis';
 import type { Square } from '@core/types';
 
 type XY = (sq: Square) => [number, number];
@@ -7,14 +7,24 @@ const DASH: Record<string, string | undefined> = { free: undefined, contested: '
 /**
  * Road lines; a ring on every attacked piece, its thickness and style from the core (solid: free,
  * dashed: defended but not enough, dotted: held); a cross on road squares an enemy pawn guards.
+ * A battery road (a piece behind its own piece on the same line) is a dashed lane beside the front piece's road.
  */
-export function Roads({ rays, rings, guards, xy }: { rays: Ray[]; rings: RoadRing[]; guards: PawnGuard[]; xy: XY }) {
+export function Roads({ rays, batteries = [], rings, guards, xy }: { rays: Ray[]; batteries?: BatteryRay[]; rings: RoadRing[]; guards: PawnGuard[]; xy: XY }) {
   const road = (c: string) => (c === 'w' ? 'var(--board-road-w)' : 'var(--board-road-b)');
   return (
     <g aria-hidden="true">
       {rays.filter((r) => r.squares.length).map((r, i) => {
         const [x1, y1] = xy(r.from), [x2, y2] = xy(r.squares[r.squares.length - 1]!);
         return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth={0.07} strokeLinecap="round" stroke={road(r.piece.color)} opacity={0.85} />;
+      })}
+      {batteries.map((r, i) => {
+        // From the back piece to its target, shifted to one side so it runs beside the front piece's road, not on it.
+        const to = r.squares[r.squares.length - 1]!;
+        const [ax, ay] = xy(r.from), [bx, by] = xy(to);
+        const len = Math.hypot(bx - ax, by - ay) || 1, ox = (-(by - ay) / len) * 0.16, oy = ((bx - ax) / len) * 0.16;
+        const [x1, y1, x2, y2] = [ax + ox, ay + oy, bx + ox, by + oy];
+        return <line key={`b${i}`} data-battery={r.from} data-through={r.through.join(' ')} data-to={to} x1={x1} y1={y1} x2={x2} y2={y2}
+          strokeWidth={0.07} strokeLinecap="round" strokeDasharray="0.16 0.14" stroke={road(r.piece.color)} opacity={0.85} />;
       })}
       {guards.map((g) => {
         const [cx, cy] = xy(g.square);
