@@ -10,10 +10,10 @@ export function EnginePanel({ state, turn, onRetry }: { state: AnalysisState; tu
   if (state.kind === 'off') return null;
   if (state.kind === 'thinking') return <p aria-live="polite" className="font-bold text-ink-soft">{t('engineThinking')}</p>;
   if (state.kind === 'none') return <p className="font-bold text-ink-soft">{t('engineNoEval')}</p>;
-  if (state.kind === 'failed' || state.kind === 'dead') {
+  if (state.kind === 'failed' || state.kind === 'dead' || state.kind === 'slow') {
     return (
       <div className="flex flex-wrap items-center gap-3">
-        <p role="alert" className="font-bold text-bad">{t(state.kind === 'failed' ? 'engineFailed' : 'engineDead')}</p>
+        <p role="alert" className="font-bold text-bad">{t(state.kind === 'failed' ? 'engineFailed' : state.kind === 'slow' ? 'engineSlow' : 'engineDead')}</p>
         <Button tone="quiet" onPress={onRetry}>{t('tryAgain')}</Button>
       </div>
     );

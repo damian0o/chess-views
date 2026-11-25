@@ -18,6 +18,7 @@ export function GuessPanel({ fen, analysis, hint, guess, revealed, onReveal, onA
   const locale = usePlayer()?.locale ?? 'pl';
   if (!guess) return <p aria-live="polite" className="font-bold">{t(hint ?? 'guessHint')}</p>;
   const mine = formatSan(guess.san, locale);
+  if (analysis.kind === 'none' || analysis.kind === 'failed' || analysis.kind === 'dead' || analysis.kind === 'slow') return <p aria-live="polite" className="font-bold">{t('guessNoEval')}</p>;
   if (analysis.kind !== 'done') return <p aria-live="polite" className="font-bold text-ink-soft">{t('engineThinking')}</p>;
   const lines = analysis.analysis.lines;
   const best = lines[0];

@@ -31,7 +31,7 @@ export function FreeBoard() {
   const store = useAppStore();
   const session = useApp((s) => s.session);
   const player = useApp((s) => s.player);
-  const [knight, setKnight] = useState<Square | undefined>(undefined);
+  const [knight, setKnight] = useState<Square | undefined>(() => { const sq = new URLSearchParams(search).get('sq'); return sq && /^[a-h][1-8]$/.test(sq) ? sq as Square : undefined; });
   const fen = session?.game.fen(session.ply);
   const engineOn = session?.view === 'engine';
   const { state: analysis, retry } = useAnalysis((fen ?? '') as never, !!session && engineOn, { depth: 10, multipv: 5 });
@@ -42,7 +42,7 @@ export function FreeBoard() {
   const [revealed, setRevealed] = useState(false);
   const resetGuess = () => { setPick({}); setHint(null); setGuess(null); setRevealed(false); };
   // A new position starts a new guess.
-  useEffect(() => { resetGuess(); }, [fen]);
+  useEffect(() => { resetGuess(); }, [fen, session?.view]);
   const HINT: Record<string, MessageKey> = { opponent: 'guessOpponent', empty: 'guessEmpty', illegal: 'guessIllegal', stuck: 'guessStuck' };
   const onGuessTap = (sq: Square) => {
     if (!fen || guess) return;
@@ -91,7 +91,7 @@ export function FreeBoard() {
   const s = store.getState();
   const copy = async () => {
     const url = `${location.origin}${location.pathname}#/board?${sessionParams(session).toString()}`;
-    try { await navigator.clipboard.writeText(url); store.setState({ toast: t('linkCopied') }); } catch { /* clipboard blocked */ }
+    try { await navigator.clipboard.writeText(url); store.setState({ toast: t('linkCopied') }); } catch { store.setState({ toast: t('linkCopyFailed') }); }
   };
 
   return (
@@ -107,7 +107,7 @@ export function FreeBoard() {
           {engineOn && (
             <div className="flex flex-col gap-2 rounded-card bg-card p-3 shadow-card">
               <Switch isSelected={guessing} onChange={(on) => { setGuessing(on); resetGuess(); }} className="group flex min-h-12 cursor-pointer items-center gap-2 font-bold">
-                <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent">
+                <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent group-data-[focus-visible]:outline group-data-[focus-visible]:outline-3 group-data-[focus-visible]:outline-offset-2 group-data-[focus-visible]:outline-[var(--focus)]">
                   <span className="block h-5 w-5 rounded-full bg-card shadow transition group-data-[selected]:translate-x-5" />
                 </span>
                 {t('guessMode')}
@@ -122,7 +122,8 @@ export function FreeBoard() {
             <Button tone="quiet" aria-label={t('lastMove')} onPress={() => s.setPly(session.game.length)}>⏭</Button>
           </div>
           {session.game.length > 0 && (
-            <input type="range" min={0} max={session.game.length} value={session.ply} aria-label={t('moveList')}
+            <input type="range" min={0} max={session.game.length} value={session.ply} aria-label={t('moveSlider')}
+              aria-valuetext={t('moveOfTotal', { n: session.ply, total: session.game.length })}
               onChange={(e) => s.setPly(Number(e.target.value))} className="w-full accent-[var(--accent)]" />
           )}
         </div>
@@ -136,7 +137,7 @@ export function FreeBoard() {
             const side = t(scene.fen.split(' ')[1] === 'b' ? 'toMoveBlack' : 'toMoveWhite');
             return st === 'mate' ? t('statusMate') : st === 'stalemate' ? t('statusStalemate') : st === 'check' ? `${t('statusCheck')} · ${side}` : side;
           })()}</p>
-          <MoveStrip moves={session.game.moves()} ply={session.ply} onPly={s.setPly} white={session.headers.White} black={session.headers.Black} hideFromPly={session.solve ? session.ply : undefined} />
+          <MoveStrip moves={session.game.moves()} ply={session.ply} onPly={s.setPly} white={session.headers.White} black={session.headers.Black} hideFromPly={session.solve ? session.ply : undefined} startFen={session.game.fen(0)} />
           <div className="flex flex-wrap items-center gap-2">
             <LoadDialog />
             <Button tone="quiet" onPress={() => s.toggleFlip()}>⟲ {t('flip')}</Button>
@@ -144,7 +145,7 @@ export function FreeBoard() {
             <Button tone="quiet" onPress={() => navigate('/print')}>{t('print')}</Button>
             <Switch isSelected={player?.pieceStyle === 'letters'} onChange={(on) => void s.updatePlayer({ pieceStyle: on ? 'letters' : 'images' })}
               className="group flex min-h-12 cursor-pointer items-center gap-2 font-bold">
-              <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent">
+              <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent group-data-[focus-visible]:outline group-data-[focus-visible]:outline-3 group-data-[focus-visible]:outline-offset-2 group-data-[focus-visible]:outline-[var(--focus)]">
                 <span className="block h-5 w-5 rounded-full bg-card shadow transition group-data-[selected]:translate-x-5" />
               </span>
               {t('letters')}

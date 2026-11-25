@@ -18,8 +18,10 @@ export function Library() {
   const [query, setQuery] = useState('');
   const [tag, setTag] = useState<string | null>(null);
   const tags = useMemo(() => [...new Set(entries.flatMap((e) => e.tags))], [entries]);
+  const names = JSON.parse(t('tagNames')) as Record<string, string>;
+  const tagName = (g: string) => names[g] ?? g;
   const q = query.trim().toLowerCase();
-  const shown = entries.filter((e) => (!tag || e.tags.includes(tag)) && (!q || `${e.id} ${e.name} ${tx(e.note)} ${e.tags.join(' ')}`.toLowerCase().includes(q)));
+  const shown = entries.filter((e) => (!tag || e.tags.includes(tag)) && (!q || `${e.id} ${e.name} ${tx(e.note)} ${e.tags.map(tagName).join(' ')} ${e.tags.join(' ')}`.toLowerCase().includes(q)));
   const viewFor = (e: LibraryEntry) => viewOf(e.scene?.layers ?? ['pieces']).id;
   const open = (e: LibraryEntry) => {
     const s = openSession(e.source, { view: viewFor(e), solve: e.tags.includes('problem') });
@@ -37,7 +39,7 @@ export function Library() {
         <div className="flex flex-wrap gap-2">
           {tags.map((g) => (
             <button key={g} type="button" aria-pressed={tag === g} onClick={() => setTag(tag === g ? null : g)}
-              className={`rounded-full px-4 py-2 font-bold ring-2 ring-ink/15 ${tag === g ? 'bg-accent text-accent-ink' : 'bg-card'}`}>{g}</button>
+              className={`rounded-full px-4 py-2 font-bold ring-2 ring-ink/15 ${tag === g ? 'bg-accent text-accent-ink' : 'bg-card'}`}>{tagName(g)}</button>
           ))}
         </div>
         {!shown.length && <p className="text-ink-soft">{t('nothingFound')}</p>}
@@ -47,7 +49,7 @@ export function Library() {
             return (
               <article key={e.id} aria-label={e.name} className="flex flex-col gap-2 rounded-card bg-card p-4 shadow-card">
                 <h2 className="text-lg font-black">{e.name}</h2>
-                {!('error' in s) && <div className="pointer-events-none mx-auto w-40"><Board scene={sessionScene(s, ['pieces'])} /></div>}
+                {!('error' in s) && <div aria-hidden="true" inert className="pointer-events-none mx-auto w-40"><Board scene={sessionScene(s, ['pieces'])} /></div>}
                 <p className="text-sm text-ink-soft">{tx(e.note)}</p>
                 <div className="mt-auto"><Button onPress={() => open(e)}>{t('open')}</Button></div>
               </article>

@@ -17,7 +17,7 @@ export const memory = (init: Record<string, string> = {}): StorageLike & { data:
   const data = { ...init };
   return { data, getItem: (k) => data[k] ?? null, setItem: (k, v) => { data[k] = v; }, removeItem: (k) => { delete data[k]; } };
 };
-export const makeStore = (storage = memory(), opts: { minStepMs?: number; fetch?: typeof fetch } = {}) => createAppStore({ storage, lessons: content.lessons, library: content.library, pocStepIds: stepIds as Record<string, string[]>, minStepMs: opts.minStepMs ?? 0, ...(opts.fetch ? { fetch: opts.fetch } : {}) });
+export const makeStore = (storage = memory(), opts: { minStepMs?: number; fetch?: typeof fetch; fetchTimeoutMs?: number } = {}) => createAppStore({ storage, lessons: content.lessons, library: content.library, pocStepIds: stepIds as Record<string, string[]>, minStepMs: opts.minStepMs ?? 0, ...(opts.fetch ? { fetch: opts.fetch } : {}), ...(opts.fetchTimeoutMs ? { fetchTimeoutMs: opts.fetchTimeoutMs } : {}) });
 
 /** Render UI with a store and an in-memory router starting at `path`. */
 export function mount(ui: ReactNode, { store = makeStore(), path = '/' }: { store?: AppStore; path?: string } = {}) {

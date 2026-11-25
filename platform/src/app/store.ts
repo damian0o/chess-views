@@ -62,6 +62,8 @@ export interface StoreDeps {
   now?: () => number;
   /** For lichess imports (tests pass a fake). */
   fetch?: typeof fetch;
+  /** How long a lichess download may take (ms). */
+  fetchTimeoutMs?: number;
   lessons: Record<Locale, Lesson[]>;
   library: Record<Locale, LibraryEntry[]>;
   pocStepIds: Record<string, string[]>;
@@ -109,21 +111,24 @@ export function createAppStore(deps: StoreDeps) {
 
       async loadBoardText(text) {
         const view = get().session?.view ?? 'board';
+        const flip = get().session?.flip ?? false;
         const parsed = parseInput(text);
         if (parsed.kind === 'lichess-game') {
           const doFetch = deps.fetch ?? globalThis.fetch.bind(globalThis);
           let pgn: string;
           try {
-            const res = await doFetch(`https://lichess.org/game/export/${parsed.gameId}?clocks=false&evals=false`, { headers: { Accept: 'application/x-chess-pgn' } });
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), deps.fetchTimeoutMs ?? 15_000);
+            const res = await doFetch(`https://lichess.org/game/export/${parsed.gameId}?clocks=false&evals=false`, { headers: { Accept: 'application/x-chess-pgn' }, signal: ctrl.signal }).finally(() => clearTimeout(timer));
             if (!res.ok) return 'loadLichessFailed';
             pgn = await res.text();
           } catch { return 'loadLichessFailed'; }
-          const s = openSession({ kind: 'pgn', pgn, ply: parsed.ply ?? Number.MAX_SAFE_INTEGER }, { view });
+          const s = openSession({ kind: 'pgn', pgn, ply: parsed.ply ?? Number.MAX_SAFE_INTEGER }, { view, flip });
           if ('error' in s) return 'loadLichessFailed';
           set({ session: stepTo(s, parsed.ply ?? s.game.length) });
           return null;
         }
-        const s = openSession(text, { view });
+        const s = openSession(text, { view, flip });
         if ('error' in s) return s.error;
         set({ session: s });
         return null;

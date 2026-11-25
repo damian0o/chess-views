@@ -58,7 +58,7 @@ describe('free board', () => {
     fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'https://lichess.org/AbCd1234' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Wczytaj' }));
     await waitFor(() => expect(store.getState().session?.game.length).toBe(33));
-    expect(fetch).toHaveBeenCalledWith('https://lichess.org/game/export/AbCd1234?clocks=false&evals=false', { headers: { Accept: 'application/x-chess-pgn' } });
+    expect(fetch).toHaveBeenCalledWith('https://lichess.org/game/export/AbCd1234?clocks=false&evals=false', expect.objectContaining({ headers: { Accept: 'application/x-chess-pgn' } }));
   });
   test('Load: a lichess failure shows loadLichessFailed', async () => {
     const fetch = vi.fn(async () => new Response('', { status: 404 }));

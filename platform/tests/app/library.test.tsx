@@ -19,10 +19,10 @@ describe('library', () => {
     const store = await withPlayer();
     mount(<AppRoutes />, { store, path: '/library' });
     await screen.findAllByRole('article');
-    fireEvent.click(screen.getByRole('button', { name: 'endgame', pressed: false }));
+    fireEvent.click(screen.getByRole('button', { name: 'końcówka', pressed: false }));
     const n = screen.getAllByRole('article').length;
     expect(n).toBeGreaterThan(0); expect(n).toBeLessThan(25);
-    fireEvent.click(screen.getByRole('button', { name: 'endgame', pressed: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'końcówka', pressed: true }));
     expect(screen.getAllByRole('article')).toHaveLength(25);
   });
   test('Otwórz opens the free board at the entry with its view', async () => {

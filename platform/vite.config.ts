@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
-import { createReadStream, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { createReadStream } from 'node:fs';
+import { engineFileFor } from './scripts/engine-files';
 
 /** In development, serve the vendored Stockfish files (repo root engine/) at /engine/, as the published site does. */
 const engineFiles = () => ({
@@ -11,11 +11,10 @@ const engineFiles = () => ({
   configureServer(server: { middlewares: { use: (fn: (req: { url?: string }, res: { setHeader: (k: string, v: string) => void } & NodeJS.WritableStream, next: () => void) => void) => void } }) {
     const root = fileURLToPath(new URL('../engine', import.meta.url));
     server.middlewares.use((req, res, next) => {
-      const m = /\/engine\/([\w.-]+)$/.exec(req.url ?? '');
-      const file = m ? join(root, m[1]!) : '';
-      if (!m || !existsSync(file)) return next();
-      res.setHeader('Content-Type', file.endsWith('.wasm') ? 'application/wasm' : 'text/javascript');
-      createReadStream(file).pipe(res);
+      const hit = engineFileFor(req.url ?? '', root);
+      if (!hit) return next();
+      res.setHeader('Content-Type', hit.type);
+      createReadStream(hit.file).pipe(res);
     });
   },
 });
