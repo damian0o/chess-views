@@ -16,6 +16,10 @@ import { VIEWS, type View } from '../views';
 import { useAnalysis } from '../board/useAnalysis';
 import { EnginePanel } from '../board/EnginePanel';
 import { Arrows } from '../board/Arrows';
+import { GuessPanel, type Guess } from '../board/GuessPanel';
+import { tapGuess, type GuessState } from '@core/guess';
+import type { MessageKey } from '@core/i18n/index';
+import type { Fen } from '@core/types';
 
 const ALL = VIEWS.flatMap((v) => v.layers);
 
@@ -30,7 +34,24 @@ export function FreeBoard() {
   const [knight, setKnight] = useState<Square | undefined>(undefined);
   const fen = session?.game.fen(session.ply);
   const engineOn = session?.view === 'engine';
-  const { state: analysis, retry } = useAnalysis((fen ?? '') as never, !!session && engineOn);
+  const { state: analysis, retry } = useAnalysis((fen ?? '') as never, !!session && engineOn, { depth: 10, multipv: 5 });
+  const [guessing, setGuessing] = useState(false);
+  const [pick, setPick] = useState<GuessState>({});
+  const [hint, setHint] = useState<MessageKey | null>(null);
+  const [guess, setGuess] = useState<Guess | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const resetGuess = () => { setPick({}); setHint(null); setGuess(null); setRevealed(false); };
+  // A new position starts a new guess.
+  useEffect(() => { resetGuess(); }, [fen]);
+  const HINT: Record<string, MessageKey> = { opponent: 'guessOpponent', empty: 'guessEmpty', illegal: 'guessIllegal', stuck: 'guessStuck' };
+  const onGuessTap = (sq: Square) => {
+    if (!fen || guess) return;
+    const r = tapGuess(pick, sq, fen as Fen);
+    setPick(r.state);
+    if (r.result.kind === 'ignore') setHint(HINT[r.result.reason]!);
+    else if (r.result.kind === 'guess') { setGuess({ move: r.result.move, san: r.result.san }); setHint(null); }
+    else setHint(null);
+  };
 
   // The address opens a session only when it differs from the board on screen (one owner, no loop).
   useEffect(() => {
@@ -70,9 +91,21 @@ export function FreeBoard() {
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
           <Board scene={scene} flip={session.flip} pieceStyle={player?.pieceStyle ?? 'images'} knightSquare={knight}
-            onSquare={view.id === 'knight' ? setKnight : undefined}
-            overlay={analysis.kind === 'done' && analysis.fen === scene.fen ? <Arrows lines={analysis.analysis.lines} flip={session.flip} /> : undefined} />
-          <EnginePanel state={analysis} turn={(scene.fen.split(' ')[1] ?? 'w') as 'w' | 'b'} onRetry={retry} />
+            onSquare={view.id === 'knight' ? setKnight : engineOn && guessing ? onGuessTap : undefined}
+            tapMarks={pick.from ? { right: pick.from } : {}}
+            overlay={analysis.kind === 'done' && analysis.fen === scene.fen && (!guessing || revealed) ? <Arrows lines={analysis.analysis.lines} flip={session.flip} /> : undefined} />
+          {(!guessing || analysis.kind !== 'thinking') && <EnginePanel state={guessing && !revealed && analysis.kind === 'done' ? { kind: 'off' } : analysis} turn={(scene.fen.split(' ')[1] ?? 'w') as 'w' | 'b'} onRetry={retry} />}
+          {engineOn && (
+            <div className="flex flex-col gap-2 rounded-card bg-card p-3 shadow-card">
+              <Switch isSelected={guessing} onChange={(on) => { setGuessing(on); resetGuess(); }} className="group flex min-h-12 cursor-pointer items-center gap-2 font-bold">
+                <span className="h-7 w-12 rounded-full bg-ink/20 p-1 transition group-data-[selected]:bg-accent">
+                  <span className="block h-5 w-5 rounded-full bg-card shadow transition group-data-[selected]:translate-x-5" />
+                </span>
+                {t('guessMode')}
+              </Switch>
+              {guessing && fen && <GuessPanel fen={fen as Fen} analysis={analysis} hint={hint} guess={guess} revealed={revealed} onReveal={() => setRevealed(true)} onAgain={resetGuess} />}
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button tone="quiet" aria-label={t('firstMove')} onPress={() => s.setPly(0)}>⏮</Button>
             <Button tone="quiet" aria-label={t('prevMove')} onPress={() => s.stepPly(-1)}>◀</Button>

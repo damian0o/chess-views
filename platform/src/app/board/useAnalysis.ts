@@ -25,7 +25,7 @@ export function useAnalysis(fen: Fen, on: boolean, opts = { depth: 10, multipv: 
       (e: Error) => { if (current.current === fen && !/aborted/.test(e.message)) setState({ kind: /stopped responding/.test(e.message) ? 'dead' : 'failed' }); },
     );
     return () => ctrl.abort();
-  }, [fen, on, attempt]);
+  }, [fen, on, attempt, opts.depth, opts.multipv]);
   const retry = () => { engine.restart(); setAttempt((n) => n + 1); };
   return { state, retry };
 }
