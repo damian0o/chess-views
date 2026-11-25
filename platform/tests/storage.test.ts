@@ -24,7 +24,7 @@ describe('LocalProfileStore', () => {
     const p = { ...defaultProfile(), id: 'kid-1', name: 'Ola' };
     await s.save(p);
     expect(await s.load('kid-1')).toEqual(p);
-    expect(await s.list()).toEqual([{ id: 'kid-1', name: 'Ola', age: 'kids' }]);
+    expect(await s.list()).toEqual([{ id: 'kid-1', name: 'Ola', age: 'kids', avatar: 'violet' }]);
     await s.remove('kid-1');
     expect(await s.load('kid-1')).toBeNull();
   });

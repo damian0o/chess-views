@@ -132,8 +132,11 @@ export type LibraryEntry = z.infer<typeof LibraryEntrySchema>;
 
 // ---------- the child's profile ----------
 
-export const ProfileSchema = z.object({
-  version: z.literal(1),
+export const AVATARS = ['violet', 'orange', 'green', 'blue', 'pink', 'yellow'] as const;
+export const AvatarSchema = z.enum(AVATARS);
+export type Avatar = z.infer<typeof AvatarSchema>;
+
+const profileFields = {
   id: z.string().min(1),
   name: z.string().optional(),
   age: AgeBandSchema,
@@ -143,5 +146,9 @@ export const ProfileSchema = z.object({
   pieceStyle: z.enum(['images', 'letters']),
   progress: z.record(z.string(), z.object({ reachedStep: z.string(), done: z.boolean() })),
   unlockedLayers: z.array(LayerKindSchema),
-});
+};
+/** Version 1 (phase 1): no avatar. Read only to migrate. */
+export const ProfileV1Schema = z.object({ version: z.literal(1), ...profileFields });
+/** The current profile. */
+export const ProfileSchema = z.object({ version: z.literal(2), ...profileFields, avatar: AvatarSchema });
 export type Profile = z.infer<typeof ProfileSchema>;

@@ -9,21 +9,40 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run lint && npm run test",
-    "content": "tsx scripts/compile-content.ts content dist/content"
+    "check": "npm run content && npm run typecheck && npm run lint && npm run test",
+    "content": "tsx scripts/compile-content.ts content dist/content",
+    "dev": "npm run content && vite",
+    "build": "npm run content && vite build",
+    "preview": "vite preview",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.65.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.19.2",
+    "@types/react": "^19.3.1",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
     "eslint": "^9.39.5",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.74.0",
-    "vitest": "^3.2.7"
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   },
   "dependencies": {
     "chess.js": "^1.4.0",
+    "react": "^19.3.1",
+    "react-aria-components": "^1.22.1",
+    "react-dom": "^19.3.1",
+    "wouter": "^3.13.0",
     "yaml": "^2.9.1",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "zustand": "^5.1.0"
   }
 }

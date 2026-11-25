@@ -102,3 +102,18 @@ export function crossings(rayList: readonly Ray[]): Crossing[] {
     .map((e) => ({ square: e.square, color: e.color, from: [...e.from].sort(), count: e.from.size, hit: e.hit }))
     .sort((a, b) => (Number(b.hit) - Number(a.hit)) || (b.count - a.count) || a.square.localeCompare(b.square));
 }
+
+export type RoadHit = { square: Square; color: Color; from: Square[] };
+
+/** Every piece a road runs into, with the squares of the pieces whose roads reach it (grouped by the attacking side). */
+export function roadHits(rayList: readonly Ray[]): RoadHit[] {
+  const by = new Map<string, RoadHit>();
+  for (const r of rayList) {
+    if (r.end !== 'enemy' || !r.hit) continue;
+    const key = `${r.hit}|${r.piece.color}`;
+    const h = by.get(key) ?? { square: r.hit, color: r.piece.color, from: [] };
+    if (!h.from.includes(r.from)) h.from.push(r.from);
+    by.set(key, h);
+  }
+  return [...by.values()];
+}

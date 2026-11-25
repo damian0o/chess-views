@@ -1,0 +1,34 @@
+@import "tailwindcss";
+@import "./theme/tokens.css";
+
+/* Tailwind colour and radius names read the theme's CSS variables. */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-2: var(--accent-2);
+  --color-accent-2-ink: var(--accent-2-ink);
+  --color-fun-1: var(--fun-1);
+  --color-fun-2: var(--fun-2);
+  --color-fun-3: var(--fun-3);
+  --color-fun-4: var(--fun-4);
+  --color-good: var(--good);
+  --color-good-ink: var(--good-ink);
+  --color-bad: var(--bad);
+  --color-bad-ink: var(--bad-ink);
+  --color-board-light: var(--board-light);
+  --color-board-dark: var(--board-dark);
+  --color-board-ink: var(--board-ink);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --shadow-card: var(--shadow-card);
+  --text-step: var(--text-step);
+}
+
+@keyframes cv-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes cv-confetti { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(-120px) rotate(540deg); opacity: 0; } }
+.cv-pop { animation: cv-pop 450ms ease-out both; }
+.cv-confetti { animation: cv-confetti 900ms ease-out both; }

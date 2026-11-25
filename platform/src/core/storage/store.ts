@@ -1,6 +1,6 @@
-import type { AgeBand, Profile } from '../types';
+import type { AgeBand, Avatar, Profile } from '../types';
 
-export interface ProfileSummary { id: string; name?: string; age: AgeBand }
+export interface ProfileSummary { id: string; name?: string; age: AgeBand; avatar: Avatar }
 
 /** Where profiles live. Local now; a remote service later through the same interface. */
 export interface ProfileStore {

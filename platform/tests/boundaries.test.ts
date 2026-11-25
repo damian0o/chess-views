@@ -20,3 +20,7 @@ test('core may not import content', async () => {
 test('content may import core', async () => {
   expect(await lint('src/content/a.ts', "import { CORE_VERSION } from '@core/index';\nexport const a = CORE_VERSION;\n")).toHaveLength(0);
 });
+
+test('core may not import app', async () => {
+  expect(await lint('src/core/z.ts', "import App from '../app/App';\nexport const z = App;\n")).toHaveLength(1);
+});
