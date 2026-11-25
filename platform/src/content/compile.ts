@@ -4,7 +4,7 @@
  * positions and answers). Every problem is a ContentError with the file and the line.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { loadGame, ChessError } from '@core/chess/rules';
 import {
@@ -57,6 +57,21 @@ function replayer() {
 }
 
 /** The line of `<marker>` in a YAML text (1-based), or 1. */
+const STEP_KEYS = ['scene', 'fen', 'pgn', 'ply', 'pos', 'same', 'focus', 'flip', 'locked', 'moment', 'solve', 'ages'];
+const QUESTION_KEYS = ['recall', 'answer', 'tap'];
+const POSITION_KEYS = ['fen', 'pgn', 'pos', 'same'];
+
+/** A step's schema failure in words a lesson writer understands, naming the bad value where there is one. */
+function stepMessage(issues: { path: PropertyKey[]; message: string }[], candidate: unknown): string {
+  const path = issues[0]?.path ?? [];
+  const value = path.reduce<unknown>((v, k) => (v && typeof v === 'object' ? (v as Record<PropertyKey, unknown>)[k] : undefined), candidate);
+  const [a, b] = path;
+  if (a === 'scene' && b === 'focus') return `"${String(value)}" is not a square (a1 to h8)`;
+  if (a === 'scene' && (b === 'layers' || b === 'lockedLayers')) return `unknown view "${String(value)}"`;
+  if (a === 'audience') return `unknown age "${String(value)}" (use kids, teens or adults)`;
+  return zodMessage(issues);
+}
+
 const lineIn = (text: string, re: RegExp) => { const i = text.split('\n').findIndex((l) => re.test(l)); return i < 0 ? 1 : i + 1; };
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&');
 
@@ -145,8 +160,16 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
     const err = (message: string, line = s.line) => errors.push({ file, line, message });
     if (ids.has(s.id)) { err(`step id "${s.id}" is used twice`); continue; }
     ids.add(s.id);
+    const unknown = Object.keys(s.attrs).find((k) => !STEP_KEYS.includes(k));
+    if (unknown) { err(`unknown attribute "${unknown}" (a step takes ${STEP_KEYS.join(', ')})`); continue; }
+    const qUnknown = s.question ? Object.keys(s.question.attrs).find((k) => !QUESTION_KEYS.includes(k)) : undefined;
+    if (qUnknown) { err(`unknown attribute "${qUnknown}" (a question takes ${QUESTION_KEYS.join(', ')})`, s.question!.line); continue; }
+    const given = POSITION_KEYS.filter((k) => s.attrs[k] !== undefined && s.attrs[k] !== false);
+    if (given.length > 1) { err(`a step has only one position: use one of ${POSITION_KEYS.join(', ')} (this one has ${given.join(' and ')})`); continue; }
     const recall = s.question?.attrs.recall;
     const recallYes = recall !== undefined && (s.question?.attrs.answer === true || s.question?.attrs.answer === 'yes') ? String(recall) : null;
+    const own = [...given, ...(s.attrs.ply !== undefined ? ['ply'] : [])];
+    if (recallYes !== null && own.length) { err(`a recall question with answer yes shows its moment's board: remove the step's own position (${own.join(', ')})`); continue; }
     if (recallYes !== null && !momentIds.has(recallYes)) { err(`no moment "${recallYes}"`, s.question!.line); continue; }
     const position = resolvePosition(s.attrs, { lessonPgn, previous, library, momentBoard: (id) => momentBoards.get(id) ?? null }, recallYes);
     if (typeof position === 'string') { err(position); continue; }
@@ -175,7 +198,7 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
     const parsed = StepSchema.safeParse(candidate);
     if (!parsed.success) {
       const onQuestion = parsed.error.issues[0]?.path[0] === 'question';
-      err(zodMessage(parsed.error.issues), onQuestion && s.question ? s.question.line : s.line);
+      err(stepMessage(parsed.error.issues, candidate), onQuestion && s.question ? s.question.line : s.line);
       continue;
     }
     steps.push(parsed.data);
@@ -217,10 +240,21 @@ export function compileContent(root: string): Compiled {
       errors.push(...pe);
       const id = raw ? String(raw.meta.id ?? '') : '';
       if (!raw || pe.length) { broken.add(id); continue; }
+      const first = files[locale].get(id);
+      if (first !== undefined) { errors.push({ file: path, line: 1, message: `lesson id "${id}" is used twice (also in ${relative(root, first)})` }); broken.add(id); continue; }
       files[locale].set(id, path);
       const { lesson, origin } = compileLesson(raw, positions, replay, errors);
       origins[locale].set(id, origin);
       if (lesson) lessons[locale].push(lesson); else broken.add(id);
+    }
+  }
+  // A looksLike names another moment as <lesson id>/<moment id>; it must exist in the same language.
+  for (const locale of LOCALES) {
+    const known = new Set(lessons[locale].flatMap((l) => l.moments.map((m) => `${l.id}/${m.id}`)));
+    for (const l of lessons[locale]) for (const m of l.moments) for (const ref of m.looksLike ?? []) {
+      if (known.has(ref)) continue;
+      const file = files[locale].get(l.id)!;
+      errors.push({ file, line: lineIn(readFileSync(file, 'utf8'), new RegExp(esc(ref))), message: `moment ${m.id}: looksLike "${ref}" is not a moment of any lesson (use <lesson id>/<moment id>)` });
     }
   }
   errors.push(...compareLocales(lessons, origins, files, broken));

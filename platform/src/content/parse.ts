@@ -33,7 +33,7 @@ function attrsOf(text: string, file: string, line: number, errors: ParseError[])
 
 export function parseLesson(file: string, text: string): { lesson: RawLesson | null; errors: ParseError[] } {
   const errors: ParseError[] = [];
-  const lines = text.split('\n');
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');   // Windows and old Mac line endings read the same
   if (lines[0]?.trim() !== '---') return { lesson: null, errors: [{ file, line: 1, message: 'a lesson starts with front matter (---)' }] };
   const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
   if (end < 0) return { lesson: null, errors: [{ file, line: 1, message: 'the front matter is not closed (---)' }] };

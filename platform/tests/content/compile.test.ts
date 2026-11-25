@@ -64,6 +64,38 @@ describe('compileContent: errors with file and line', () => {
     expect(errs[0]!.file).toMatch(/pl\/patterns\/f7-attack\/mini\.md$/);
     expect(errs[0]!.line).toBe(lineOf(text, needle.startsWith('##') ? needle : needle));
   });
+  test.each([
+    ['an unknown step attribute', { '## tap-it {scene: board, same: true}': '## tap-it {scene: board, same: true, colour: red}' }, '## tap-it', /unknown attribute "colour"/],
+    ['two positions on one step', { '## from-library {scene: board+territory, pos: scholar-threat}': '## from-library {scene: board+territory, pos: scholar-threat, fen: "8/8/8/8/8/8/8/K6k w - - 0 1"}' }, '## from-library', /only one position/],
+    ['an unknown question attribute', { '{tap: f7}': '{tap: f7, hint: x}' }, '? Tap the square.', /unknown attribute "hint"/],
+    ['a recall "yes" step with its own position', { '## is-attack {moment: attack}': '## is-attack {moment: attack, ply: 3}' }, '## is-attack', /shows its moment's board/],
+    ['a focus that is not a square', { 'same: true, focus: f7}': 'same: true, focus: f9}' }, '## roads', /"f9" is not a square/],
+    ['a scene with an unknown view', { '## roads {scene: board+roads,': '## roads {scene: board+rodas,' }, '## roads', /unknown view "rodas"/],
+  ])('%s: one error, on its line, said plainly', (_name, swap, needle, message) => {
+    const errs = broken(swap, swap);
+    const pl = errs.filter((e) => /\/pl\//.test(e.file));
+    expect(pl).toHaveLength(1);
+    expect(pl[0]!.line).toBe(lineOf(lesson('pl', swap), needle));
+    expect(pl[0]!.message).toMatch(message);
+  });
+  test('a lesson id used by two files', () => {
+    const errs = compileContent(valid({ 'pl/patterns/f7-attack/copy.md': lesson('pl') })).errors;
+    expect(errs.map((e) => e.message)).toContainEqual(expect.stringMatching(/lesson id "mini" is used twice/));
+  });
+  test('a looksLike naming a moment that does not exist', () => {
+    const errs = broken({ 'mate: { name: mat, ply: 7 }': 'mate: { name: mat, ply: 7, looksLike: [nope/mate] }' },
+      { 'mate: { name: the mate, ply: 7 }': 'mate: { name: the mate, ply: 7, looksLike: [nope/mate] }' });
+    expect(errs.map((e) => e.message)).toContainEqual(expect.stringMatching(/looksLike "nope\/mate"/));
+  });
+  test('a file with Windows line endings compiles like any other', () => {
+    const crlf = (t: string) => t.replace(/\n/g, '\r\n');
+    const out = compileContent(tree({
+      'library.yaml': crlf(LIBRARY), 'pl/library.yaml': crlf(LIB_WORDS('Groźba')), 'en/library.yaml': crlf(LIB_WORDS('Threat')),
+      'pl/patterns/f7-attack/mini.md': crlf(lesson('pl')), 'en/patterns/f7-attack/mini.md': crlf(lesson('en')),
+    }));
+    expect(out.errors).toEqual([]);
+    expect(out.lessons.pl[0]).toEqual(compileContent(valid()).lessons.pl[0]);
+  });
   test('an English file whose step ids differ from Polish', () => {
     const errs = broken({}, { '## tap-it {': '## tap-this {' });
     expect(errs).toHaveLength(1);
