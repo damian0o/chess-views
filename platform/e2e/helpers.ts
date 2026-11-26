@@ -14,7 +14,7 @@ export async function openBoard(page: Page) {
   await expect(page.locator('[data-step-text]')).toBeVisible();   // the step is on screen (either layout)
   const handle = page.getByRole('button', { name: 'Rozumiem, pokaż planszę' });
   if (await handle.isVisible()) {
-    await handle.click();
+    await handle.click({ force: true });   // after the reading pause the edge nudges, so it is never 'stable'
     await expect(page.locator('[data-sheet]')).toHaveAttribute('data-sheet', 'up');
     await expect.poll(async () => (await page.locator('[data-sheet]').boundingBox())?.y).toBe(0);   // slid all the way up
   }
