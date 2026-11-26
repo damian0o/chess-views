@@ -3,7 +3,7 @@ import assert from './assert';
 import { analyse, batteryRays, boardFromFen, roadRings } from '@core/analysis';
 import type { Fen } from '@core/types';
 
-// 1. e4 e5 2. Bc4 Nc6 3. c3 Nf6 4. Qb3 — eyes-on-f7 step s11: the queen stands behind the bishop.
+// 1. e4 e5 2. Bc4 Nc6 3. c3 Nf6 4. Qb3 — eyes-on-f7 step s03: the queen stands behind the bishop.
 const QB3 = 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/1QP5/PP1P1PPP/RNB1K1NR b KQkq - 2 4' as Fen;
 const ringsOf = (fen: Fen) => new Map(roadRings(boardFromFen(fen)).map((r) => [r.square as string, r]));
 

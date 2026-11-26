@@ -25,8 +25,10 @@ describe('converted content', () => {
   const CHANGED: Record<string, Record<number, object>> = {
     'scholars-mate': { 20: { kind: 'tap', squares: ['f7'] }, 22: { kind: 'tap', squares: ['f2'] }, 24: { kind: 'choice', choices: ['Yes', 'No'], answer: 1 } },
   };
+  // Rewritten after parity (2026-11-26): ideas on f7 that scholar's mate does not already teach.
+  const REWRITTEN = ['eyes-on-f7'];
   test('English lessons match the proof of concept step by step', () => {
-    for (const poc of POC.lessons) {
+    for (const poc of POC.lessons.filter((l) => !REWRITTEN.includes(l.id))) {
       const L = out.lessons.en.find((l: Lesson) => l.id === poc.id);
       expect(L, poc.id).toBeDefined();
       const steps = resolveSteps(poc, POC.positions) as { source: PositionSource }[];
@@ -78,5 +80,22 @@ describe('converted content', () => {
     expect(out.library.en).toHaveLength(25);
     expect(out.library.pl).toHaveLength(25);
     expect(out.library.pl.map((e) => e.id)).toEqual(POC.positions.map((p) => p.id));
+  });
+});
+
+describe('the f7 lessons', () => {
+  const out = compileContent(fileURLToPath(new URL('../../content', import.meta.url)));
+  test("scholar's mate comes first; eyes-on-f7 builds on it in both languages", () => {
+    for (const loc of ['pl', 'en'] as const) {
+      const ids = out.lessons[loc].map((l) => l.id);
+      expect(ids.indexOf('scholars-mate' as never), loc).toBeLessThan(ids.indexOf('eyes-on-f7' as never));
+    }
+  });
+  test("eyes-on-f7 does not reuse a scholar's mate position", () => {
+    for (const loc of ['pl', 'en'] as const) {
+      const fens = (id: string) => new Set(out.lessons[loc].find((l) => l.id === id)!.steps.map((s) => fenOf(s.scene.position)));
+      const scholar = fens('scholars-mate');
+      expect([...fens('eyes-on-f7')].filter((f) => scholar.has(f)), loc).toEqual([]);
+    }
   });
 });

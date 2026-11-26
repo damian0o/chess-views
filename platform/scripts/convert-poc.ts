@@ -44,8 +44,8 @@ write('en/library.yaml', stringify(Object.fromEntries(poc.positions.map((p) => [
 
 // ---------- lessons ----------
 const GROUP: Record<string, { kind: string; id: string; dir: string; file: string }> = {
-  'scholars-mate': { kind: 'pattern', id: 'f7-attack', dir: 'patterns/f7-attack', file: 'scholars-mate' },
-  'eyes-on-f7': { kind: 'pattern', id: 'f7-attack', dir: 'patterns/f7-attack', file: 'eyes-on-f7' },
+  'scholars-mate': { kind: 'pattern', id: 'f7-attack', dir: 'patterns/f7-attack', file: '1-scholars-mate' },
+  'eyes-on-f7': { kind: 'pattern', id: 'f7-attack', dir: 'patterns/f7-attack', file: '2-eyes-on-f7' },
   'opera-game-lesson': { kind: 'game', id: 'opera-game', dir: 'games', file: 'opera-game' },
   'legal-mate': { kind: 'game', id: 'legal-mate', dir: 'games', file: 'legal-mate' },
   'reti-tartakower': { kind: 'game', id: 'reti-tartakower', dir: 'games', file: 'reti-tartakower' },
