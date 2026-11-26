@@ -25,7 +25,7 @@ const sets = [...css.matchAll(/\[data-family="(\w+)"\]\[data-mode="(\w+)"\] \{([
 const root = Object.fromEntries([...css.matchAll(/--(board-road-[wb]):\s*(#[0-9a-f]{6})/gi)].map(([, k, c]) => [k!, c!]));
 
 describe('colours', () => {
-  test('the six theme sets were found', () => expect(sets).toHaveLength(6));
+  test('the eight theme sets were found', () => expect(sets).toHaveLength(8));
   test.each(Object.entries(AVATAR_COLORS ?? { missing: { bg: '#ffffff', ink: '#ffffff' } }))('the %s avatar initial is readable (≥ 3:1, large bold text)', (_name, { bg, ink }) => {
     expect(contrast(bg, ink)).toBeGreaterThanOrEqual(3);
   });

@@ -1,5 +1,5 @@
 /*
- * Six theme sets: family (kids 8–12, teens 12–16, adults) × mode (light, dark), set on <html> by
+ * Eight theme sets: family (kids 8–12, teens 12–16, adults, crayons) × mode (light, dark), set on <html> by
  * ThemeRoot as data-family / data-mode. Every set keeps text on surfaces, cards and accent buttons at
  * contrast ≥ 4.5, and the board's dark squares light enough for black pieces (relative luminance > 0.45).
  * The kids family is deliberately bright and playful.
@@ -62,6 +62,25 @@
   --fun-1: #a1a1aa; --fun-2: #71717a; --fun-3: #d4d4d8; --fun-4: #e4e4e7;
   --good: #86efac; --good-ink: #052e16; --bad: #fca5a5; --bad-ink: #450a0a;
   --board-light: #f0ede6; --board-dark: #c9c3b6; --board-ink: #18181b; --focus: #93c5fd;
+}
+
+/* ---------- crayons (Kredki): a crayon notebook; light = Zeszyt, dark = Czarny karton ---------- */
+[data-family="crayons"] { --radius-control: 1.25rem; --radius-card: 1.5rem; --shadow-card: none; --text-step: 1.25rem; }
+[data-family="crayons"][data-mode="light"] {
+  --surface: #fffefa; --card: #ffffff; --ink: #23305c; --ink-soft: #5a6a9a;
+  --accent: #d81b60; --accent-ink: #ffffff; --accent-2: #ffe066; --accent-2-ink: #23305c;
+  --fun-1: #f23c7a; --fun-2: #ffe066; --fun-3: #7bd389; --fun-4: #8ccaf5;
+  --good: #15803d; --good-ink: #ffffff; --bad: #dc2626; --bad-ink: #ffffff;
+  --board-light: #fff7cf; --board-dark: #8ccaf5; --board-ink: #23305c; --focus: #c2410c;
+  --title: #e0306b; --chip: #7bd389; --edge: #23305c; --paper-lines: #dceaf8; --paper-margin: #f6c9c9;
+}
+[data-family="crayons"][data-mode="dark"] {
+  --surface: #1f1d2b; --card: #2c2940; --ink: #fbf7ff; --ink-soft: #cfc7ea;
+  --accent: #3ee08f; --accent-ink: #10261a; --accent-2: #ff8fc7; --accent-2-ink: #1f1d2b;
+  --fun-1: #ff8fc7; --fun-2: #ffe14d; --fun-3: #3ee08f; --fun-4: #5ccfff;
+  --good: #4ade80; --good-ink: #052e16; --bad: #fca5a5; --bad-ink: #450a0a;
+  --board-light: #fff4d6; --board-dark: #c3a6f7; --board-ink: #1e1b4b; --focus: #ffe14d;
+  --title: #ffe14d; --chip: #5ccfff; --edge: #fbf7ff; --paper-lines: transparent; --paper-margin: transparent;
 }
 
 html { background: var(--surface); color: var(--ink); font-family: var(--font-ui); }
