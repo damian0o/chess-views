@@ -1,0 +1,55 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--ink:#23305c;--soft:#5b6690;--accent:#d81b60;--bg:#fffefa;--l:#fff7cf;--d:#8ccaf5;--y:#ffe066}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.top{display:flex;align-items:center;gap:8px;padding:12px 14px}
+.btn{border:3px solid var(--ink);border-radius:18px;background:#fff;font-weight:800;font-size:18px;padding:10px 16px;color:var(--ink)}
+.btn.primary{background:var(--accent);color:#fff}.btn.dis{opacity:.45}.btn.pulse{box-shadow:0 0 0 6px var(--y)}
+h1{font-size:24px;margin:4px 16px 0;color:#c2185b}
+.text{font-size:23px;line-height:1.5;padding:12px 18px}
+/* the sheet: the board's panel, resting with only its top edge showing */
+.sheet{position:fixed;left:0;right:0;top:0;height:100vh;background:var(--bg);transform:translateY(calc(100vh - 128px));transition:transform .45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:0 -6px 18px rgba(35,48,92,.18);border-radius:22px 22px 0 0}
+.sheet.up{transform:translateY(0);border-radius:0}
+.grip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px 6px}
+.grip .bar{width:56px;height:6px;border-radius:3px;background:var(--ink);opacity:.5}
+.grip .label{font-weight:900;font-size:19px;display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:var(--y);border:3px solid var(--ink)}
+.sheet:not(.up) .grip .label{animation:glow 1.4s ease-in-out infinite}
+.sheet:not(.up){animation:nudge 1.4s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 8px rgba(255,224,102,.6)}}
+@keyframes nudge{50%{transform:translateY(calc(100vh - 140px))}}
+.mini{display:none;align-items:center;gap:10px;padding:4px 12px 8px;font-size:17px;font-weight:700}
+.sheet.up .mini{display:flex}.sheet.up .label{display:none}
+.mini span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board{margin:4px auto 0;width:min(96vw,420px);aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border:4px solid var(--ink);border-radius:6px;overflow:hidden;flex:none}
+.sheet:not(.up) .board{outline:4px solid var(--y);outline-offset:0;animation:edge 1.4s ease-in-out infinite}
+@keyframes edge{50%{outline-color:rgba(255,224,102,.2)}}
+.sq{display:grid;place-items:center;font-size:min(9vw,40px);line-height:1;position:relative;min-height:0;overflow:hidden}
+.sq i{position:absolute;left:2px;top:0;font-size:10px;font-style:normal;font-weight:700;opacity:.7}
+.spacer{flex:1}
+.moves{padding:10px 14px;font-weight:800;color:var(--soft)}
+.dock{display:flex;align-items:center;gap:10px;padding:10px 12px 16px;border-top:3px solid var(--ink);background:#fff}
+.dock .ply{font-weight:800;color:var(--soft)}.dock .next{margin-left:auto}
+.ok{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.6);opacity:0;font-size:30px;font-weight:900;background:#e3f7ea;border:3px solid #2e7d4f;border-radius:20px;padding:10px 20px;transition:all .3s}
+.ok.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+</style></head><body>
+<div class="top"><span class="btn">◀ Wzory</span><span style="margin-left:auto;font-weight:800;color:var(--soft)">1/25</span><span class="btn">⚙</span></div>
+<h1>Mat szkolny</h1>
+<div class="text">Naciskaj ▶ i zagraj pierwsze ruchy partii: e4 e5, Gc4 Sc6, Hh5. Po trzech ruchach białych zobacz, w co celują.</div>
+<section class="sheet" id="sheet">
+ <div class="grip"><div class="bar"></div><div class="label">✓ Rozumiem · pociągnij planszę ⌃</div>
+  <div class="mini"><span>⌄</span><span>Naciskaj ▶ i zagraj pierwsze ruchy…</span></div></div>
+ <div class="board" id="board"></div>
+ <div class="moves">1. e4 &nbsp; e5 &nbsp; 2. Gc4 &nbsp; Sc6 &nbsp; 3. Hh5</div>
+ <div class="spacer"></div>
+ <div class="dock"><span class="btn">◀</span><span class="btn pulse">▶</span><span class="ply">Ruch 0 z 5</span><span class="btn primary dis next">Dalej ▶</span></div>
+</section>
+<div class="ok" id="ok">✓ Rozumiem!</div>
+<script>
+const START=['rnbqkbnr','pppppppp','........','........','........','........','PPPPPPPP','RNBQKBNR'];
+const G={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
+START.forEach((row,r)=>[...row].forEach((c,f)=>{const d=document.createElement('div');d.className='sq';d.style.background=(r+f)%2?'var(--d)':'var(--l)';d.innerHTML=(f===0?`<i>${8-r}</i>`:'')+(G[c]||'');board.appendChild(d)}));
+window.pull=()=>{sheet.style.animation='none';sheet.classList.add('up');ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),700)};
+window.drag=(px)=>{sheet.style.animation='none';sheet.style.transition='none';sheet.style.transform=`translateY(${innerHeight-128-px}px)`};
+window.release=()=>{sheet.style.transition='';sheet.style.transform='';pull()};
+</script></body></html>

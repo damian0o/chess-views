@@ -1,0 +1,66 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--ink:#23305c;--soft:#5b6690;--accent:#d81b60;--card:#fff;--bg:#fffefa;--l:#fff7cf;--d:#8ccaf5}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font-family:system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.scroller{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
+.panel{height:100vh;scroll-snap-align:start;display:flex;flex-direction:column;position:relative}
+.top{display:flex;align-items:center;gap:8px;padding:12px 14px}
+.btn{border:3px solid var(--ink);border-radius:18px;background:#fff;font-weight:800;font-size:18px;padding:10px 16px;color:var(--ink)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--ink)}
+.btn.dis{opacity:.45}
+.btn.pulse{box-shadow:0 0 0 6px #ffe066}
+h1{font-size:24px;margin:4px 16px 0;color:#c2185b}
+.text{font-size:23px;line-height:1.5;padding:12px 18px;flex:1}
+.go{display:flex;justify-content:center;padding:18px 16px 28px}
+.go .btn{font-size:22px;padding:16px 28px}
+.mini{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:2px solid #dceaf8;font-size:17px;font-weight:700}
+.mini .up{border:3px solid var(--ink);border-radius:14px;width:44px;height:44px;display:grid;place-items:center;font-size:22px;flex:none;background:#fff}
+.mini span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board{margin:8px auto 0;width:min(96vw,420px);aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border:4px solid var(--ink);border-radius:6px;overflow:hidden}
+.sq{display:grid;place-items:center;font-size:min(9vw,40px);line-height:1;position:relative;min-height:0;overflow:hidden}
+.sq i{position:absolute;left:2px;top:0;font-size:10px;font-style:normal;font-weight:700;opacity:.7}
+.choices{display:flex;gap:10px;justify-content:center;padding:10px 12px 0;flex-wrap:wrap}
+.spacer{flex:1}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 12px 16px;border-top:3px solid var(--ink);background:#fff}
+.bar .ply{font-weight:800;color:var(--soft)}
+.bar .next{margin-left:auto}
+.note{font-size:15px;color:var(--soft);padding:0 18px}
+.right{background:#e3f7ea;border:3px solid #2e7d4f;border-radius:16px;margin:8px 14px 0;padding:8px 12px;font-weight:800}
+</style></head><body>
+<div class="scroller" id="s">
+ <section class="panel" id="p1">
+  <div class="top"><span class="btn">◀ Wzory</span><span style="margin-left:auto;font-weight:800;color:var(--soft)" id="count">1/25</span><span class="btn">⚙</span></div>
+  <h1 id="title">Mat szkolny</h1>
+  <div class="text" id="text"></div>
+  <div class="go"><span class="btn primary">⬇ Do planszy</span></div>
+ </section>
+ <section class="panel" id="p2">
+  <div class="mini"><span class="up">⬆</span><span id="minitext"></span></div>
+  <div class="board" id="board"></div>
+  <div id="extra"></div>
+  <div class="spacer"></div>
+  <div class="bar" id="bar"></div>
+ </section>
+</div>
+<script>
+const P=new URLSearchParams(location.search), v=P.get('v')||'walk';
+const START=['rnbqkbnr','pppppppp','........','........','........','........','PPPPPPPP','RNBQKBNR'];
+const AFTER=['r.bqkbnr','pppp.ppp','..n.....','....p..Q','..B.P...','........','PPPP.PPP','RNB.K.NR'];
+const E4=['rnbqkbnr','pppp.ppp','........','....p...','....P...','........','PPPP.PPP','RNBQKBNR'];
+const G={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
+const V={
+ walk:{title:'Mat szkolny',count:'1/25',text:'Naciskaj ▶ i zagraj pierwsze ruchy partii: e4 e5, Gc4 Sc6, Hh5. Po trzech ruchach białych zobacz, w co celują.',mini:'Naciskaj ▶ i zagraj pierwsze ruchy…',pos:E4,
+   bar:'<span class="btn">◀</span><span class="btn pulse">▶</span><span class="ply">Ruch 2 z 5</span><span class="btn primary dis next">Dalej ▶</span>'},
+ ask:{title:'Mat szkolny',count:'6/25',text:'Tu nie ma narysowanych dróg: odpowiedz z pamięci.<br><br><b>Które pole atakują goniec i hetman?</b>',mini:'Które pole atakują goniec i hetman?',pos:AFTER,
+   extra:'<div class="choices"><span class="btn">e5</span><span class="btn">f7</span><span class="btn">f2</span></div>',
+   bar:'<span class="btn dis">◀</span><span class="btn dis">▶</span><span class="ply">Ruch 5 z 5</span><span class="btn primary dis next">Dalej ▶</span>'},
+ done:{title:'Mat szkolny',count:'6/25',text:'',mini:'Które pole atakują goniec i hetman?',pos:AFTER,
+   extra:'<div class="right">✓ Tak, f7! Pilnuje go tylko król.</div>',
+   bar:'<span class="btn">◀</span><span class="btn">▶</span><span class="ply">Ruch 5 z 5</span><span class="btn primary pulse next">Dalej ▶</span>'},
+}[v];
+title.textContent=V.title;count.textContent=V.count;text.innerHTML=V.text;minitext.textContent=V.mini;
+extra.innerHTML=V.extra||'';bar.innerHTML=V.bar;
+V.pos.forEach((row,r)=>[...row].forEach((c,f)=>{const d=document.createElement('div');d.className='sq';d.style.background=(r+f)%2?'var(--d)':'var(--l)';d.innerHTML=(f===0?`<i>${8-r}</i>`:'')+(G[c]||'');board.appendChild(d)}));
+if(P.get('at')==='board') document.getElementById('s').scrollTop=innerHeight;
+</script></body></html>
