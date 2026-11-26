@@ -1,10 +1,11 @@
 import type { LessonRun } from '@core/lessons/run';
 import type { MessageKey } from '@core/i18n/index';
 import { formatSan } from '@core/chess/san';
-import { usePlayer, useT, useText } from '../i18n';
+import { usePlayer, useT } from '../i18n';
 import { Button } from '../ui/Button';
 import { Question } from './Question';
 import { Celebrate } from './Celebrate';
+import { StepText } from './StepText';
 import type { SolveState } from './useSolve';
 
 export interface SolveView { state: SolveState; tries: number; hint: MessageKey | null; solving: boolean; gameSan: string | null }
@@ -39,25 +40,30 @@ function SolveStatus({ solve, onReveal }: { solve: SolveView; onReveal: () => vo
   );
 }
 
+/** A "find the move" step's live status and the step's question: what the child acts on. */
+export function StepActions({ run, solve, onAnswer, onReveal, showPrompt = true }: {
+  run: LessonRun; solve?: SolveView | undefined; onAnswer: (v: number) => void; onReveal: () => void; showPrompt?: boolean;
+}) {
+  const t = useT();
+  return (
+    <>
+      {run.step.solve && (solve
+        ? <SolveStatus solve={solve} onReveal={onReveal} />
+        : run.gate?.kind === 'reveal' && <div><Button tone="secondary" onPress={onReveal}>{t('play')}</Button></div>)}
+      <Question run={run} onAnswer={onAnswer} showPrompt={showPrompt} />
+    </>
+  );
+}
+
 /** The step: its text for the player's age, a "find the move" task played on the board, the question, Back and Next. */
 export function StepCard({ run, solve, onAnswer, onReveal, onBack, onNext }: {
   run: LessonRun; solve?: SolveView | undefined; onAnswer: (v: number) => void; onReveal: () => void; onBack: () => void; onNext: () => void;
 }) {
-  const t = useT(); const tx = useText();
-  const step = run.step;
+  const t = useT();
   return (
     <section aria-label={t('stepOf', { n: run.index + 1, total: run.total })} className="flex flex-col gap-4 rounded-card bg-card p-5 shadow-card">
-      <p className="text-step leading-relaxed">{tx(step.explain)}</p>
-      {step.solve && (
-        <div className="flex flex-col gap-2">
-          <p className="font-black">{tx(step.solve.task)}</p>
-          {solve
-            ? <SolveStatus solve={solve} onReveal={onReveal} />
-            : run.gate?.kind === 'reveal' && <div><Button tone="secondary" onPress={onReveal}>{t('play')}</Button></div>}
-        </div>
-      )}
-      <Question run={run} onAnswer={onAnswer} />
-      {run.gate?.kind === 'play' && <p className="font-black">{t('playToEnd')}</p>}
+      <StepText run={run} />
+      <StepActions run={run} solve={solve} onAnswer={onAnswer} onReveal={onReveal} />
       <div className="flex items-center justify-between gap-3">
         <Button tone="quiet" isDisabled={run.index === 0} onPress={onBack}>◀ {t('back')}</Button>
         <Button isDisabled={!!run.gate} onPress={onNext}>{run.done ? t('finish') : `${t('next')} ▶`}</Button>

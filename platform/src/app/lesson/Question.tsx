@@ -3,8 +3,8 @@ import { useT, useText } from '../i18n';
 import { Button } from '../ui/Button';
 import { Celebrate } from './Celebrate';
 
-/** The step's question: answer buttons, the tap hint or Yes/No; then "try again" or the right line. */
-export function Question({ run, onAnswer }: { run: LessonRun; onAnswer: (value: number) => void }) {
+/** The step's question: answer buttons, the tap hint or Yes/No; then "try again" or the right line. `showPrompt` false leaves the prompt to the caller. */
+export function Question({ run, onAnswer, showPrompt = true }: { run: LessonRun; onAnswer: (value: number) => void; showPrompt?: boolean }) {
   const t = useT(); const tx = useText();
   const q = run.step.question;
   if (!q) return null;
@@ -16,7 +16,7 @@ export function Question({ run, onAnswer }: { run: LessonRun; onAnswer: (value: 
 
   return (
     <div className="relative flex flex-col gap-3">
-      {prompt && <p className="text-lg font-black">{tx(prompt)}</p>}
+      {prompt && showPrompt && <p className="text-lg font-black">{tx(prompt)}</p>}
       {q.kind === 'tap' && open && <p className="text-ink-soft">{t('tapASquare')}</p>}
       {choices.length > 0 && (
         <div role="group" aria-label={prompt ? tx(prompt) : t('answerChoices')} className="flex flex-wrap gap-2">
