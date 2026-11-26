@@ -3,8 +3,8 @@ import type { Move } from '@core/chess/rules';
 import { formatSan } from '@core/chess/san';
 import { usePlayer, useT } from '../i18n';
 
-/** The game's moves as numbered buttons; the current one is marked; tapping a move goes there. */
-export function MoveStrip({ moves, ply, onPly, white, black, hideFromPly, startFen }: { startFen?: string; moves: Move[]; ply: number; onPly: (ply: number) => void; white?: string | undefined; black?: string | undefined; hideFromPly?: number | undefined }) {
+/** The game's moves as numbered buttons; the current one is marked; tapping a move goes there (not while `locked`). */
+export function MoveStrip({ moves, ply, onPly, white, black, hideFromPly, startFen, locked }: { locked?: boolean; startFen?: string; moves: Move[]; ply: number; onPly: (ply: number) => void; white?: string | undefined; black?: string | undefined; hideFromPly?: number | undefined }) {
   const t = useT();
   const locale = usePlayer()?.locale ?? 'pl';
   const nav = useRef<HTMLElement>(null);
@@ -25,8 +25,8 @@ export function MoveStrip({ moves, ply, onPly, white, black, hideFromPly, startF
             {i === 0 && off === 1 && <span className="text-sm text-ink-soft">{first}...</span>}
             {hideFromPly !== undefined && i >= hideFromPly
               ? <button type="button" disabled className="rounded-control px-2 py-1 font-mono font-bold text-ink-soft">?</button>
-              : <button type="button" aria-current={ply === i + 1 ? 'true' : undefined} onClick={() => onPly(i + 1)}
-                  className={`rounded-control px-2 py-1 font-mono font-bold ${ply === i + 1 ? 'bg-accent text-accent-ink' : 'hover:bg-surface'}`}>
+              : <button type="button" disabled={locked} aria-current={ply === i + 1 ? 'true' : undefined} onClick={() => onPly(i + 1)}
+                  className={`rounded-control px-2 py-1 font-mono font-bold ${ply === i + 1 ? 'bg-accent text-accent-ink' : locked ? '' : 'hover:bg-surface'}`}>
                   {formatSan(m.san, locale)}
                 </button>}
           </span>

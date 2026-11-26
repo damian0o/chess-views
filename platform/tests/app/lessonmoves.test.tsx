@@ -47,3 +47,30 @@ describe('move buttons on a lesson step from a game', () => {
     expect(screen.queryByRole('button', { name: 'Następny ruch' })).toBeNull();
   });
 });
+
+describe('the move list on a lesson step from a game', () => {
+  const list = () => screen.getByRole('navigation', { name: 'Ruchy' });
+  test('Lasker step 7: every move of the game is listed in order, and tapping one goes there', async () => {
+    const store = await open('/lesson/lasker-thomas/s07-board');
+    const moves = list().querySelectorAll('button');
+    expect(moves.length).toBe(35);
+    expect(list().querySelector('[aria-current]')).toBe(moves[21]);
+    fireEvent.click(moves[2]!);
+    expect(store.getState().run?.ply).toBe(3);
+    expect(list().querySelector('[aria-current]')).toBe(moves[2]);
+  });
+  test('while a find-the-move task is open, the moves after it are hidden and none can be tapped', async () => {
+    const store = await open('/lesson/lasker-thomas/s03-board');
+    const ply = store.getState().run!.ply;
+    const moves = [...list().querySelectorAll('button')] as HTMLButtonElement[];
+    expect(moves.every((b) => b.disabled)).toBe(true);
+    expect(moves.slice(ply).every((b) => b.textContent === '?')).toBe(true);
+    expect(moves.slice(0, ply).some((b) => b.textContent === '?')).toBe(false);
+    fireEvent.click(moves[0]!);
+    expect(store.getState().run?.ply).toBe(ply);
+  });
+  test('a step set up from a FEN has no move list', async () => {
+    await open('/lesson/scholars-mate/s15-board');
+    expect(screen.queryByRole('navigation', { name: 'Ruchy' })).toBeNull();
+  });
+});

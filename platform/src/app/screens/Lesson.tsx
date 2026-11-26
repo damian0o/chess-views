@@ -10,6 +10,7 @@ import { showsSquareNames } from '@core/storage/index';
 import { useApp, useAppStore } from '../appStore';
 import { useT } from '../i18n';
 import { Board } from '../board/Board';
+import { MoveStrip } from '../board/MoveStrip';
 import { TopBar } from '../ui/TopBar';
 import { Button } from '../ui/Button';
 import { StepCard } from '../lesson/StepCard';
@@ -56,11 +57,12 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   }, [step]);
   const solving = !!solveAt && run.gate?.kind === 'reveal';
   // A step from a game can be played on through the game with ◀ ▶, but not while a question or task is open.
-  const gameLength = useMemo(() => {
+  const game = useMemo(() => {
     const pos = step.scene.position;
-    if (pos.kind !== 'pgn') return 0;
-    try { return loadGame({ ...pos, ply: 0 }).length; } catch { return 0; }
+    if (pos.kind !== 'pgn') return null;
+    try { const g = loadGame({ ...pos, ply: 0 }); return { moves: g.moves(), startFen: g.fen(0) }; } catch { return null; }
   }, [step]);
+  const gameLength = game?.moves.length ?? 0;
   const movesLocked = !!run.gate;
   const solve = useSolve(solveAt?.fen ?? null, solveAt?.gameUci ?? null);
   const [pick, setPick] = useState<GuessState>({});
@@ -111,6 +113,11 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
               <Button tone="quiet" aria-label={t('nextMove')} isDisabled={movesLocked || run.ply >= gameLength} onPress={() => report({ kind: 'ply', ply: run.ply + 1 })}>▶</Button>
               <span className="font-bold text-ink-soft">{t('moveOfTotal', { n: run.ply, total: gameLength })}</span>
             </div>
+          )}
+          {/* The whole game in order; while a question or task is open the later moves stay hidden. */}
+          {game && gameLength > 0 && (
+            <MoveStrip moves={game.moves} ply={run.ply} startFen={game.startFen} locked={movesLocked}
+              hideFromPly={movesLocked ? run.ply : undefined} onPly={(ply) => report({ kind: 'ply', ply })} />
           )}
         </div>
         <StepCard run={run}
