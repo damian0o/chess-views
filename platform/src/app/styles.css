@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./theme/tokens.css";
+@import "./theme/crayons.css";
 
 /* Tailwind colour and radius names read the theme's CSS variables. */
 @theme inline {

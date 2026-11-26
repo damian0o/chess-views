@@ -22,7 +22,7 @@ async function pick(page: Page, look: string, mode: string) {
 }
 
 // Review Focus 5
-for (const look of ['Kolorowy', 'Spokojny', 'Prosty']) for (const mode of ['Jasny', 'Ciemny']) {
+for (const look of ['Kredki', 'Kolorowy', 'Spokojny', 'Prosty']) for (const mode of ['Jasny', 'Ciemny']) {
   test(`${look} / ${mode}: readable text, light board, no overflow`, async ({ page }, info) => {
     await addPlayer(page, 'Ola');
     await pick(page, look, mode);

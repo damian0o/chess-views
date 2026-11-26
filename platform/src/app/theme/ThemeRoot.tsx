@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import type { Profile } from '@core/types';
+import { CrayonDefs } from './CrayonDefs';
 
 const QUERY = '(prefers-color-scheme: dark)';
 const systemDark = () => typeof matchMedia === 'function' && matchMedia(QUERY).matches;
@@ -24,5 +25,5 @@ export function ThemeRoot({ profile, children }: { profile: Profile | null; chil
     document.documentElement.dataset.mode = mode;
     document.documentElement.lang = lang;
   }, [family, mode, lang]);
-  return <>{children}</>;
+  return <>{family === 'crayons' && <CrayonDefs />}{children}</>;
 }

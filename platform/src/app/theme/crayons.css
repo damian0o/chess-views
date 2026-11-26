@@ -1,0 +1,58 @@
+/*
+ * Kredki: the crayon layer, on only under [data-family="crayons"]. Colours come from tokens.css.
+ * Every element keeps its own solid background-color; the crayon grain is a background-image on top
+ * (gaps in the wax where the paper shows through), and outlines are a ::before drawn through #cv-rough.
+ * Pieces, square names and text are never filtered. Texture level 1 from the approved mockup.
+ */
+@import "@fontsource/patrick-hand/latin-400.css";
+@import "@fontsource/patrick-hand/latin-ext-400.css";
+
+[data-family="crayons"] {
+  --crayon-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5 0.08' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.5 -0.82'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+  --crayon-grain-board: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5 0.08' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.5 -0.82'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+[data-family="crayons"][data-mode="dark"] { --crayon-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5 0.08' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.122  0 0 0 0 0.114  0 0 0 0 0.169  0 0 0 1.5 -0.82'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E"); }
+
+/* The page: a notebook sheet (lines and a red margin) or black paper. */
+[data-family="crayons"] body {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(90deg, transparent 30px, var(--paper-margin) 30px 32px, transparent 32px),
+    repeating-linear-gradient(transparent 0 27px, var(--paper-lines) 27px 28px);
+  min-height: 100vh;
+}
+
+/* Crayon fills: coloured buttons, chips, the selected choice, avatars' colour, the board's squares. */
+[data-family="crayons"] :is(.bg-accent, .bg-accent-2, .bg-fun-1, .bg-fun-2, .bg-fun-3, .bg-fun-4, .bg-good, .bg-bad, [data-selected].data-\[selected\]\:bg-accent) {
+  background-image: var(--crayon-grain);
+}
+[data-family="crayons"] :is(.bg-board-light, .bg-board-dark) { background-image: var(--crayon-grain-board); }
+
+/* Hand-drawn outlines instead of rings and shadows. */
+[data-family="crayons"] :is(button, [role="radio"], label:has(input[type="radio"]), .rounded-card, [data-board]):not([role="gridcell"]) {
+  position: relative;
+  box-shadow: none;
+}
+[data-family="crayons"] :is(button, label:has(input[type="radio"]), .rounded-card):not([role="gridcell"]):not([role="option"])::before {
+  content: ""; position: absolute; inset: -1px; border: 3px solid var(--edge); border-radius: inherit;
+  filter: url(#cv-rough); pointer-events: none;
+}
+/* The board: a crayon frame drawn just outside the squares, so it never covers a square's name. */
+[data-family="crayons"] [data-board] { overflow: visible; border-radius: 4px; margin-block: 8px; }
+[data-family="crayons"] [data-board] > [role="grid"] { border-radius: 4px; overflow: hidden; }
+[data-family="crayons"] [data-board]::before {
+  content: ""; position: absolute; inset: -7px; z-index: 25; border: 4px solid var(--edge); border-radius: 10px;
+  filter: url(#cv-rough); pointer-events: none;
+}
+
+/* Handwriting for titles and small labels; the lesson text stays in the clear UI face. */
+[data-family="crayons"] :is(h1, h2, h3, .cv-hand) { font-family: "Patrick Hand", var(--font-ui); font-weight: 400; letter-spacing: 0.01em; }
+[data-family="crayons"] h1 { color: var(--title); font-size: 2.1rem; line-height: 1.1; }
+[data-family="crayons"] h2 { font-size: 1.85rem; }
+
+/* Paper prints plain. */
+@media print {
+  [data-family="crayons"] body, [data-family="crayons"] * { background-image: none !important; }
+  [data-family="crayons"] *::before { display: none !important; }
+  [data-family="crayons"] #print-sheet h1 { color: #000; font-family: var(--font-ui); }
+}

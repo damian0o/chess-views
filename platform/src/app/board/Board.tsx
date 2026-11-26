@@ -111,7 +111,7 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
   )) : null;
 
   return (
-    <div data-square-names={names ? 'true' : undefined} className={`relative mx-auto aspect-square w-full max-w-[min(92vw,34rem)] select-none overflow-hidden shadow-card ${names ? 'rounded-lg' : 'rounded-card'}`}>
+    <div data-board data-square-names={names ? 'true' : undefined} className={`relative mx-auto aspect-square w-full max-w-[min(92vw,34rem)] select-none overflow-hidden shadow-card ${names ? 'rounded-lg' : 'rounded-card'}`}>
       {diamond ? (
         <div role="grid" aria-label={t('viewBoard')} className="flex h-full w-full flex-col">{diamondRowsUi}</div>
       ) : (

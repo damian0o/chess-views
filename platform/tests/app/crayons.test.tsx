@@ -37,3 +37,15 @@ describe('Kredki follows the system mode', () => {
     expect([h.dataset.family, h.dataset.mode]).toEqual(['crayons', 'dark']);
   });
 });
+
+describe('the crayon filters', () => {
+  test('Kredki mounts the crayon filters; other looks do not', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }));
+    const { unmount } = render(<ThemeRoot profile={defaultProfile()}><p>x</p></ThemeRoot>);
+    expect(document.querySelector('filter#cv-rough')).not.toBeNull();
+    expect(document.querySelector('filter#cv-stroke')).not.toBeNull();
+    unmount();
+    render(<ThemeRoot profile={defaultProfile({ age: 'teens' })}><p>x</p></ThemeRoot>);
+    expect(document.querySelector('filter#cv-rough')).toBeNull();
+  });
+});
