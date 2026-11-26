@@ -13,7 +13,11 @@ import { Board } from '../board/Board';
 import { MoveStrip } from '../board/MoveStrip';
 import { TopBar } from '../ui/TopBar';
 import { Button } from '../ui/Button';
-import { StepCard } from '../lesson/StepCard';
+import { StepActions, StepCard } from '../lesson/StepCard';
+import { LessonDock } from '../lesson/LessonDock';
+import { PhoneRun } from '../lesson/PhoneRun';
+import { useIsPhone } from '../lesson/useIsPhone';
+import { dockHighlight } from '../lesson/sheet';
 import { ViewPicker } from '../lesson/ViewPicker';
 import { LegendPopup } from '../lesson/LegendPopup';
 import { lessonViews, viewOf } from '../views';
@@ -33,6 +37,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   const report = useApp((s) => s.report);
   const player = useApp((s) => s.player);
   const isRound = useApp((s) => s.round !== null);
+  const phone = useIsPhone();
   const scene = sceneOfRun(run);
   const q = run.step.question;
   const answering = run.gate?.kind === 'answer';
@@ -89,24 +94,55 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
     if (!r) onDone(); else onStep(r);
   };
 
+  const topBar = <TopBar title={run.lesson.title} up={isRound ? undefined : { to: `/room/${roomOfLesson(run.lesson)}`, label: t(ROOM_NAME[roomOfLesson(run.lesson)]) }} extra={<span className="font-bold text-ink-soft">{run.index + 1}/{run.total}</span>} />;
+  const board = (
+    <Board scene={boardScene} flip={scene.flip} squareNames={!!player && showsSquareNames(player)}
+      onSquare={tapOpen ? (sq) => { setLastTap(sq); report({ kind: 'answer', value: sq }); } : solving ? onSolveTap : undefined}
+      tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}), ...solveMarks }} />
+  );
+  const tools = (
+    <div className="flex flex-wrap items-center gap-2">
+      <ViewPicker views={views} selected={view.id} allowed={run.allowedLayers} disabled={answering && isBlocks(run.step)}
+        onChange={(v) => report({ kind: 'layers', on: v.layers })} />
+      <LegendPopup view={view} />
+      {isBlocks(run.step) && !answering && (
+        <Button tone="quiet" onPress={() => report({ kind: 'layers', on: run.layersOn.includes('pieces') ? run.layersOn.filter((l) => l !== 'pieces') : [...run.layersOn, 'pieces'] })}>
+          {t(run.layersOn.includes('pieces') ? 'hidePieces' : 'showPieces')}
+        </Button>
+      )}
+    </div>
+  );
+  // The whole game in order; while a question or task is open the later moves stay hidden.
+  const moveList = game && gameLength > 0 && (
+    <MoveStrip moves={game.moves} ply={run.ply} startFen={game.startFen} locked={movesLocked}
+      hideFromPly={movesLocked ? run.ply : undefined} onPly={(ply) => report({ kind: 'ply', ply })} />
+  );
+  const solveView = { state: solve.state, tries: solve.tries, hint, solving, gameSan: solveAt?.gameSan ?? null };
+  const onReveal = () => { setPick({}); report({ kind: 'ply', ply: (solveAt?.ply ?? run.ply) + 1 }); };
+  const onAnswer = (v: number) => report({ kind: 'answer', value: v });
+  const onBack = () => void after(() => store.getState().back())();
+  const onNext = () => void after(() => store.getState().next())();
+  const live = <p className="sr-only" aria-live="polite">{t('stepOf', { n: run.index + 1, total: run.total })}</p>;
+
+  if (phone) {
+    return (
+      <>
+        <PhoneRun run={run} topBar={topBar} board={board} onBack={onBack}
+          actions={<div className="relative flex flex-col gap-3 px-1"><StepActions run={run} solve={solveView} onAnswer={onAnswer} onReveal={onReveal} /></div>}
+          tools={<>{tools}{moveList}</>}
+          dock={<LessonDock run={run} gameLength={gameLength} movesLocked={movesLocked} onPly={(ply) => report({ kind: 'ply', ply })} onNext={onNext} highlight={dockHighlight(run)} />} />
+        {live}
+      </>
+    );
+  }
+
   return (
     <>
-      <TopBar title={run.lesson.title} up={isRound ? undefined : { to: `/room/${roomOfLesson(run.lesson)}`, label: t(ROOM_NAME[roomOfLesson(run.lesson)]) }} extra={<span className="font-bold text-ink-soft">{run.index + 1}/{run.total}</span>} />
+      {topBar}
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
-          <Board scene={boardScene} flip={scene.flip} squareNames={!!player && showsSquareNames(player)}
-            onSquare={tapOpen ? (sq) => { setLastTap(sq); report({ kind: 'answer', value: sq }); } : solving ? onSolveTap : undefined}
-            tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}), ...solveMarks }} />
-          <div className="flex flex-wrap items-center gap-2">
-            <ViewPicker views={views} selected={view.id} allowed={run.allowedLayers} disabled={answering && isBlocks(run.step)}
-              onChange={(v) => report({ kind: 'layers', on: v.layers })} />
-            <LegendPopup view={view} />
-            {isBlocks(run.step) && !answering && (
-              <Button tone="quiet" onPress={() => report({ kind: 'layers', on: run.layersOn.includes('pieces') ? run.layersOn.filter((l) => l !== 'pieces') : [...run.layersOn, 'pieces'] })}>
-                {t(run.layersOn.includes('pieces') ? 'hidePieces' : 'showPieces')}
-              </Button>
-            )}
-          </div>
+          {board}
+          {tools}
           {gameLength > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <Button tone="quiet" aria-label={t('prevMove')} isDisabled={movesLocked || run.ply <= 0} onPress={() => report({ kind: 'ply', ply: run.ply - 1 })}>◀</Button>
@@ -114,20 +150,11 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
               <span className="font-bold text-ink-soft">{t('moveOfTotal', { n: run.ply, total: gameLength })}</span>
             </div>
           )}
-          {/* The whole game in order; while a question or task is open the later moves stay hidden. */}
-          {game && gameLength > 0 && (
-            <MoveStrip moves={game.moves} ply={run.ply} startFen={game.startFen} locked={movesLocked}
-              hideFromPly={movesLocked ? run.ply : undefined} onPly={(ply) => report({ kind: 'ply', ply })} />
-          )}
+          {moveList}
         </div>
-        <StepCard run={run}
-          solve={{ state: solve.state, tries: solve.tries, hint, solving, gameSan: solveAt?.gameSan ?? null }}
-          onAnswer={(v) => report({ kind: 'answer', value: v })}
-          onReveal={() => { setPick({}); report({ kind: 'ply', ply: (solveAt?.ply ?? run.ply) + 1 }); }}
-          onBack={() => void after(() => store.getState().back())()}
-          onNext={() => void after(() => store.getState().next())()} />
+        <StepCard run={run} solve={solveView} onAnswer={onAnswer} onReveal={onReveal} onBack={onBack} onNext={onNext} />
       </main>
-      <p className="sr-only" aria-live="polite">{t('stepOf', { n: run.index + 1, total: run.total })}</p>
+      {live}
     </>
   );
 }
