@@ -92,6 +92,7 @@ export const en = {
   langPl: "Polski",
   langEn: "English",
   menu: "Menu",
+  lookCrayons: "Crayons",
   lookKids: "Colourful",
   lookTeens: "Calm",
   lookAdults: "Simple",

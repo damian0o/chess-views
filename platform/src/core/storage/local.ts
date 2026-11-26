@@ -4,7 +4,7 @@
  * (blocked, private mode) behaves as empty with writes dropped. Loading never throws.
  */
 import { ProfileSchema, type AgeBand, type Avatar, type Locale, type Profile } from '../types';
-import { migrateProfile } from './migrate';
+import { lookForAge, migrateProfile } from './migrate';
 import { EXPORT_FORMAT, type ProfileStore, type ProfileSummary, type StorageLike } from './store';
 
 type Record_ = { profiles: Record<string, unknown> };
@@ -22,7 +22,7 @@ export function defaultProfile(opts: { name?: string; age?: AgeBand; locale?: Lo
   const age = opts.age ?? 'kids';
   return {
     version: 2, id: newId(), ...(opts.name ? { name: opts.name } : {}), age, experience: 'basic', locale: opts.locale ?? 'pl',
-    theme: { family: age, mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'], avatar: opts.avatar ?? 'violet',
+    theme: { family: lookForAge(age), mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'], avatar: opts.avatar ?? 'violet',
   };
 }
 

@@ -28,9 +28,9 @@ describe('ThemeRoot', () => {
     act(() => flip(true));
     expect(html().dataset.mode).toBe('dark');
   });
-  test('no profile gives kids and the system mode', () => {
+  test('no profile gives Kredki and the system mode', () => {
     fakeMedia(true);
     render(<ThemeRoot profile={null}><p>x</p></ThemeRoot>);
-    expect([html().dataset.family, html().dataset.mode]).toEqual(['kids', 'dark']);
+    expect([html().dataset.family, html().dataset.mode]).toEqual(['crayons', 'dark']);
   });
 });

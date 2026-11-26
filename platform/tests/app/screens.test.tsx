@@ -73,6 +73,15 @@ describe('Settings', () => {
     await waitFor(() => expect(store.getState().player?.age).toBe('teens'));
     expect(store.getState().player?.theme.family).toBe('teens');
   });
+  test('the look list starts with Kredki, and choosing 8–12 picks Kredki', async () => {
+    const store = makeStore();
+    await store.getState().addPlayer({ name: 'Ola', age: 'teens' });
+    mount(<Settings />, { store });
+    const looks = within(screen.getByRole('radiogroup', { name: 'Wygląd' })).getAllByRole('radio').map((r) => r.closest('label')?.textContent?.trim());
+    expect(looks).toEqual(['Kredki', 'Kolorowy', 'Spokojny', 'Prosty']);
+    fireEvent.click(screen.getByRole('radio', { name: '8–12' }));
+    await waitFor(() => expect(store.getState().player?.theme.family).toBe('crayons'));
+  });
   test('remove asks for confirmation', async () => {
     const store = makeStore();
     await store.getState().addPlayer({ name: 'Ola' });

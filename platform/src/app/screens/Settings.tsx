@@ -7,7 +7,7 @@ import { useT } from '../i18n';
 import { Button } from '../ui/Button';
 import { Choice } from '../ui/Choice';
 import { Toggle } from '../ui/Toggle';
-import { showsSquareNames } from '@core/storage/index';
+import { lookForAge, showsSquareNames } from '@core/storage/index';
 import { TopBar } from '../ui/TopBar';
 
 /** The player's settings: name, age band, language, look, light/dark, square names, save/load to a file, remove. */
@@ -43,12 +43,12 @@ export function Settings() {
           <Input className="rounded-control bg-card px-4 py-3 text-lg ring-2 ring-ink/15" />
         </TextField>
         <Choice label={t('ageBand')} value={player.age}
-          onChange={(age) => void update({ age, theme: { ...player.theme, family: age } })}
+          onChange={(age) => void update({ age, theme: { ...player.theme, family: lookForAge(age) } })}
           options={(['kids', 'teens', 'adults'] as const).map((a) => ({ value: a, label: ageLabel(a) }))} />
         <Choice label={t('language')} value={player.locale} onChange={(locale: Locale) => void update({ locale })}
           options={[{ value: 'pl', label: t('langPl') }, { value: 'en', label: t('langEn') }]} />
         <Choice label={t('themeFamily')} value={player.theme.family} onChange={(family) => void update({ theme: { ...player.theme, family } })}
-          options={[{ value: 'kids', label: t('lookKids') }, { value: 'teens', label: t('lookTeens') }, { value: 'adults', label: t('lookAdults') }]} />
+          options={[{ value: 'crayons', label: t('lookCrayons') }, { value: 'kids', label: t('lookKids') }, { value: 'teens', label: t('lookTeens') }, { value: 'adults', label: t('lookAdults') }]} />
         <Choice label={t('themeMode')} value={player.theme.mode} onChange={(mode: Profile['theme']['mode']) => void update({ theme: { ...player.theme, mode } })}
           options={[{ value: 'light', label: t('modeLight') }, { value: 'dark', label: t('modeDark') }, { value: 'system', label: t('modeSystem') }]} />
         <Toggle isSelected={showsSquareNames(player)} onChange={(on) => void update({ squareNames: on })}>{t('squareNames')}</Toggle>

@@ -93,6 +93,7 @@ export const pl: Record<keyof typeof en, Message> = {
   langPl: "Polski",
   langEn: "English",
   menu: "Menu",
+  lookCrayons: "Kredki",
   lookKids: "Kolorowy",
   lookTeens: "Spokojny",
   lookAdults: "Prosty",

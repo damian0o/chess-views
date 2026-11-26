@@ -6,7 +6,7 @@ const systemDark = () => typeof matchMedia === 'function' && matchMedia(QUERY).m
 
 /** Puts the player's theme on <html>: data-family (kids/teens/adults) and data-mode (light/dark, "system" followed live). */
 export function ThemeRoot({ profile, children }: { profile: Profile | null; children: ReactNode }) {
-  const family = profile?.theme.family ?? 'kids';
+  const family = profile?.theme.family ?? 'crayons';
   const wanted = profile?.theme.mode ?? 'system';
   const [dark, setDark] = useState(systemDark);
   useEffect(() => {

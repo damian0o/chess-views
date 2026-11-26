@@ -1,4 +1,9 @@
-import { ProfileSchema, ProfileV1Schema, type Profile } from '../types';
+import { ProfileSchema, ProfileV1Schema, type AgeBand, type Profile, type ThemeFamily } from '../types';
+
+/** The look a new player of this age starts with: Kredki for 8–12, the age's own look otherwise. */
+export function lookForAge(age: AgeBand): ThemeFamily {
+  return age === 'kids' ? 'crayons' : age;
+}
 
 /**
  * A stored profile of any known version as the current one, or null when it is not a profile at all.
@@ -34,7 +39,7 @@ function repair(raw: unknown): Profile | null {
     version: 2 as const, id: r.id, ...(name ? { name } : {}), age,
     experience: pick(S.experience, r.experience, 'basic'),
     locale: pick(S.locale, r.locale, 'pl'),
-    theme: { family: pick(S.theme.shape.family, theme.family, age), mode: pick(S.theme.shape.mode, theme.mode, 'system') },
+    theme: { family: pick(S.theme.shape.family, theme.family, lookForAge(age)), mode: pick(S.theme.shape.mode, theme.mode, 'system') },
     pieceStyle: pick(S.pieceStyle, r.pieceStyle, 'images'),
     ...(typeof r.squareNames === 'boolean' ? { squareNames: r.squareNames } : {}),
     progress,

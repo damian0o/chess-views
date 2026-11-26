@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createLocalProfileStore, defaultProfile, type StorageLike } from '@core/storage/index';
+import { createLocalProfileStore, defaultProfile, lookForAge, migrateProfile, type StorageLike } from '@core/storage/index';
 import { ProfileSchema } from '@core/types';
 
 const memory = (init: Record<string, string> = {}): StorageLike & { data: Record<string, string> } => {
@@ -13,8 +13,26 @@ describe('defaultProfile', () => {
   test('is a valid Polish kids profile with pieces unlocked', () => {
     const p = defaultProfile();
     expect(ProfileSchema.safeParse(p).success).toBe(true);
-    expect([p.locale, p.age, p.experience, p.theme.family, p.theme.mode, p.pieceStyle]).toEqual(['pl', 'kids', 'basic', 'kids', 'system', 'images']);
+    expect([p.locale, p.age, p.experience, p.theme.family, p.theme.mode, p.pieceStyle]).toEqual(['pl', 'kids', 'basic', 'crayons', 'system', 'images']);
     expect(p.unlockedLayers).toEqual(['pieces']);
+  });
+});
+
+describe('the Kredki look', () => {
+  test('each age gets its own default look: 8–12 Kredki', () => {
+    expect(['kids', 'teens', 'adults'].map((a) => defaultProfile({ age: a as never }).theme.family)).toEqual(['crayons', 'teens', 'adults']);
+    expect(lookForAge('kids')).toBe('crayons');
+  });
+  test('a saved Kolorowy profile stays Kolorowy', () => {
+    const p = { ...defaultProfile(), theme: { family: 'kids', mode: 'dark' } };
+    expect(migrateProfile(p)!.theme.family).toBe('kids');
+  });
+  test('an unknown look is repaired to the age default', () => {
+    const p = { ...defaultProfile({ age: 'kids' }), theme: { family: 'foo', mode: 'light' } };
+    expect(migrateProfile(p)!.theme).toEqual({ family: 'crayons', mode: 'light' });
+  });
+  test('crayons is a valid look', () => {
+    expect(ProfileSchema.safeParse({ ...defaultProfile({ age: 'adults' }), theme: { family: 'crayons', mode: 'system' } }).success).toBe(true);
   });
 });
 

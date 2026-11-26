@@ -38,6 +38,10 @@ export type PositionSource = z.infer<typeof PositionSourceSchema>;
 // ---------- audience ----------
 
 export const AgeBandSchema = z.enum(AGE_BANDS);
+/** The look: one per age band, plus Kredki (crayons). */
+export const THEME_FAMILIES = ['kids', 'teens', 'adults', 'crayons'] as const;
+export const ThemeFamilySchema = z.enum(THEME_FAMILIES);
+export type ThemeFamily = z.infer<typeof ThemeFamilySchema>;
 export type AgeBand = z.infer<typeof AgeBandSchema>;
 export const ExperienceSchema = z.enum(EXPERIENCES);
 export type Experience = z.infer<typeof ExperienceSchema>;
@@ -157,7 +161,7 @@ const profileFields = {
   age: AgeBandSchema,
   experience: ExperienceSchema,
   locale: LocaleSchema,
-  theme: z.object({ family: AgeBandSchema, mode: z.enum(['light', 'dark', 'system']) }),
+  theme: z.object({ family: ThemeFamilySchema, mode: z.enum(['light', 'dark', 'system']) }),
   pieceStyle: z.enum(['images', 'letters']),
   /** Names on every board square; unset means the age default (on for 8–12). */
   squareNames: z.boolean().optional(),
