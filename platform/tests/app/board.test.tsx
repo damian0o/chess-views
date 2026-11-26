@@ -33,6 +33,12 @@ describe('Board', () => {
     const ring = document.querySelector('[data-ring="f7"]') as HTMLElement | null;
     expect(ring?.dataset.attackers).toBe('2');
   });
+  test('the roads layer is marked for the crayon look; the engine-arrow overlay is not', () => {
+    render(<Board scene={scene(SCHOLAR, ['pieces', 'roads'])} overlay={<line x1={0} y1={0} x2={1} y2={1} />} />);
+    const layer = document.querySelector('[data-layer="roads"]');
+    expect(layer?.querySelector('[data-ring="f7"]')).not.toBeNull();
+    expect(document.querySelectorAll('[data-layer]')).toHaveLength(1);
+  });
   test('the king houses layer outlines the squares around each king', () => {
     render(<Board scene={scene(START, ['pieces', 'kings'])} />);
     expect(cell('f2').dataset.house).toBe('w');

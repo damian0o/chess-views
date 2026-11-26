@@ -45,6 +45,10 @@
   filter: url(#cv-rough); pointer-events: none;
 }
 
+/* Marks on the board: roads drawn with a crayon, blocks with a hand-drawn edge. Pieces stay sharp above them. */
+[data-family="crayons"] [data-layer="roads"] { filter: url(#cv-stroke); }
+[data-family="crayons"] [data-block] { filter: url(#cv-rough); }
+
 /* Handwriting for titles and small labels; the lesson text stays in the clear UI face. */
 [data-family="crayons"] :is(h1, h2, h3, .cv-hand) { font-family: "Patrick Hand", var(--font-ui); font-weight: 400; letter-spacing: 0.01em; }
 [data-family="crayons"] h1 { color: var(--title); font-size: 2.1rem; line-height: 1.1; }

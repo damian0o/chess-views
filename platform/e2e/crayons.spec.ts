@@ -23,3 +23,32 @@ test('Kredki: the print sheet prints without paper lines or handwriting colour',
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).backgroundImage)).toBe('none');
   expect(await page.evaluate(style('#print-sheet h1', 'color'))).toBe('rgb(0, 0, 0)');
 });
+
+// Review Focus 3
+test('Kredki: roads are drawn in crayon under sharp pieces; letters and square names stay sharp', async ({ page }) => {
+  await page.addInitScript(() => {
+    const p = { version: 2, id: 'p1', name: 'Ola', age: 'kids', experience: 'basic', locale: 'pl', theme: { family: 'crayons', mode: 'light' }, pieceStyle: 'images',
+      progress: {}, unlockedLayers: ['pieces', 'roads', 'territory', 'shapes'], avatar: 'violet' };
+    localStorage.setItem('chess-views:profiles', JSON.stringify({ profiles: { p1: p } })); localStorage.setItem('chess-views:current-player', 'p1');
+  });
+  await page.goto('./#/lesson/eyes-on-f7/s03-roads');
+  await expect(page.locator('[data-layer="roads"]')).toBeVisible();
+  expect(await page.evaluate(style('[data-layer="roads"]', 'filter'))).toContain('cv-stroke');
+  const c4 = (await page.locator('[data-square="c4"]').boundingBox())!;
+  expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.tagName, [c4.x + c4.width / 2, c4.y + c4.height / 2])).toBe('IMG');
+  await page.evaluate(() => {
+    const all = JSON.parse(localStorage.getItem('chess-views:profiles')!); all.profiles.p1.pieceStyle = 'letters';
+    localStorage.setItem('chess-views:profiles', JSON.stringify(all));
+  });
+  await page.reload();
+  await expect(page.locator('[data-square="c4"] span[aria-hidden]').first()).toBeVisible();
+  expect(await page.evaluate(style('[data-square="c4"] span[aria-hidden]', 'filter'))).toBe('none');
+  expect(await page.evaluate(style('[data-square-name]', 'filter'))).toBe('none');
+});
+
+test('Kredki: blocks get a hand-drawn edge', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await page.goto('./#/lesson/eyes-on-f7/s02-blocks');
+  await expect(page.locator('[data-block]').first()).toBeVisible();
+  expect(await page.evaluate(style('[data-block]', 'filter'))).toContain('cv-rough');
+});
