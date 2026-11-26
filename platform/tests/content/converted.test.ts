@@ -27,6 +27,8 @@ describe('converted content', () => {
   };
   // Rewritten after parity (2026-11-26): ideas on f7 that scholar's mate does not already teach.
   const REWRITTEN = ['eyes-on-f7'];
+  // Steps that now open at the start of their game, so the child plays the first moves with ▶.
+  const FROM_START: Record<string, number[]> = { 'scholars-mate': [1] };
   test('English lessons match the proof of concept step by step', () => {
     for (const poc of POC.lessons.filter((l) => !REWRITTEN.includes(l.id))) {
       const L = out.lessons.en.find((l: Lesson) => l.id === poc.id);
@@ -36,7 +38,8 @@ describe('converted content', () => {
       L!.steps.forEach((s, i) => {
         const raw = poc.steps[i]!;
         const pocFen = raw.recall ? fenOf((resolveMoments(poc, POC.positions) as { id: string; source: PositionSource }[]).find((m) => m.id === raw.moment)!.source) : fenOf(steps[i]!.source);
-        expect(fenOf(s.scene.position), `${poc.id} step ${i + 1}`).toBe(pocFen);
+        if (FROM_START[poc.id]?.includes(i + 1)) expect(s.scene.position, `${poc.id} step ${i + 1}`).toMatchObject({ kind: 'pgn', ply: 0 });
+        else expect(fenOf(s.scene.position), `${poc.id} step ${i + 1}`).toBe(pocFen);
         const q = s.question;
         const changed = CHANGED[poc.id]?.[i + 1];
         if (changed) expect(q, `${poc.id} step ${i + 1}`).toMatchObject(changed);

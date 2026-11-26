@@ -23,13 +23,13 @@ moments:
 ---
 <!-- draft: review -->
 
-## s01-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 5, moment: "attack"}
+## s01-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 0, moment: "attack"}
 
 ::: kids
-Trzy ruchy białych. Zobacz teraz, w co celują.
+Naciskaj ▶ i zagraj pierwsze ruchy partii: e4 e5, Gc4 Sc6, Hh5. Po trzech ruchach białych zobacz, w co celują.
 :::
 
-## s02-houses {scene: "board+kings", same: true, moment: "attack"}
+## s02-houses {scene: "board+kings", same: true, ply: 5, moment: "attack"}
 
 ::: kids
 f7 to najsłabsze pole w domku czarnych: pilnuje go tylko król.

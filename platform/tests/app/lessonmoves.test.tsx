@@ -74,3 +74,17 @@ describe('the move list on a lesson step from a game', () => {
     expect(screen.queryByRole('navigation', { name: 'Ruchy' })).toBeNull();
   });
 });
+
+describe('Mat szkolny, step 1: the child plays the first moves', () => {
+  test('the step opens at the start of the game and ▶ plays the moves; step 2 shows the position after Hh5', async () => {
+    const store = await open('/lesson/scholars-mate/s01-board');
+    expect(store.getState().run?.ply).toBe(0);
+    expect(screen.getByText('Ruch 0 z 5')).toBeTruthy();
+    for (let i = 0; i < 5; i++) fireEvent.click(fwd());
+    expect(store.getState().run?.ply).toBe(5);
+    expect(fwd().disabled).toBe(true);
+    await store.getState().next();
+    expect(store.getState().run?.step.id).toBe('s02-houses');
+    expect(store.getState().run?.ply).toBe(5);
+  });
+});
