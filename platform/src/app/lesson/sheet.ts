@@ -7,11 +7,12 @@ export function readingPauseMs(text: string): number {
 
 /**
  * Where the board sheet settles after a drag: past a third of its travel, or a flick faster than
- * 0.5 px/ms, in the direction it can go; otherwise it springs back. dy and vy are negative upward.
+ * 0.5 px/ms over at least 32 px, in the direction it can go; otherwise it springs back. dy and vy are negative upward.
  */
 export function sheetAfterDrag(start: 'up' | 'down', dy: number, travel: number, vy: number): 'up' | 'down' {
-  if (start === 'down') return -dy > travel / 3 || vy < -0.5 ? 'up' : 'down';
-  return dy > travel / 3 || vy > 0.5 ? 'down' : 'up';
+  const FLICK = 32;
+  if (start === 'down') return -dy > travel / 3 || (vy < -0.5 && -dy >= FLICK) ? 'up' : 'down';
+  return dy > travel / 3 || (vy > 0.5 && dy >= FLICK) ? 'down' : 'up';
 }
 
 /** The one dock control to press now: ▶ while a play-through step waits, Next when open, nothing while a question or task is open. */

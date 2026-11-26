@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { readingPauseMs } from '../../src/app/lesson/sheet';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { AppRoutes } from '../../src/app/App';
 import { makeStore, mount } from './helpers/harness';
@@ -79,5 +80,51 @@ describe('a lesson on a phone', () => {
     expect(document.querySelector('[data-sheet]')).toBeNull();
     expect(screen.getByText('Ruch 23 z 35')).toBeTruthy();
     expect(store.getState().run?.ply).toBe(23);
+  });
+});
+
+describe('pulling the board sheet', () => {
+  const handle = () => screen.getByRole('button', { name: 'Rozumiem, pokaż planszę' });
+  const drag = (el: Element, from: number, to: number) => {
+    fireEvent.pointerDown(el, { clientY: from, pointerId: 1 });
+    fireEvent.pointerMove(el, { clientY: (from + to) / 2, pointerId: 1 });
+    fireEvent.pointerMove(el, { clientY: to, pointerId: 1 });
+    fireEvent.pointerUp(el, { clientY: to, pointerId: 1 });
+  };
+  test('the edge starts to glow only after the reading pause', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await open('/lesson/scholars-mate/s02-houses');
+      expect(sheet().hasAttribute('data-glow')).toBe(false);
+      const text = 'f7 to najsłabsze pole w domku czarnych: pilnuje go tylko król.';
+      act(() => { vi.advanceTimersByTime(readingPauseMs(text) + 10); });
+      expect(sheet().getAttribute('data-glow')).toBe('true');
+      pull();
+      expect(sheet().hasAttribute('data-glow')).toBe(false);
+    } finally { vi.useRealTimers(); }
+  });
+  test('a drag past a third of the way pulls the sheet up and says Rozumiem', async () => {
+    await open('/lesson/scholars-mate/s02-houses');
+    drag(handle(), 700, 300);
+    expect(sheet().dataset.sheet).toBe('up');
+    expect(document.querySelector('[data-sheet-flash]')?.textContent).toBe('✓ Rozumiem!');
+  });
+  test('a short drag springs back', async () => {
+    await open('/lesson/scholars-mate/s02-houses');
+    drag(handle(), 700, 680);
+    expect(sheet().dataset.sheet).toBe('down');
+  });
+  test('dragging down on the strip takes the sheet back to the instruction', async () => {
+    await open('/lesson/scholars-mate/s02-houses');
+    pull();
+    drag(screen.getByRole('button', { name: 'Pokaż instrukcję' }), 60, 500);
+    expect(sheet().dataset.sheet).toBe('down');
+  });
+  test('a drag on the board never moves the sheet', async () => {
+    await open('/lesson/scholars-mate/s02-houses');
+    pull();
+    drag(document.querySelector('[data-square="e2"]')!, 600, 100);
+    drag(document.querySelector('[data-square="e2"]')!, 100, 700);
+    expect(sheet().dataset.sheet).toBe('up');
   });
 });

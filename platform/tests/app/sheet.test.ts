@@ -26,6 +26,7 @@ describe('lesson sheet decisions', () => {
     expect(sheetAfterDrag('up', 100, 700, 0)).toBe('up');
     expect(sheetAfterDrag('up', 40, 700, 0.9)).toBe('down');
     expect(sheetAfterDrag('down', 200, 700, 0.9)).toBe('down');   // pulling a resting sheet down does nothing
+    expect(sheetAfterDrag('down', -20, 700, -5)).toBe('down');    // a flick needs some distance: a jittery tap is not one
   });
   test('dock highlight: ▶ while a playTo step waits, Dalej when open, nothing while a question or task is open', () => {
     const play = startLesson(lessonOf(step('walk', { playTo: 5 }, 0)), kid)!;

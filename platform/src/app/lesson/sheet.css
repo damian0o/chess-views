@@ -1,0 +1,15 @@
+/* The phone's board sheet: resting with its top edge peeking, sliding up over the instruction. */
+.cv-sheet {
+  transform: translateY(calc(100dvh - var(--peek, 132px)));
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 1.25rem 1.25rem 0 0;
+  box-shadow: 0 -6px 18px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.cv-sheet[data-sheet='up'] { transform: none; border-radius: 0; }
+/* After the reading pause: the edge glows and nudges, asking to be pulled. */
+.cv-sheet[data-glow] { animation: cv-nudge 1.4s ease-in-out infinite; }
+.cv-sheet[data-glow] .cv-handle { animation: cv-glow 1.4s ease-in-out infinite; }
+@keyframes cv-nudge { 50% { transform: translateY(calc(100dvh - var(--peek, 132px) - 12px)); } }
+@keyframes cv-glow { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent-2) 70%, transparent); } }
+.cv-flash { animation: cv-flash 0.7s ease-out both; }
+@keyframes cv-flash { from { opacity: 0; transform: translate(-50%, 0) scale(0.6); } 30% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } to { opacity: 0; transform: translate(-50%, 0) scale(1); } }

@@ -4,6 +4,7 @@ import { useT, useText } from '../i18n';
 import { Button } from '../ui/Button';
 import { StepText } from './StepText';
 import { BoardSheet } from './BoardSheet';
+import { readingPauseMs } from './sheet';
 
 /**
  * A lesson step on a phone: the instruction first; the child pulls the board up (that is the "Rozumiem"),
@@ -43,7 +44,8 @@ export function PhoneRun({ run, topBar, board, actions, tools, dock, onBack }: {
         </main>
       </div>
       <BoardSheet up={up} onUp={open} onDown={close} stripRef={strip} strip={tx(run.step.explain)}
-        counter={`${run.index + 1}/${run.total}`} dock={dock}>
+        counter={`${run.index + 1}/${run.total}`} dock={dock} resetKey={run.step.id}
+        pauseMs={readingPauseMs(`${tx(run.step.explain)} ${run.step.question?.prompt ? tx(run.step.question.prompt) : ''}`.trim())}>
         {board}
         {actions}
         {tools}
