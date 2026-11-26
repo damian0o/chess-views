@@ -128,3 +128,13 @@ describe('pulling the board sheet', () => {
     expect(sheet().dataset.sheet).toBe('up');
   });
 });
+
+describe('the sheet on old phones', () => {
+  test('every dvh size has a vh fallback before it, so a phone without dvh still rests the sheet below the text', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync(`${process.cwd()}/src/app/lesson/sheet.css`, 'utf8');
+    const rule = css.slice(css.indexOf('.cv-sheet {'), css.indexOf('}', css.indexOf('.cv-sheet {')));
+    expect(rule).toMatch(/height: 100vh;[\s\S]*height: 100dvh;/);
+    expect(rule).toMatch(/translateY\(calc\(100vh[^;]*;[\s\S]*translateY\(calc\(100dvh/);
+  });
+});

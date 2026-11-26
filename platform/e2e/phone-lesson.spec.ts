@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addPlayer, openBoard } from './helpers';
+import { addPlayer, openBoard, pressNext } from './helpers';
 
 const SIZES = [{ width: 390, height: 844 }, { width: 360, height: 640 }];
 const inView = async (page: Page, sel: ReturnType<Page['locator']>) => {
@@ -40,6 +40,28 @@ test.describe('a lesson on a phone', () => {
     const sheetTop = (await page.locator('[data-sheet]').boundingBox())!.y;
     expect(b.y + b.height).toBeLessThanOrEqual(sheetTop);
     await expect(page.getByRole('button', { name: 'Rozumiem, pokaż planszę' })).toBeInViewport();
+  });
+  test('Kredki: the control to press now is visibly highlighted, not only marked', async ({ page }) => {
+    await addPlayer(page, 'Ola');   // 8–12 opens in Kredki
+    await page.goto('./#/lesson/scholars-mate/s01-board');
+    await openBoard(page);
+    const play = page.locator('[data-dock] [data-highlight="true"]');
+    await expect(play).toHaveAccessibleName('Następny ruch');
+    const o = await play.evaluate((el) => { const s = getComputedStyle(el); return { style: s.outlineStyle, width: parseFloat(s.outlineWidth) }; });
+    expect(o.style).toBe('solid');
+    expect(o.width).toBeGreaterThanOrEqual(3);
+  });
+  test('360×640: a sheet scrolled down on one step opens at the top of the board on the next', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await addPlayer(page, 'Ola');
+    await page.goto('./#/lesson/lasker-thomas/s07-board');
+    await openBoard(page);
+    const scroller = page.locator('[data-sheet-body] > div').first();
+    await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    expect(await scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    await pressNext(page);
+    await openBoard(page);
+    expect(await page.locator('[data-sheet-body] > div').first().evaluate((el) => el.scrollTop)).toBe(0);
   });
   test('a find-the-move task is played on the sheet and the sheet stays up', async ({ page }) => {
     await addPlayer(page, 'Ola');

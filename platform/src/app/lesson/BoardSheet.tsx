@@ -68,7 +68,7 @@ export function BoardSheet({ up, onUp, onDown, strip, counter, children, dock, s
   return (
     <section ref={root} data-sheet={up ? 'up' : 'down'} data-glow={glow && !up && dragY === null ? 'true' : undefined} aria-label={t('viewBoard')}
       style={{ ...style, ['--peek' as string]: `${PEEK}px` }}
-      className="cv-sheet fixed inset-x-0 top-0 z-40 flex h-[100dvh] flex-col bg-surface">
+      className="cv-sheet fixed inset-x-0 top-0 z-40 flex flex-col bg-surface">
       {up ? (
         <button ref={stripRef} type="button" aria-label={t('sheetClose')} onClick={click(onDown)} {...grab}
           className="flex min-h-12 touch-none items-center gap-2 border-b-2 border-ink/10 px-3 py-1 text-left font-bold">
@@ -84,7 +84,8 @@ export function BoardSheet({ up, onUp, onDown, strip, counter, children, dock, s
         </div>
       )}
       <div data-sheet-body inert={!up} className="flex min-h-0 flex-1 flex-col">
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3">{children}</div>
+        {/* Keyed by step: a new step's board always starts at the top, however far the last one was scrolled. */}
+        <div key={resetKey} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3">{children}</div>
         {dock}
       </div>
       {flash && <p data-sheet-flash role="status" className="cv-flash pointer-events-none absolute left-1/2 top-1/3 z-50 -translate-x-1/2 rounded-card border-2 border-good bg-card px-5 py-2 text-2xl font-black text-good">{t('sheetFlash')}</p>}
