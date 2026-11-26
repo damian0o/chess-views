@@ -99,6 +99,8 @@ export const StepSchema = z.object({
   explain: AgedTextSchema,
   moment: MomentIdSchema.optional(),
   solve: z.object({ task: AgedTextSchema }).optional(),
+  /** The child plays the game on with ▶ up to this ply before Next opens. */
+  playTo: z.number().int().positive().optional(),
   question: QuestionSchema.optional(),
   audience: z.object({ ages: z.array(AgeBandSchema).optional(), experience: z.array(ExperienceSchema).optional() }).optional(),
 });

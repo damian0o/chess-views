@@ -166,3 +166,23 @@ describe('the compile script', () => {
     expect(run(root).code).toBe(0);
   }, 30000);
 });
+
+describe('compileContent: playTo, a step the child plays through to a move', () => {
+  const swap = { '## look {scene: board, ply: 5, moment: attack}': '## look {scene: board, ply: 0, playTo: 5, moment: attack}' };
+  test('compiles to the step\'s playTo', () => {
+    const out = compileContent(tree({
+      'library.yaml': LIBRARY, 'pl/library.yaml': LIB_WORDS('Groźba'), 'en/library.yaml': LIB_WORDS('Threat'),
+      'pl/patterns/f7-attack/mini.md': lesson('pl', swap), 'en/patterns/f7-attack/mini.md': lesson('en', swap),
+    }));
+    expect(out.errors).toEqual([]);
+    expect(out.lessons.pl[0]!.steps.find((s) => s.id === 'look')!.playTo).toBe(5);
+  });
+  test.each([
+    ['not after the step\'s move', { '## look {scene: board, ply: 5, moment: attack}': '## look {scene: board, ply: 5, playTo: 5, moment: attack}' }],
+    ['past the end of the game', { '## look {scene: board, ply: 5, moment: attack}': '## look {scene: board, ply: 0, playTo: 9, moment: attack}' }],
+  ])('a playTo %s is one error', (_n, bad) => {
+    const errs = broken(bad, bad);
+    expect(errs.length).toBeGreaterThan(0);
+    expect(errs[0]!.message).toMatch(/playTo/);
+  });
+});

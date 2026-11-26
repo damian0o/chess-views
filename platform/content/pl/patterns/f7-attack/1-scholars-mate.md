@@ -23,7 +23,7 @@ moments:
 ---
 <!-- draft: review -->
 
-## s01-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 0, moment: "attack"}
+## s01-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 0, playTo: 5, moment: "attack"}
 
 ::: kids
 Naciskaj ▶ i zagraj pierwsze ruchy partii: e4 e5, Gc4 Sc6, Hh5. Po trzech ruchach białych zobacz, w co celują.

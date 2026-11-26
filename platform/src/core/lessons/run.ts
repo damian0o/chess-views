@@ -1,13 +1,13 @@
 /**
  * A lesson in progress, as an immutable value. The UI reports what happened (the viewer's ply, an
  * answer, layers turned on) and gets a new run back. Gates: a hidden move must be revealed (a ply past
- * the step's), then the question must be answered. Steps outside the profile's audience are skipped.
+ * the step's), then the question must be answered, then a playTo step must be played up to its move. Steps outside the profile's audience are skipped.
  */
 import type { LayerKind, Lesson, Profile, Square, Step } from '../types';
 import { unlockedLayers } from './unlock';
 import { isBlocks } from '../scene';
 
-export type Gate = { kind: 'reveal' | 'answer' };
+export type Gate = { kind: 'reveal' | 'answer' | 'play' };
 export type LessonEvent =
   | { kind: 'layers'; on: LayerKind[] }
   | { kind: 'ply'; ply: number }
@@ -27,7 +27,7 @@ export interface LessonRun {
   back(): LessonRun;
 }
 
-interface State { lesson: Lesson; profile: Profile; steps: Step[]; index: number; revealed: boolean; answered: boolean; lastAnswer: 'right' | 'wrong' | null; wrong: (number | Square)[]; ply: number; layersOn: LayerKind[] }
+interface State { lesson: Lesson; profile: Profile; steps: Step[]; index: number; revealed: boolean; answered: boolean; lastAnswer: 'right' | 'wrong' | null; wrong: (number | Square)[]; ply: number; played: boolean; layersOn: LayerKind[] }
 
 const plyOf = (s: Step) => (s.scene.position.kind === 'pgn' ? s.scene.position.ply : 0);
 
@@ -46,16 +46,17 @@ function whileOpen(step: Step, layers: LayerKind[]): LayerKind[] {
   return layers.filter((l) => !locked.includes(l) && !(l === 'pieces' && isBlocks(step)));
 }
 
-function fresh(base: Omit<State, 'revealed' | 'answered' | 'lastAnswer' | 'wrong' | 'ply' | 'layersOn'>): State {
+function fresh(base: Omit<State, 'revealed' | 'answered' | 'lastAnswer' | 'wrong' | 'ply' | 'played' | 'layersOn'>): State {
   const step = base.steps[base.index]!;
-  return { ...base, revealed: false, answered: false, lastAnswer: null, wrong: [], ply: plyOf(step), layersOn: whileOpen(step, step.scene.layers.slice()) };
+  return { ...base, revealed: false, answered: false, lastAnswer: null, wrong: [], ply: plyOf(step), played: false, layersOn: whileOpen(step, step.scene.layers.slice()) };
 }
 
 function make(s: State): LessonRun {
   const step = s.steps[s.index]!;
   // The hidden move stays revealed once the viewer has gone past it, even after stepping back.
   const gate: Gate | null = step.solve && !s.revealed ? { kind: 'reveal' }
-    : step.question && !s.answered ? { kind: 'answer' } : null;
+    : step.question && !s.answered ? { kind: 'answer' }
+    : step.playTo !== undefined && !s.played ? { kind: 'play' } : null;
   const last = s.index === s.steps.length - 1;
   const allowed = new Set<LayerKind>([...unlockedLayers(s.profile, [s.lesson]), ...step.scene.layers]);
   const run: LessonRun = {
@@ -64,7 +65,7 @@ function make(s: State): LessonRun {
     allowedLayers: [...allowed],
     withProfile: (profile) => make({ ...s, profile }),
     report(e) {
-      if (e.kind === 'ply') return make({ ...s, ply: e.ply, revealed: s.revealed || e.ply > plyOf(step) });
+      if (e.kind === 'ply') return make({ ...s, ply: e.ply, revealed: s.revealed || e.ply > plyOf(step), played: s.played || (step.playTo !== undefined && e.ply >= step.playTo) });
       if (e.kind === 'layers') {
         const on = e.on.filter((l) => allowed.has(l));
         return make({ ...s, layersOn: s.answered ? on : whileOpen(step, on) });

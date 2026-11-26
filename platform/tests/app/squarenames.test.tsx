@@ -92,3 +92,27 @@ describe('the square names preference', () => {
     expect(names()).toHaveLength(0);
   });
 });
+
+describe('edge numbers when square names are off', () => {
+  const coords = () => [...document.querySelectorAll<HTMLElement>('[data-coord]')];
+  const coordOn = (sq: string) => [...document.querySelectorAll<HTMLElement>(`[data-square="${sq}"] [data-coord]`)].map((e) => e.textContent);
+  test('ranks 1–8 down the left edge and files a–h along the bottom, hidden from screen readers', () => {
+    render(<Board scene={scene} />);
+    expect(coords()).toHaveLength(16);
+    expect(coordOn('a8')).toEqual(['8']);
+    expect(coordOn('a1')).toEqual(['1', 'a']);
+    expect(coordOn('h1')).toEqual(['h']);
+    expect(coordOn('e4')).toEqual([]);
+    expect(coords().every((e) => e.getAttribute('aria-hidden') === 'true')).toBe(true);
+  });
+  test('a flipped board numbers its own edges: h on the left, 8 at the bottom', () => {
+    render(<Board scene={scene} flip />);
+    expect(coordOn('h1')).toEqual(['1']);
+    expect(coordOn('h8')).toEqual(['8', 'h']);
+    expect(coordOn('a8')).toEqual(['a']);
+  });
+  test('with square names on there are no edge numbers', () => {
+    render(<Board scene={scene} squareNames />);
+    expect(coords()).toHaveLength(0);
+  });
+});

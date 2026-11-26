@@ -57,7 +57,7 @@ function replayer() {
 }
 
 /** The line of `<marker>` in a YAML text (1-based), or 1. */
-const STEP_KEYS = ['scene', 'fen', 'pgn', 'ply', 'pos', 'same', 'focus', 'flip', 'locked', 'moment', 'solve', 'ages'];
+const STEP_KEYS = ['scene', 'fen', 'pgn', 'ply', 'pos', 'same', 'focus', 'flip', 'locked', 'moment', 'solve', 'playTo', 'ages'];
 const QUESTION_KEYS = ['recall', 'answer', 'tap'];
 const POSITION_KEYS = ['fen', 'pgn', 'pos', 'same'];
 
@@ -187,6 +187,12 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
       const len = loadGame({ ...position, ply: 0 }).length;
       if (position.ply >= len) { err(`a solve step needs a move after ply ${position.ply}`); continue; }
     }
+    if (s.attrs.playTo !== undefined) {
+      const to = Number(s.attrs.playTo);
+      if (position.kind !== 'pgn') { err('a playTo step needs a pgn position'); continue; }
+      const len = loadGame({ ...position, ply: 0 }).length;
+      if (!Number.isInteger(to) || to <= position.ply || to > len) { err(`playTo ${String(s.attrs.playTo)} must be a move after ply ${position.ply} and at most ${len}`); continue; }
+    }
     const ages = asList(s.attrs.ages);
     const candidate = {
       id: s.id,
@@ -194,6 +200,7 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
       explain: s.explain,
       ...(s.attrs.moment !== undefined ? { moment: String(s.attrs.moment) } : {}),
       ...(s.attrs.solve !== undefined ? { solve: { task: aged(s.attrs.solve) } } : {}),
+      ...(s.attrs.playTo !== undefined ? { playTo: Number(s.attrs.playTo) } : {}),
       ...(question ? { question } : {}),
       ...(ages.length ? { audience: { ages } } : {}),
     };

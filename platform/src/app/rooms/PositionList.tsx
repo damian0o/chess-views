@@ -53,7 +53,7 @@ export function PositionList({ entries }: { entries: LibraryEntry[] }) {
           return (
             <article key={e.id} aria-label={e.name} className="flex flex-col gap-2 rounded-card bg-card p-4 shadow-card">
               <h3 className="text-lg font-black">{e.name}</h3>
-              {!('error' in s) && <div aria-hidden="true" inert className="pointer-events-none mx-auto w-40"><Board scene={sessionScene(s, ['pieces'])} /></div>}
+              {!('error' in s) && <div aria-hidden="true" inert className="pointer-events-none mx-auto w-40"><Board scene={sessionScene(s, ['pieces'])} edges={false} /></div>}
               <p className="text-sm text-ink-soft">{tx(e.note)}</p>
               <div className="mt-auto"><Button isDisabled={!href} onPress={() => href && navigate(href)}>{t('open')}</Button></div>
             </article>

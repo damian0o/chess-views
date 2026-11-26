@@ -88,3 +88,17 @@ describe('Mat szkolny, step 1: the child plays the first moves', () => {
     expect(store.getState().run?.ply).toBe(5);
   });
 });
+
+describe('Mat szkolny, step 1: Next waits for the last move', () => {
+  const next = () => screen.getByRole('button', { name: /^Dalej/ }) as HTMLButtonElement;
+  test('Next is locked, ▶ still works, and Next opens on the last move with a hint before', async () => {
+    await open('/lesson/scholars-mate/s01-board');
+    expect(next().disabled).toBe(true);
+    expect(screen.getByText('Naciskaj ▶ aż do ostatniego ruchu')).toBeTruthy();
+    for (let i = 0; i < 4; i++) fireEvent.click(fwd());
+    expect(next().disabled).toBe(true);
+    fireEvent.click(fwd());
+    expect(next().disabled).toBe(false);
+    expect(screen.queryByText('Naciskaj ▶ aż do ostatniego ruchu')).toBeNull();
+  });
+});

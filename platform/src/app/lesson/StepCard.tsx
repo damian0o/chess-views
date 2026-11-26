@@ -57,6 +57,7 @@ export function StepCard({ run, solve, onAnswer, onReveal, onBack, onNext }: {
         </div>
       )}
       <Question run={run} onAnswer={onAnswer} />
+      {run.gate?.kind === 'play' && <p className="font-black">{t('playToEnd')}</p>}
       <div className="flex items-center justify-between gap-3">
         <Button tone="quiet" isDisabled={run.index === 0} onPress={onBack}>◀ {t('back')}</Button>
         <Button isDisabled={!!run.gate} onPress={onNext}>{run.done ? t('finish') : `${t('next')} ▶`}</Button>

@@ -63,7 +63,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
     try { const g = loadGame({ ...pos, ply: 0 }); return { moves: g.moves(), startFen: g.fen(0) }; } catch { return null; }
   }, [step]);
   const gameLength = game?.moves.length ?? 0;
-  const movesLocked = !!run.gate;
+  const movesLocked = !!run.gate && run.gate.kind !== 'play';   // a play step is played with ▶
   const solve = useSolve(solveAt?.fen ?? null, solveAt?.gameUci ?? null);
   const [pick, setPick] = useState<GuessState>({});
   const [hint, setHint] = useState<MessageKey | null>(null);

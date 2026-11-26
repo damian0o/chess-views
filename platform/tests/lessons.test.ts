@@ -143,3 +143,19 @@ test('sceneOfRun clamps a ply past the end of the game', async () => {
   const { sceneOfRun } = await import('@core/scene');
   expect(sceneOfRun(goto('find').report({ kind: 'ply', ply: 99 })).ply).toBe(7);
 });
+
+describe('playTo: Next waits until the child has played to that move', () => {
+  const L = { ...LESSON, steps: [{ ...step('walk', { playTo: 5 }), scene: { position: at(0), base: 'board', layers: ['pieces'] } }, step('after')] } as Lesson;
+  test('the play gate stays until the move is reached, then stays open even after stepping back', () => {
+    let r = startLesson(L, kid)!;
+    expect(r.gate).toEqual({ kind: 'play' });
+    expect(r.next().index).toBe(0);
+    r = r.report({ kind: 'ply', ply: 4 });
+    expect(r.gate).toEqual({ kind: 'play' });
+    r = r.report({ kind: 'ply', ply: 5 });
+    expect(r.gate).toBeNull();
+    r = r.report({ kind: 'ply', ply: 2 });
+    expect(r.gate).toBeNull();
+    expect(r.next().step.id).toBe('after');
+  });
+});

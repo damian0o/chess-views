@@ -151,8 +151,8 @@ describe('M4 (re-graded): a double tap on Next moves one step', () => {
   test('two presses in a row advance once', async () => {
     const store = makeStore(undefined, { minStepMs: 300 });
     await store.getState().addPlayer({ name: 'Ola' });
-    await store.getState().openLesson('scholars-mate', 's01-board');
+    await store.getState().openLesson('scholars-mate', 's02-houses');   // step 1 waits for ▶ to the last move
     await Promise.all([store.getState().next(), store.getState().next()]);
-    expect(store.getState().run?.step.id).toBe('s02-houses');
+    expect(store.getState().run?.step.id).toBe('s03-roads');
   });
 });

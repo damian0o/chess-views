@@ -55,8 +55,8 @@ export function compareLocales(
         if (JSON.stringify(r.scene.position) !== JSON.stringify(s.scene.position)) {
           errors.push({ file, line: where?.line ?? 1, message: `step "${s.id}": the position differs from ${REFERENCE}` });
         } else {
-          const shape = (x: typeof s) => JSON.stringify([x.scene, !!x.solve, x.moment ?? null, x.audience ?? null]);
-          if (shape(r) !== shape(s)) errors.push({ file, line: where?.line ?? 1, message: `step "${s.id}": the scene, solve, moment or ages differ from ${REFERENCE}` });
+          const shape = (x: typeof s) => JSON.stringify([x.scene, !!x.solve, x.moment ?? null, x.audience ?? null, x.playTo ?? null]);
+          if (shape(r) !== shape(s)) errors.push({ file, line: where?.line ?? 1, message: `step "${s.id}": the scene, solve, playTo, moment or ages differ from ${REFERENCE}` });
         }
         if (answerOf(r.question) !== answerOf(s.question)) {
           errors.push({ file, line: where?.questionLine ?? where?.line ?? 1, message: `step "${s.id}": the answer differs from ${REFERENCE}` });

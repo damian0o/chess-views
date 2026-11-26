@@ -131,6 +131,7 @@ export const pl: Record<keyof typeof en, Message> = {
   nextMove: "Następny ruch",
   lastMove: "Koniec",
   moveList: "Ruchy",
+  playToEnd: "Naciskaj ▶ aż do ostatniego ruchu",
   startPosition: "Pozycja początkowa",
   engineThinking: "Silnik myśli…",
   engineFailed: "Silnik nie wystartował w tej przeglądarce",

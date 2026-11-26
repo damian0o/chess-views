@@ -28,11 +28,13 @@ export interface BoardProps {
   pieceStyle?: 'images' | 'letters';
   /** Show each square's name ("e4") small in its top-left corner. */
   squareNames?: boolean | undefined;
+  /** Rank numbers and file letters on the board's edges when square names are off (not on small previews). */
+  edges?: boolean | undefined;
   /** Extra marks drawn over the board in its 8×8 coordinates (engine arrows). */
   overlay?: ReactNode;
 }
 
-export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images', squareNames = false, overlay }: BoardProps) {
+export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images', squareNames = false, edges = true, overlay }: BoardProps) {
   const t = useT();
   const board = boardFromFen(scene.fen);
   const showPieces = scene.layers.includes('pieces');
@@ -53,6 +55,7 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
   const diamond = scene.layers.includes('diamond');
   // The diamond's cells are too small for a name, and its empty squares have no background to read it on.
   const names = squareNames && !diamond;
+  const showEdges = edges && !squareNames && !diamond;
 
   // Roving focus: one cell is the tab stop; arrows move it (in screen order, so a flipped board still feels right).
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
@@ -98,6 +101,10 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
           {piece && showBlocks && <Block cell={piece} />}
           {names && <span aria-hidden="true" data-square-name
             className={`pointer-events-none absolute left-0.5 top-0 z-20 text-[clamp(8px,2.2vw,11px)] font-bold leading-tight text-board-ink/70`}>{sq}</span>}
+          {showEdges && j === 0 && <span aria-hidden="true" data-coord
+            className="pointer-events-none absolute left-0.5 top-0 z-20 text-[clamp(8px,2.2vw,11px)] font-bold leading-tight text-board-ink/70">{sq[1]}</span>}
+          {showEdges && i === 7 && <span aria-hidden="true" data-coord
+            className="pointer-events-none absolute bottom-0 right-0.5 z-20 text-[clamp(8px,2.2vw,11px)] font-bold leading-tight text-board-ink/70">{sq[0]}</span>}
           {reach?.has(sq) && <span data-reach={reach.get(sq)} className="absolute right-0.5 top-0.5 z-20 rounded-full bg-board-ink px-1.5 text-xs font-black text-white">{reach.get(sq)}</span>}
           {dist && (dist[row]?.[col] ?? -1) > 0 && <span data-dist={dist[row]![col]} className="absolute bottom-0.5 left-0.5 z-20 text-sm font-black text-board-ink">{dist[row]![col]}</span>}
         </button>

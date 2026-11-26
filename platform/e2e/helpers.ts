@@ -20,7 +20,9 @@ export async function answerStep(page: Page) {
   const showAnswer = page.getByRole('button', { name: 'Pokaż odpowiedź' });
   const verdict = page.getByText(/^(Twój ruch |Tu silnik nie sprawdzi|Silnik myśli)/);
   const tapHint = page.getByText('Dotknij pola na szachownicy');
+  const playHint = page.getByText('Naciskaj ▶ aż do ostatniego ruchu');
   for (let guard = 0; guard < 80 && await next.isDisabled(); guard++) {
+    if (await playHint.isVisible()) { await page.getByRole('button', { name: 'Następny ruch' }).click(); continue; }
     if (await showAnswer.isVisible()) { await showAnswer.click(); continue; }
     if (await page.getByRole('gridcell').first().getAttribute('aria-disabled') !== 'true' && !(await tapHint.isVisible())) {
       // A find-the-move step: the board takes taps. Tap through the squares until a move is played, then wait for the verdict.

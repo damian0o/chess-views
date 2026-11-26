@@ -22,7 +22,7 @@ moments:
     ply: 7
 ---
 
-## s01-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 0, moment: "attack"}
+## s01-board {scene: "board", pgn: "1. e4 e5 2. Bc4 Nc6 3. Qh5", ply: 0, playTo: 5, moment: "attack"}
 
 ::: kids
 Press ▶ to play the first moves of the game: e4 e5, Bc4 Nc6, Qh5. After three moves by White, look what they aim at.

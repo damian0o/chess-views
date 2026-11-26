@@ -130,6 +130,7 @@ export const en = {
   nextMove: "Next move",
   lastMove: "End",
   moveList: "Moves",
+  playToEnd: "Press ▶ up to the last move",
   startPosition: "Start position",
   engineThinking: "The engine is thinking…",
   engineFailed: "The engine could not start in this browser",
