@@ -52,3 +52,26 @@ test('Kredki: blocks get a hand-drawn edge', async ({ page }) => {
   await expect(page.locator('[data-block]').first()).toBeVisible();
   expect(await page.evaluate(style('[data-block]', 'filter'))).toContain('cv-rough');
 });
+
+// Final review I1: with square names off the board root is also .rounded-card; its frame must still sit outside the squares.
+test('Kredki: the board frame sits outside the squares with square names off too', async ({ page }) => {
+  await page.addInitScript(() => {
+    const p = { version: 2, id: 'p1', name: 'Ola', age: 'kids', experience: 'basic', locale: 'pl', theme: { family: 'crayons', mode: 'light' }, pieceStyle: 'images',
+      squareNames: false, progress: {}, unlockedLayers: ['pieces'], avatar: 'violet' };
+    localStorage.setItem('chess-views:profiles', JSON.stringify({ profiles: { p1: p } })); localStorage.setItem('chess-views:current-player', 'p1');
+  });
+  await page.goto('./#/lesson/scholars-mate/s01-board');
+  await expect(page.locator('[data-board]')).toBeVisible();
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-board]')!, '::before').top)).toBe('-7px');
+});
+
+// Final review I2: Kredki changes the heading face, not the sizes each screen chose.
+test('Kredki: headings keep their own sizes', async ({ page }) => {
+  await addPlayer(page, 'Ola');
+  await expect(page.locator('header h1')).toBeVisible();
+  expect(await page.evaluate(style('header h1', 'fontSize'))).toBe('20px');   // TopBar: text-xl
+  await page.goto('./#/board');
+  await page.getByRole('button', { name: 'Drukuj' }).click();
+  await expect(page.getByTestId('print-sheet')).toBeVisible();
+  expect(await page.evaluate(style('#print-sheet h1', 'fontSize'))).toBe('24px');   // text-2xl
+});

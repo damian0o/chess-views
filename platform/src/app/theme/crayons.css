@@ -33,7 +33,7 @@
   position: relative;
   box-shadow: none;
 }
-[data-family="crayons"] :is(button, label:has(input[type="radio"]), .rounded-card):not([role="gridcell"]):not([role="option"])::before {
+[data-family="crayons"] :is(button, label:has(input[type="radio"]), .rounded-card):not([role="gridcell"]):not([role="option"]):not([data-board])::before {
   content: ""; position: absolute; inset: -1px; border: 3px solid var(--edge); border-radius: inherit;
   filter: url(#cv-rough); pointer-events: none;
 }
@@ -51,8 +51,7 @@
 
 /* Handwriting for titles and small labels; the lesson text stays in the clear UI face. */
 [data-family="crayons"] :is(h1, h2, h3, .cv-hand) { font-family: "Patrick Hand", var(--font-ui); font-weight: 400; letter-spacing: 0.01em; }
-[data-family="crayons"] h1 { color: var(--title); font-size: 2.1rem; line-height: 1.1; }
-[data-family="crayons"] h2 { font-size: 1.85rem; }
+[data-family="crayons"] h1 { color: var(--title); }
 
 /* Paper prints plain. */
 @media print {

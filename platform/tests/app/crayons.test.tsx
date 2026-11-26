@@ -22,7 +22,7 @@ describe.each(['light', 'dark'])('Kredki %s colours', (mode) => {
   const v = set(mode);
   test('the set exists', () => expect(Object.keys(v).length).toBeGreaterThan(10));
   test.each([['ink', 'surface'], ['ink', 'card'], ['accent-ink', 'accent'], ['accent-2-ink', 'accent-2'], ['good-ink', 'good'], ['bad-ink', 'bad'], ['board-ink', 'board-dark'], ['board-ink', 'board-light']])('%s on %s ≥ 4.5', (a, b) => expect(contrast(v[a]!, v[b]!)).toBeGreaterThanOrEqual(4.5));
-  test('the title stands out (≥ 3, large text)', () => expect(contrast(v.title!, v.surface!)).toBeGreaterThanOrEqual(3));
+  test('the title is readable at any size (≥ 4.5)', () => expect(contrast(v.title!, v.surface!)).toBeGreaterThanOrEqual(4.5));
   test('dark squares are light enough for black pieces', () => expect(lum(v['board-dark']!)).toBeGreaterThan(0.45));
 });
 

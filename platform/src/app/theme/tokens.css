@@ -72,7 +72,7 @@
   --fun-1: #f23c7a; --fun-2: #ffe066; --fun-3: #7bd389; --fun-4: #8ccaf5;
   --good: #15803d; --good-ink: #ffffff; --bad: #dc2626; --bad-ink: #ffffff;
   --board-light: #fff7cf; --board-dark: #8ccaf5; --board-ink: #23305c; --focus: #c2410c;
-  --title: #e0306b; --chip: #7bd389; --edge: #23305c; --paper-lines: #dceaf8; --paper-margin: #f6c9c9;
+  --title: #c2185b; --chip: #7bd389; --edge: #23305c; --paper-lines: #dceaf8; --paper-margin: #f6c9c9;
 }
 [data-family="crayons"][data-mode="dark"] {
   --surface: #1f1d2b; --card: #2c2940; --ink: #fbf7ff; --ink-soft: #cfc7ea;
