@@ -111,13 +111,30 @@ describe('I4: printing other screens', () => {
 });
 
 describe('I5: the current move stays in view', () => {
-  test('stepping scrolls the current move into the strip', async () => {
-    const spy = vi.fn();
-    Element.prototype.scrollIntoView = spy;
-    const store = await withPlayer();
-    mount(<AppRoutes />, { store, path: '/board?pgn=1.+e4+e5+2.+Nf3+Nc6&ply=0' });
-    fireEvent.click(await screen.findByRole('button', { name: 'Następny ruch' }));
-    await waitFor(() => expect(spy).toHaveBeenCalled());
+  test('stepping scrolls the move list itself to the current move, never the page around it', async () => {
+    const intoView = vi.fn();
+    Element.prototype.scrollIntoView = intoView;
+    // jsdom has no layout: the current move sits 200–230 px down a list 100 px tall.
+    const writes: number[] = [];
+    const sizes: [string, number][] = [['offsetTop', 200], ['offsetHeight', 30], ['clientHeight', 100]];
+    const restore = sizes.map(([k, v]) => {
+      const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, k) ?? Object.getOwnPropertyDescriptor(Element.prototype, k);
+      Object.defineProperty(HTMLElement.prototype, k, { configurable: true, get: () => v });
+      return [k, d] as const;
+    });
+    const st = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+    Object.defineProperty(HTMLElement.prototype, 'scrollTop', { configurable: true, get: () => 0, set: (v: number) => { writes.push(v); } });
+    try {
+      const store = await withPlayer();
+      mount(<AppRoutes />, { store, path: '/board?pgn=1.+e4+e5+2.+Nf3+Nc6&ply=0' });
+      fireEvent.click(await screen.findByRole('button', { name: 'Następny ruch' }));
+      await waitFor(() => expect(writes).toContain(130));
+      expect(intoView).not.toHaveBeenCalled();
+    } finally {
+      for (const [k, d] of restore) { if (d) Object.defineProperty(HTMLElement.prototype, k, d); else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[k]; }
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollTop;
+      if (st) Object.defineProperty(Element.prototype, 'scrollTop', st);
+    }
   });
 });
 

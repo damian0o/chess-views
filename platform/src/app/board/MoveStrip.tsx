@@ -8,8 +8,14 @@ export function MoveStrip({ moves, ply, onPly, white, black, hideFromPly, startF
   const t = useT();
   const locale = usePlayer()?.locale ?? 'pl';
   const nav = useRef<HTMLElement>(null);
-  // Keep the current move in view in a long game.
-  useEffect(() => { nav.current?.querySelector('[aria-current]')?.scrollIntoView?.({ block: 'nearest' }); }, [ply]);
+  // Keep the current move in view in a long game, scrolling only the list itself (never the page or the board sheet around it).
+  useEffect(() => {
+    const box = nav.current; const cur = box?.querySelector<HTMLElement>('[aria-current]');
+    if (!box || !cur) return;
+    const top = cur.offsetTop, bottom = top + cur.offsetHeight;
+    if (top < box.scrollTop) box.scrollTop = top;
+    else if (bottom > box.scrollTop + box.clientHeight) box.scrollTop = bottom - box.clientHeight;
+  }, [ply]);
   if (!moves.length) return null;
   // A game from a set-up position may start with Black and at any move number.
   const [, side = 'w', , , , full = '1'] = (startFen ?? '').split(' ');
@@ -18,7 +24,7 @@ export function MoveStrip({ moves, ply, onPly, white, black, hideFromPly, startF
   return (
     <div className="flex flex-col gap-2 rounded-card bg-card p-3 shadow-card">
       {(white || black) && <p className="break-words font-bold [overflow-wrap:anywhere]"><span>⚪ {white ?? '?'}</span> <span className="text-ink-soft">–</span> <span>⚫ {black ?? '?'}</span></p>}
-      <nav ref={nav} aria-label={t('moveList')} className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
+      <nav ref={nav} aria-label={t('moveList')} className="relative flex max-h-40 flex-wrap gap-1 overflow-y-auto">
         {moves.map((m, i) => (
           <span key={i} className="inline-flex items-center gap-1">
             {(i + off) % 2 === 0 && <span className="text-sm text-ink-soft">{first + (i + off) / 2}.</span>}

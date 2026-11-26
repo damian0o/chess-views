@@ -9,6 +9,17 @@ export async function addPlayer(page: Page, name: string, age: '8–12' | '12–
   await expect(page).toHaveURL(/#\/home$/);
 }
 
+/** On a phone a step opens on its instruction: pull the board sheet up (a no-op on a laptop or when it is already up). */
+export async function openBoard(page: Page) {
+  await expect(page.locator('[data-step-text]')).toBeVisible();   // the step is on screen (either layout)
+  const handle = page.getByRole('button', { name: 'Rozumiem, pokaż planszę' });
+  if (await handle.isVisible()) {
+    await handle.click();
+    await expect(page.locator('[data-sheet]')).toHaveAttribute('data-sheet', 'up');
+    await expect.poll(async () => (await page.locator('[data-sheet]').boundingBox())?.y).toBe(0);   // slid all the way up
+  }
+}
+
 export const nextButton = (page: Page) => page.getByRole('button', { name: /^(Dalej|Zakończ ✓)/ });
 
 /**
@@ -19,6 +30,7 @@ export async function answerStep(page: Page) {
   const next = nextButton(page);
   const showAnswer = page.getByRole('button', { name: 'Pokaż odpowiedź' });
   const verdict = page.getByText(/^(Twój ruch |Tu silnik nie sprawdzi|Silnik myśli)/);
+  await openBoard(page);
   const tapHint = page.getByText('Dotknij pola na szachownicy');
   const playHint = page.getByText('Naciskaj ▶ aż do ostatniego ruchu');
   for (let guard = 0; guard < 80 && await next.isDisabled(); guard++) {
@@ -46,7 +58,7 @@ export async function answerStep(page: Page) {
 /** Walk a lesson from its first step to the end; lands on home. */
 export async function walkLesson(page: Page, id: string) {
   await page.goto(`./#/lesson/${id}`);
-  await expect(nextButton(page)).toBeVisible();
+  await expect(page.locator('[data-step-text]')).toBeVisible();
   for (let guard = 0; guard < 80; guard++) {
     await answerStep(page);
     const finishing = (await nextButton(page).textContent())?.startsWith('Zakończ');
@@ -59,6 +71,7 @@ export async function walkLesson(page: Page, id: string) {
 /** Press Next once the double-tap window (300 ms after a step change) has passed, and expect the step to move. */
 export async function pressNext(page: Page) {
   const before = page.url();
+  await openBoard(page);
   await page.waitForTimeout(350);
   await nextButton(page).click();
   await expect(page).not.toHaveURL(before);
@@ -66,6 +79,7 @@ export async function pressNext(page: Page) {
 
 /** Press "Zakończ ✓" the same way and expect to land on home. */
 export async function pressFinish(page: Page) {
+  await openBoard(page);
   await page.waitForTimeout(350);
   await nextButton(page).click();
   await expect(page).toHaveURL(/#\/home$/);

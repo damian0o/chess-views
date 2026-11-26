@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addPlayer, answerStep, nextButton, pressNext, walkLesson } from './helpers';
+import { addPlayer, answerStep, nextButton, openBoard, pressNext, walkLesson } from './helpers';
 
 const LESSONS = ['scholars-mate', 'eyes-on-f7', 'opera-game-lesson', 'legal-mate', 'reti-tartakower', 'lasker-thomas'];
 
@@ -30,6 +30,7 @@ test('a reload mid-lesson reopens the same step with the question asked again', 
 test('a find-the-move step is judged by the real engine: a6 allows mate, Qe7 also stops it', async ({ page }) => {
   await addPlayer(page, 'Ola');
   await page.goto('./#/lesson/scholars-mate/s13-territory');
+  await openBoard(page);
   const cell = (sq: string) => page.getByRole('gridcell', { name: new RegExp(`^${sq}\\b`) });
   await expect(page.getByText('Dotknij bierki, potem pola, na które idzie')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pokaż odpowiedź' })).toHaveCount(0);

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addPlayer } from './helpers';
+import { addPlayer, openBoard } from './helpers';
 
 const CONTRAST = `(sel) => {
   const el = document.querySelector(sel); if (!el) return null;
@@ -30,9 +30,10 @@ for (const look of ['Kredki', 'Kolorowy', 'Spokojny', 'Prosty']) for (const mode
     expect(await page.evaluate(`(${CONTRAST})('main h2')`)).toBeGreaterThanOrEqual(4.5);
     expect(await page.evaluate(`(${CONTRAST})('main article button')`)).toBeGreaterThanOrEqual(4.5);
     await page.goto('./#/lesson/scholars-mate/s02-houses');
+    expect(await page.evaluate(`(${CONTRAST})('[data-step-text]')`)).toBeGreaterThanOrEqual(4.5);
+    await openBoard(page);   // on a phone the board sheet slides up over the instruction
     await expect(page.getByRole('gridcell').first()).toBeVisible();
     expect(await page.evaluate(`(${LUM})('[data-square="a1"]')`)).toBeGreaterThan(0.45);   // a1 is a dark square
-    expect(await page.evaluate(`(${CONTRAST})('section p')`)).toBeGreaterThanOrEqual(4.5);
     const width = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(width).toBe(page.viewportSize()!.width);
     if (info.project.name === 'laptop') {

@@ -14,25 +14,25 @@ export function PhoneRun({ run, topBar, board, actions, tools, dock, onBack }: {
   run: LessonRun; topBar: ReactNode; board: ReactNode; actions: ReactNode; tools: ReactNode; dock: ReactNode; onBack: () => void;
 }) {
   const t = useT(); const tx = useText();
-  const [up, setUp] = useState(false);
+  // The sheet is up only for the step it was pulled up on, so a new step opens on its instruction in its first render.
+  const [upFor, setUpFor] = useState<string | null>(null);
+  const up = upFor === run.step.id;
   const panel = useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLButtonElement>(null);
+  const lastStep = useRef(run.step.id);
   const wasUp = useRef(false);
   const focusNext = useRef<'strip' | 'text' | null>(null);
-  // A new step opens on its instruction; if the board was up, focus follows to the new text.
+  // Focus moves after the panels have swapped, when the one it lands in is no longer inert;
+  // when the board was up and the step changed, focus follows to the new text.
   useEffect(() => {
-    if (wasUp.current) focusNext.current = 'text';
-    setUp(false);
-  }, [run.step.id]);
-  // Focus moves after the panels have swapped, when the one it lands in is no longer inert.
-  useEffect(() => {
+    if (lastStep.current !== run.step.id) { if (wasUp.current) focusNext.current = 'text'; lastStep.current = run.step.id; }
     wasUp.current = up;
     const target = focusNext.current; focusNext.current = null;
     if (target === 'strip') strip.current?.focus();
     if (target === 'text') panel.current?.querySelector<HTMLElement>('[data-step-text]')?.focus();
   });
-  const open = () => { focusNext.current = 'strip'; setUp(true); };
-  const close = () => { focusNext.current = 'text'; setUp(false); };
+  const open = () => { focusNext.current = 'strip'; setUpFor(run.step.id); };
+  const close = () => { focusNext.current = 'text'; setUpFor(null); };
 
   return (
     <>
@@ -46,7 +46,8 @@ export function PhoneRun({ run, topBar, board, actions, tools, dock, onBack }: {
       <BoardSheet up={up} onUp={open} onDown={close} stripRef={strip} strip={tx(run.step.explain)}
         counter={`${run.index + 1}/${run.total}`} dock={dock} resetKey={run.step.id}
         pauseMs={readingPauseMs(`${tx(run.step.explain)} ${run.step.question?.prompt ? tx(run.step.question.prompt) : ''}`.trim())}>
-        {board}
+        {/* On a short phone the board shrinks so the strip, the answers and the dock still fit. */}
+        <div className="mx-auto w-full" style={{ maxWidth: 'min(100vw - 16px, 100dvh - 232px)' }}>{board}</div>
         {actions}
         {tools}
       </BoardSheet>

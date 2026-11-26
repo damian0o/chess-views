@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addPlayer } from './helpers';
+import { addPlayer, openBoard } from './helpers';
 
 const style = (sel: string, prop: string) => `getComputedStyle(document.querySelector('${sel}')).${prop}`;
 
@@ -32,6 +32,7 @@ test('Kredki: roads are drawn in crayon under sharp pieces; letters and square n
     localStorage.setItem('chess-views:profiles', JSON.stringify({ profiles: { p1: p } })); localStorage.setItem('chess-views:current-player', 'p1');
   });
   await page.goto('./#/lesson/eyes-on-f7/s03-roads');
+  await openBoard(page);
   await expect(page.locator('[data-layer="roads"]')).toBeVisible();
   expect(await page.evaluate(style('[data-layer="roads"]', 'filter'))).toContain('cv-stroke');
   const c4 = (await page.locator('[data-square="c4"]').boundingBox())!;
