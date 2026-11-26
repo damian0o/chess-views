@@ -64,7 +64,7 @@ home, rooms, lessons, the board — while reading and playing stay as easy as to
 - Approach 1; Zeszyt for light; texture level 1; crisp pieces above the marks.
 
 ## My calls (the user can override)
-- Czarny karton as the dark mode (proposed, not explicitly confirmed).
+- Czarny karton as the dark mode (confirmed by the user: "Niech będzie tak").
 - Kredki becomes the kids' default; the current kids look (Kolorowy) stays selectable; existing
   profiles keep their saved look.
 - Handwriting only in headings and labels.
