@@ -22,7 +22,7 @@ import { EngineProvider } from './engine';
 
 function NotFound() {
   const t = useT(); const [, navigate] = useLocation();
-  return <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6"><p className="text-xl font-black">{t('notFound')}</p><Button onPress={() => navigate('/')}>{t('home')}</Button></main>;
+  return <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6"><p className="text-xl font-black">{t('notFound')}</p><Button onPress={() => navigate('/')}>{t('home')}</Button></main>;
 }
 
 /** The screens by route. Without a player, "Kto gra?" comes first and then continues to the address asked for. */

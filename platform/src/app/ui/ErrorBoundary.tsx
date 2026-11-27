@@ -4,7 +4,7 @@ import { useT } from '../i18n';
 function Fallback({ onHome }: { onHome: () => void }) {
   const t = useT();
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
+    <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
       <p className="text-xl font-black">{t('somethingWrong')}</p>
       <a href="#/home" onClick={onHome} className="rounded-control bg-accent px-5 py-3 font-bold text-accent-ink shadow-card">{t('home')}</a>
     </main>

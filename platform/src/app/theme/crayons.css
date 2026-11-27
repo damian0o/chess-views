@@ -19,7 +19,7 @@
   background-image:
     linear-gradient(90deg, transparent 30px, var(--paper-margin) 30px 32px, transparent 32px),
     repeating-linear-gradient(transparent 0 27px, var(--paper-lines) 27px 28px);
-  min-height: 100vh;
+  min-height: 100svh;   /* svh: on iOS 100vh counts the hidden browser bars and the page scrolls */
 }
 
 /* Crayon fills: coloured buttons, chips, the selected choice, avatars' colour, the board's squares. */

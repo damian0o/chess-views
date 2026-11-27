@@ -29,7 +29,7 @@ export function Players({ next = '/home' }: { next?: string }) {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center gap-6 p-6">
+    <main className="mx-auto flex min-h-svh max-w-2xl flex-col items-center gap-6 p-6">
       <h1 className="text-4xl font-black">{t('whoPlays')}</h1>
       <ul className="flex flex-wrap justify-center gap-4">
         {players.map((p) => (

@@ -54,7 +54,7 @@ export function PhoneRun({ run, topBar, board, actions, tools, dock, onBack }: {
 
   return (
     <>
-      <div data-instruction ref={panel} inert={up} className="flex min-h-[100dvh] flex-col">
+      <div data-instruction ref={panel} inert={up} className="flex min-h-svh flex-col">
         {topBar}
         <main className="flex flex-col gap-4 px-4 pb-40 pt-2">
           <StepText run={run} withPrompt />
