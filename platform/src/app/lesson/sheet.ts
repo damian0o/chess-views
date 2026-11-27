@@ -20,3 +20,8 @@ export function dockHighlight(run: LessonRun): 'play' | 'next' | null {
   if (!run.gate) return 'next';
   return run.gate.kind === 'play' ? 'play' : null;
 }
+
+/** After Next the board stays up this long, so the child sees the step change, then slides down slowly. */
+export const NEXT_PAUSE_MS = 600;
+/** How long that slow slide down takes (matches `.cv-sheet[data-slow]` in sheet.css). */
+export const NEXT_SLIDE_MS = 800;

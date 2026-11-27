@@ -12,6 +12,7 @@ export async function addPlayer(page: Page, name: string, age: '8–12' | '12–
 /** On a phone a step opens on its instruction: pull the board sheet up (a no-op on a laptop or when it is already up). */
 export async function openBoard(page: Page) {
   await expect(page.locator('[data-step-text]')).toBeVisible();   // the step is on screen (either layout)
+  await expect(page.locator('[data-leaving]')).toHaveCount(0);    // after Next the board lingers, then slides down
   const handle = page.getByRole('button', { name: 'Rozumiem, pokaż planszę' });
   if (await handle.isVisible()) {
     // The handle may still be sliding down from the last step, or nudging after the reading pause, so it is

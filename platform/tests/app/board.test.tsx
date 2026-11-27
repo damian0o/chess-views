@@ -39,6 +39,15 @@ describe('Board', () => {
     expect(layer?.querySelector('[data-ring="f7"]')).not.toBeNull();
     expect(document.querySelectorAll('[data-layer]')).toHaveLength(1);
   });
+  test('the crayon filter goes on an HTML wrapper around the roads, never on the svg (WebKit reads an svg\'s filter in viewBox units: 1 = a square)', async () => {
+    render(<Board scene={scene(SCHOLAR, ['pieces', 'roads'])} />);
+    const wrap = document.querySelector('[data-roads-wrap]');
+    expect(wrap?.tagName).toBe('DIV');
+    expect(wrap?.querySelector('svg[data-layer="roads"]')).not.toBeNull();
+    const css = (await import('node:fs')).readFileSync('src/app/theme/crayons.css', 'utf8');
+    expect(css).toMatch(/\[data-roads-wrap\]\s*\{\s*filter:\s*url\(#cv-stroke\)/);
+    expect(css).not.toMatch(/\[data-layer="roads"\]\s*\{[^}]*filter/);
+  });
   test('the king houses layer outlines the squares around each king', () => {
     render(<Board scene={scene(START, ['pieces', 'kings'])} />);
     expect(cell('f2').dataset.house).toBe('w');

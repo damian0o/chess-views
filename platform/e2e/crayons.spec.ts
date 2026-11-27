@@ -34,7 +34,7 @@ test('Kredki: roads are drawn in crayon under sharp pieces; letters and square n
   await page.goto('./#/lesson/eyes-on-f7/s03-roads');
   await openBoard(page);
   await expect(page.locator('[data-layer="roads"]')).toBeVisible();
-  expect(await page.evaluate(style('[data-layer="roads"]', 'filter'))).toContain('cv-stroke');
+  expect(await page.evaluate(style('[data-roads-wrap]', 'filter'))).toContain('cv-stroke');
   const c4 = (await page.locator('[data-square="c4"]').boundingBox())!;
   expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.tagName, [c4.x + c4.width / 2, c4.y + c4.height / 2])).toBe('IMG');
   await page.evaluate(() => {

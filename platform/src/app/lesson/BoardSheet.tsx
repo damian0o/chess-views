@@ -10,8 +10,8 @@ const TAP = 6;      // a move shorter than this is a tap, not a drag
  * up, it covers the screen with a strip (back to the instruction), the board and its tools, and the dock.
  * Only the handle and the strip drag it, so moves played on the board never move the sheet.
  */
-export function BoardSheet({ up, onUp, onDown, strip, counter, children, dock, stripRef, pauseMs, resetKey }: {
-  up: boolean; onUp: () => void; onDown: () => void; strip: string; counter: string; children: ReactNode; dock: ReactNode;
+export function BoardSheet({ up, leaving = false, slow = false, onUp, onDown, strip, counter, children, dock, stripRef, pauseMs, resetKey }: {
+  up: boolean; leaving?: boolean; slow?: boolean; onUp: () => void; onDown: () => void; strip: string; counter: string; children: ReactNode; dock: ReactNode;
   stripRef?: RefObject<HTMLButtonElement | null>; pauseMs: number; resetKey: string;
 }) {
   const t = useT();
@@ -66,15 +66,21 @@ export function BoardSheet({ up, onUp, onDown, strip, counter, children, dock, s
     : { transform: up ? `translateY(${dragY}px)` : `translateY(calc(100dvh - ${PEEK}px + ${dragY}px))`, transition: 'none' };
 
   return (
-    <section ref={root} data-sheet={up ? 'up' : 'down'} data-glow={glow && !up && dragY === null ? 'true' : undefined} aria-label={t('viewBoard')}
+    <section ref={root} data-sheet={up ? 'up' : 'down'} data-glow={glow && !up && dragY === null ? 'true' : undefined}
+      data-leaving={leaving ? 'true' : undefined} data-slow={slow ? 'true' : undefined} aria-label={t('viewBoard')}
       style={{ ...style, ['--peek' as string]: `${PEEK}px` }}
       className="cv-sheet fixed inset-x-0 top-0 z-40 flex flex-col bg-surface">
       {up ? (
         <button ref={stripRef} type="button" aria-label={t('sheetClose')} onClick={click(onDown)} {...grab}
-          className="flex min-h-12 touch-none items-center gap-2 border-b-2 border-ink/10 px-3 py-1 text-left font-bold">
-          <span aria-hidden="true" className="text-xl">⌄</span>
-          <span className="min-w-0 flex-1 truncate">{strip}</span>
-          <span className="shrink-0 text-ink-soft">{counter}</span>
+          className="flex touch-none flex-col items-stretch border-b-2 border-ink/10 px-3 pb-1.5 pt-1.5 text-left font-bold">
+          {/* The same grip as the resting edge, and an arrow that bobs down: this pulls down. */}
+          <span aria-hidden="true" data-grip className="mx-auto h-1.5 w-14 rounded-full bg-ink/40" />
+          <span className="flex min-h-10 items-center gap-2">
+            <span aria-hidden="true" data-pull-hint
+              className="cv-bob flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-accent-2 text-xl font-black leading-none text-accent-2-ink">⌄</span>
+            <span className="min-w-0 flex-1 truncate">{strip}</span>
+            <span className="shrink-0 text-ink-soft">{counter}</span>
+          </span>
         </button>
       ) : (
         <div className="flex flex-col items-center gap-1 px-3 pb-2 pt-2">
@@ -83,9 +89,9 @@ export function BoardSheet({ up, onUp, onDown, strip, counter, children, dock, s
             className="cv-handle touch-none rounded-full border-2 border-ink bg-accent-2 px-4 py-1.5 font-black text-accent-2-ink">{t('sheetHandle')}</button>
         </div>
       )}
-      <div data-sheet-body inert={!up} className="flex min-h-0 flex-1 flex-col">
+      <div data-sheet-body inert={!up || leaving} className="flex min-h-0 flex-1 flex-col">
         {/* Keyed by step: a new step's board always starts at the top, however far the last one was scrolled. */}
-        <div key={resetKey} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3">{children}</div>
+        <div key={resetKey} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-2 pb-3">{children}</div>
         {dock}
       </div>
       {flash && <p data-sheet-flash role="status" className="cv-flash pointer-events-none absolute left-1/2 top-1/3 z-50 -translate-x-1/2 rounded-card border-2 border-good bg-card px-5 py-2 text-2xl font-black text-good">{t('sheetFlash')}</p>}

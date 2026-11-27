@@ -134,9 +134,12 @@ export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, p
         <svg viewBox="0 0 8 8" className="pointer-events-none absolute inset-0 z-30 h-full w-full" aria-hidden="true">{overlay}</svg>
       )}
       {roads && !diamond && (
-        <svg data-layer="roads" viewBox="0 0 8 8" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-          <Roads rays={roads.rays} batteries={roads.batteries} rings={roads.rings} guards={roads.pawnGuards} xy={xy} />
-        </svg>
+        // The Kredki filter goes on this HTML wrapper: on an svg, WebKit applies it in viewBox units, shifting every road.
+        <div data-roads-wrap className="pointer-events-none absolute inset-0">
+          <svg data-layer="roads" viewBox="0 0 8 8" className="h-full w-full" aria-hidden="true">
+            <Roads rays={roads.rays} batteries={roads.batteries} rings={roads.rings} guards={roads.pawnGuards} xy={xy} />
+          </svg>
+        </div>
       )}
     </div>
   );
