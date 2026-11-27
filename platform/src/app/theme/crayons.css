@@ -48,6 +48,8 @@
 /* Marks on the board: roads drawn with a crayon, blocks with a hand-drawn edge. Pieces stay sharp above them. */
 /* On the HTML wrapper, not the svg: WebKit reads an svg's own filter in viewBox units (1 = a square) and shifts the roads. */
 [data-family="crayons"] [data-roads-wrap] { filter: url(#cv-stroke); }
+/* The sheet strip's pull-down arrow, drawn with the same crayon. */
+[data-family="crayons"] [data-pull-arrow] { filter: url(#cv-stroke); }
 [data-family="crayons"] [data-block] { filter: url(#cv-rough); }
 
 /* Handwriting for titles and small labels; the lesson text stays in the clear UI face. */

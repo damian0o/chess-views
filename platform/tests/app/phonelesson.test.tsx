@@ -116,6 +116,17 @@ describe('a lesson on a phone', () => {
     expect(css).toMatch(/@keyframes cv-bob/);
     expect(css).toMatch(/prefers-reduced-motion[^{]*\{[^}]*\.cv-bob/);
   });
+  test('the strip\'s arrow is drawn (a crayon line in Kredki), not a text glyph', async () => {
+    await open('/lesson/scholars-mate/s02-houses');
+    pull();
+    const hint = screen.getByRole('button', { name: 'Pokaż instrukcję' }).querySelector('[data-pull-hint]')!;
+    expect(hint.textContent).toBe('');
+    const arrow = hint.querySelector('[data-pull-arrow]');
+    expect(arrow?.tagName).toBe('SPAN');
+    expect(arrow?.querySelector('svg path')).not.toBeNull();
+    const css = (await import('node:fs')).readFileSync('src/app/theme/crayons.css', 'utf8');
+    expect(css).toMatch(/\[data-pull-arrow\]\s*\{\s*filter:\s*url\(#cv-stroke\)/);
+  });
   test('a question\'s prompt is on the instruction and above the answers; the strip shows the step text', async () => {
     await open('/lesson/scholars-mate/s10-houses');
     expect(panel().textContent).toContain('Która bierka dała mata?');

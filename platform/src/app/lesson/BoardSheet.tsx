@@ -77,7 +77,14 @@ export function BoardSheet({ up, leaving = false, slow = false, onUp, onDown, st
           <span aria-hidden="true" data-grip className="mx-auto h-1.5 w-14 rounded-full bg-ink/40" />
           <span className="flex min-h-10 items-center gap-2">
             <span aria-hidden="true" data-pull-hint
-              className="cv-bob flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-accent-2 text-xl font-black leading-none text-accent-2-ink">⌄</span>
+              className="cv-bob flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-accent-2 text-accent-2-ink">
+              {/* Drawn, not a glyph (a glyph sits low and thin); Kredki puts its crayon filter on this HTML span. */}
+              <span data-pull-arrow className="block h-6 w-6">
+                <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
+                  <path d="M5 9.5 L12 16.5 L19 9.5" fill="none" stroke="currentColor" strokeWidth={3.6} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </span>
             <span className="min-w-0 flex-1 truncate">{strip}</span>
             <span className="shrink-0 text-ink-soft">{counter}</span>
           </span>
