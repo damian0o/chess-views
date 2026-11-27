@@ -6,6 +6,8 @@
   transform: translateY(calc(100vh - var(--peek, 132px)));
   transform: translateY(calc(100dvh - var(--peek, 132px)));
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Its own layer: sliding never repaints the board (in Kredki its filters are costly to repaint every frame). */
+  will-change: transform;
   border-radius: 1.25rem 1.25rem 0 0;
   box-shadow: 0 -6px 18px color-mix(in srgb, var(--ink) 18%, transparent);
   /* A swipe on the sheet never scrolls the instruction page under it (iOS chains scrolls otherwise). */
@@ -14,16 +16,17 @@
 .cv-sheet[data-sheet='up'] { transform: none; border-radius: 0; }
 /* After Next: a slower, gentler slide down to the new instruction (NEXT_SLIDE_MS in sheet.ts). */
 .cv-sheet[data-slow] { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-/* After the reading pause: the edge glows and nudges, asking to be pulled. */
-.cv-sheet[data-glow] { animation: cv-nudge 1.4s ease-in-out infinite; }
+/* After the reading pause: the handle glows and nudges up, asking to be pulled. Only the handle moves, so the
+   sheet itself is never animated and starts its slide from where it rests, without a jump. */
+.cv-sheet[data-glow] .cv-peek { animation: cv-nudge 1.4s ease-in-out infinite; }
 .cv-sheet[data-glow] .cv-handle { animation: cv-glow 1.4s ease-in-out infinite; }
 /* The dock's control to press now: an outline, which no theme strips (Kredki removes rings and shadows). */
 [data-dock] [data-highlight='true'] { outline: 4px solid var(--accent-2); outline-offset: 3px; }
-@keyframes cv-nudge { 50% { transform: translateY(calc(100dvh - var(--peek, 132px) - 12px)); } }
+@keyframes cv-nudge { 50% { transform: translateY(-12px); } }
 @keyframes cv-glow { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent-2) 70%, transparent); } }
 /* The strip's down-arrow bobs a few times when the board comes up: the strip pulls back down. */
 .cv-bob { animation: cv-bob 0.9s ease-in-out 0.5s 3; }
 @keyframes cv-bob { 50% { transform: translateY(5px); } }
-@media (prefers-reduced-motion: reduce) { .cv-bob { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .cv-bob, .cv-sheet[data-glow] .cv-peek { animation: none; } }
 .cv-flash { animation: cv-flash 0.7s ease-out both; }
 @keyframes cv-flash { from { opacity: 0; transform: translate(-50%, 0) scale(0.6); } 30% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } to { opacity: 0; transform: translate(-50%, 0) scale(1); } }

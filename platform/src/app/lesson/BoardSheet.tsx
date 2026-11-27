@@ -90,7 +90,7 @@ export function BoardSheet({ up, leaving = false, slow = false, onUp, onDown, st
           </span>
         </button>
       ) : (
-        <div className="flex flex-col items-center gap-1 px-3 pb-2 pt-2">
+        <div className="cv-peek flex flex-col items-center gap-1 px-3 pb-2 pt-2">
           <span aria-hidden="true" className="h-1.5 w-14 rounded-full bg-ink/40" />
           <button type="button" aria-label={t('sheetOpen')} onClick={click(goUp)} {...grab}
             className="cv-handle touch-none rounded-full border-2 border-ink bg-accent-2 px-4 py-1.5 font-black text-accent-2-ink">{t('sheetHandle')}</button>
