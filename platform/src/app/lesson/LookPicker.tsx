@@ -24,7 +24,7 @@ export function LookPicker({ options, frozen, onToggle, aside, startOpen }: {
     <div data-look-picker className="flex w-full min-w-0 flex-col gap-1.5">
       <div className="flex min-w-0 items-center gap-2">
         <Button data-look-summary aria-expanded={open} aria-controls={rowsId} onPress={() => setOpen((v) => !v)}
-          className="min-h-10 min-w-0 flex-1 truncate rounded-control px-1 text-left text-sm font-bold text-ink-soft outline-none focus-visible:ring-2 focus-visible:ring-accent">
+          className="min-h-10 w-0 min-w-0 flex-1 truncate rounded-control px-1 text-left text-sm font-bold text-ink-soft outline-none focus-visible:ring-2 focus-visible:ring-accent">
           {`${t('view')}: ${on.join(' · ')} ${open ? '▴' : '▾'}`}
         </Button>
         {aside && <div className="shrink-0">{aside}</div>}

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addPlayer, openBoard } from './helpers';
+import { addPlayer, openBoard, openPicker } from './helpers';
 
 /** Give the current player some unlocked options (the profile store is the approved saving). */
 async function unlock(page: import('@playwright/test').Page, ids: string[]) {
@@ -18,6 +18,7 @@ test('a lesson step mixes roads and king houses on one board', async ({ page }) 
   await page.reload();               // load the edited profile before the app saves its own copy again
   await page.goto('./#/lesson/scholars-mate/s03-roads');
   await openBoard(page);
+  await openPicker(page);
   const roads = page.locator('[data-option="roads"]');
   const kings = page.locator('[data-option="kings"]');
   await expect(roads).toHaveAttribute('aria-pressed', 'true');
@@ -33,6 +34,7 @@ test('on a recall step every option is disabled', async ({ page }) => {
   await addPlayer(page, 'Ola');
   await page.goto('./#/lesson/scholars-mate/s07-blocks');
   await openBoard(page);
+  await openPicker(page);
   const opts = page.locator('[data-option]');
   expect(await opts.count()).toBeGreaterThan(0);
   for (let i = 0; i < await opts.count(); i++) await expect(opts.nth(i)).toBeDisabled();
@@ -44,6 +46,7 @@ test('390×844: the picker rows are in view in the sheet and the board keeps its
   await addPlayer(page, 'Ola');
   await page.goto('./#/lesson/scholars-mate/s03-roads');
   await openBoard(page);
+  await openPicker(page);
   // The board's width before the picker: its own cap, min(92vw, 34rem) = 358.8 px at 390 wide.
   const board = (await page.locator('[data-sheet] [data-board]').boundingBox())!;
   expect(board.width).toBeGreaterThanOrEqual(358);
@@ -64,6 +67,7 @@ test('Final: 390 wide, no picker row overflows, so no label is cut', async ({ pa
   await addPlayer(page, 'Ola');
   await page.goto('./#/lesson/scholars-mate/s03-roads');      // Strategia shows Terytorium 🔒 and Domki króla 🔒
   await openBoard(page);
+  await openPicker(page);
   // Measure real edges, not scrollWidth/clientWidth: those round fractional widths in opposite directions and
   // read 1–2 px "over" even when the row has room to spare.
   const over = await page.locator('[data-look-picker] [role="group"]').evaluateAll((rows) => rows.map((row) => {
@@ -76,4 +80,36 @@ test('Final: 390 wide, no picker row overflows, so no label is cut', async ({ pa
   // Under 1 px is invisible. Nunito is not loaded, so each device uses its system font: the Mac and the iPhone
   // (San Francisco) leave 9+ px spare in the tightest row; CI's wider Linux font comes out 0.58 px over.
   expect(Math.max(...over)).toBeLessThanOrEqual(1);
+});
+
+test('the picker starts folded on a phone, open on a laptop; the moves come before it', async ({ page }, info) => {
+  await addPlayer(page, 'Ola');
+  await page.goto('./#/lesson/scholars-mate/s03-roads');
+  await openBoard(page);
+  const summary = page.locator('[data-look-summary]');
+  await expect(summary).toHaveText(/^Widok: Bierki · Drogi/);
+  const moves = page.getByRole('navigation', { name: 'Ruchy' });
+  await expect(moves).toBeVisible();
+  expect((await moves.boundingBox())!.y).toBeLessThan((await summary.boundingBox())!.y);
+  if (info.project.name === 'phone') {
+    await expect(summary).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('[data-option]')).toHaveCount(0);
+    await openPicker(page);
+  } else {
+    await expect(summary).toHaveAttribute('aria-expanded', 'true');
+  }
+  await expect(page.getByRole('group', { name: 'Strategia' })).toBeVisible();
+});
+
+test('phone: a long summary line never makes the page wider than the screen', async ({ page }, info) => {
+  test.skip(info.project.name !== 'phone', 'phone only');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await addPlayer(page, 'Ola');
+  await page.goto('./#/board');
+  await openPicker(page);
+  for (const id of ['flip', 'knight', 'kings']) await page.locator(`[data-option="${id}"]`).click();
+  await expect(page.locator('[data-look-summary]')).toHaveText(/Skoczek · Domki króla · Obróć · Nazwy pól/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await page.locator('[data-look-summary]').click();     // folded too
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });

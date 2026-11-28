@@ -88,3 +88,10 @@ export async function pressFinish(page: Page) {
   await nextButton(page).click();
   await expect(page).toHaveURL(/#\/home$/);
 }
+
+/** Unfold the look picker (it starts folded on a phone); a no-op when it is already open. */
+export async function openPicker(page: Page) {
+  const summary = page.locator('[data-look-summary]');
+  if ((await summary.getAttribute('aria-expanded')) === 'false') await summary.click();
+  await expect(summary).toHaveAttribute('aria-expanded', 'true');
+}

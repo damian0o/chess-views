@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addPlayer, pressNext, walkLesson } from './helpers';
+import { addPlayer, openPicker, pressNext, walkLesson } from './helpers';
 
 // Review Focus 3
 test('an old lesson link opens the same step after picking a player', async ({ page }) => {
@@ -12,6 +12,7 @@ test('an old FEN link opens the free board with its view and flip', async ({ pag
   await addPlayer(page, 'Ola');
   await page.goto('./#fen=r1bqkbnr%2Fpppp1ppp%2F2n5%2F4p2Q%2F2B1P3%2F8%2FPPPP1PPP%2FRNB1K1NR+b+KQkq+-+3+3&view=roads&flip=1');
   await expect(page).toHaveURL(/#\/board\?/);
+  await openPicker(page);
   await expect(page.locator('[data-option="roads"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('gridcell').first()).toHaveAttribute('aria-label', /^h1/);
 });
