@@ -92,7 +92,7 @@ describe('I3: problems hide their solution', () => {
     const s = store.getState().session!;
     expect(s.solve).toBe(true);
     expect(sessionParams(s).get('solve')).toBe('1');
-    expect(sessionScene(s, ['pieces']).hideMoves).toBe(true);
+    expect(sessionScene(s, { pieces: 'pieces' }).hideMoves).toBe(true);
     mount(<AppRoutes />, { store, path: `/board?${sessionParams(s)}` });
     await screen.findByRole('grid');
     expect(screen.queryByRole('button', { name: /Wd3#/ })).toBeNull();

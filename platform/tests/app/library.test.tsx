@@ -31,7 +31,7 @@ describe('positions in a room (the library, now by room)', () => {
     const card = (await screen.findAllByRole('article')).find((a) => /operze/i.test(a.getAttribute('aria-label') ?? ''))!;
     fireEvent.click(within(card).getByRole('button', { name: 'Plansza' }));
     await waitFor(() => expect(store.getState().session?.game.length).toBe(33));
-    expect(store.getState().session?.view).toBe('roads');
+    expect(store.getState().session?.look).toEqual({ pieces: 'pieces', moves: 'roads' });
     expect(history.at(-1)).toMatch(/^\/board/);
   });
 });

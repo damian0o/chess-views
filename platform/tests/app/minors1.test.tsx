@@ -69,7 +69,7 @@ describe('board keys', () => {
   test('Space then the button\'s own click report the square once', () => {
     const s = openSession('8/8/8/8/8/8/8/K6k w - - 0 1') as Session;
     const onSquare = vi.fn();
-    render(<Board scene={sessionScene(s, ['pieces'])} onSquare={onSquare} />);
+    render(<Board scene={sessionScene(s, { pieces: 'pieces' })} onSquare={onSquare} />);
     const a1 = screen.getByRole('gridcell', { name: /^a1\b/ });
     fireEvent.keyDown(a1, { key: ' ' });
     fireEvent.keyUp(a1, { key: ' ' });

@@ -3,9 +3,9 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { Board } from '../../src/app/board/Board';
-import { VIEWS } from '../../src/app/views';
 import { PlayerProvider } from '../../src/app/i18n';
 import { sceneFor } from '@core/scene';
+import { OPTIONS } from '@core/look';
 import { en } from '@core/i18n/messages/en';
 import { pl } from '@core/i18n/messages/pl';
 import type { Fen, BoardLook, Square, Step } from '@core/types';
@@ -17,10 +17,7 @@ const QE7 = 'r1b1kbnr/ppppqppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3' 
 const scene = (fen: Fen, look: BoardLook) => sceneFor({ id: 's', scene: { position: { kind: 'fen', fen }, look }, explain: { kids: 'x' } } as Step, { answered: false });
 const show = (ui: ReactElement) => render(<PlayerProvider player={null}>{ui}</PlayerProvider>);
 
-describe('the nine views', () => {
-  test('VIEWS has nine views in the POC order', () => {
-    expect(VIEWS.map((v) => v.id)).toEqual(['board', 'territory', 'reach', 'roads', 'kings', 'engine', 'diamond', 'shapes', 'knight']);
-  });
+describe('the drawings', () => {
   test('reach puts each piece count on it: 18 for White at the start (as the POC counts)', () => {
     show(<Board scene={scene(START, { pieces: 'pieces', moves: 'reach' })} />);
     const white = [...document.querySelectorAll('[data-reach]')].filter((e) => /[12]$/.test(e.closest('[data-square]')!.getAttribute('data-square')!));
@@ -48,8 +45,8 @@ describe('the nine views', () => {
     show(<Board scene={scene(SCHOLAR, { pieces: 'pieces', moves: 'roads' })} />);
     expect(document.querySelector('[data-guard="e6"]')?.getAttribute('data-by')).toBe('b');
   });
-  test('legends for every view in both catalogues; Roads now explains the rings and the cross', () => {
-    for (const v of VIEWS) { expect(v.legend in en, v.legend).toBe(true); expect(v.legend in pl, v.legend).toBe(true); }
+  test('labels and legends for every option in both catalogues; Roads explains the rings and the cross', () => {
+    for (const o of Object.values(OPTIONS)) for (const k of [o.label, o.legend].filter(Boolean) as string[]) { expect(k in en, k).toBe(true); expect(k in pl, k).toBe(true); }
     expect(pl.legendRoads).toMatch(/krzyżyk/i);
     expect(en.legendRoads).toMatch(/cross/i);
   });

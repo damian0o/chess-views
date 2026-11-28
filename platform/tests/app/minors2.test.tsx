@@ -22,13 +22,13 @@ describe('guess panel', () => {
     expect(screen.queryByText('Silnik myśli…')).toBeNull();
     expect(screen.getByText('Tu silnik nie oceni ruchu')).toBeTruthy();
   });
-  test('the picked piece mark goes away when the view changes', async () => {
+  test('the picked piece mark goes away when the engine is turned off', async () => {
     const store = await withPlayer();
     mount(<AppRoutes />, { store, path: `/board?${q({ fen: 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3', view: 'engine' })}` });
     fireEvent.click(await screen.findByRole('switch', { name: 'Zgadnij ruch' }));
     fireEvent.click(screen.getByRole('gridcell', { name: /^d8\b/ }));
     expect(document.querySelector('[data-tap="right"]')).not.toBeNull();
-    act(() => store.getState().setView('board'));
+    act(() => store.getState().toggleOption('engine'));
     await waitFor(() => expect(document.querySelector('[data-tap="right"]')).toBeNull());
   });
 });

@@ -8,24 +8,24 @@ import { useT } from '../i18n';
 import { Board } from '../board/Board';
 import { MoveStrip } from '../board/MoveStrip';
 import { LoadDialog } from '../board/LoadDialog';
-import { ViewPicker } from '../lesson/ViewPicker';
+import { LookPicker } from '../lesson/LookPicker';
 import { LegendPopup } from '../lesson/LegendPopup';
 import { TopBar } from '../ui/TopBar';
 import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
 import { ROOM_NAME } from '../rooms/names';
-import { VIEWS, type View } from '../views';
 import { useAnalysis } from '../board/useAnalysis';
 import { EnginePanel } from '../board/EnginePanel';
 import { Arrows } from '../board/Arrows';
 import { GuessPanel, type Guess } from '../board/GuessPanel';
 import { tapGuess, type GuessState } from '@core/guess';
 import type { MessageKey } from '@core/i18n/index';
-import type { Fen } from '@core/types';
+import { OPTION_IDS, type Fen } from '@core/types';
+import { optionStates, optionsOf } from '@core/look';
 
-const ALL = VIEWS.flatMap((v) => v.layers);
+const ALL_OPTIONS = [...OPTION_IDS];
 
-/** #/board?fen=…|pgn=…&ply=&view=&flip=1 — any position or game, in all nine views. The address follows the board. */
+/** #/board?fen=…|pgn=…&ply=&pieces=&moves=&strategy=&diamond=1&engine=1&flip=1 — any position or game, every board look option mixed freely. The address follows the board. */
 export function FreeBoard() {
   const t = useT();
   const [, navigate] = useLocation();
@@ -36,7 +36,7 @@ export function FreeBoard() {
   const boardFrom = useApp((s) => s.boardFrom);
   const [knight, setKnight] = useState<Square | undefined>(() => { const sq = new URLSearchParams(search).get('sq'); return sq && /^[a-h][1-8]$/.test(sq) ? sq as Square : undefined; });
   const fen = session?.game.fen(session.ply);
-  const engineOn = session?.view === 'engine';
+  const engineOn = !!session?.look.engine;
   const { state: analysis, retry } = useAnalysis((fen ?? '') as never, !!session && engineOn, { depth: 10, multipv: 5 });
   const [guessing, setGuessing] = useState(false);
   const [pick, setPick] = useState<GuessState>({});
@@ -45,7 +45,7 @@ export function FreeBoard() {
   const [revealed, setRevealed] = useState(false);
   const resetGuess = () => { setPick({}); setHint(null); setGuess(null); setRevealed(false); };
   // A new position starts a new guess.
-  useEffect(() => { resetGuess(); }, [fen, session?.view]);
+  useEffect(() => { resetGuess(); }, [fen, engineOn, session?.look.moves]);
   const HINT: Record<string, MessageKey> = { opponent: 'guessOpponent', empty: 'guessEmpty', illegal: 'guessIllegal', stuck: 'guessStuck' };
   const onGuessTap = (sq: Square) => {
     if (!fen || guess) return;
@@ -91,8 +91,9 @@ export function FreeBoard() {
   if (!session) return null;
   const roomFrom = boardFrom?.match(/^\/room\/(\w+)$/)?.[1];
   const upFrom = roomFrom && roomFrom in ROOM_NAME ? { to: boardFrom!, label: t(ROOM_NAME[roomFrom as keyof typeof ROOM_NAME]) } : undefined;
-  const view: View = VIEWS.find((v) => v.id === session.view) ?? VIEWS[0]!;
-  const scene = sessionScene(session, view.layers);
+  const scene = sessionScene(session);
+  const names = !!player && showsSquareNames(player);
+  const options = optionStates(session.look, { flip: session.flip, names }, ALL_OPTIONS, () => true);
   const s = store.getState();
   const copy = async () => {
     const url = `${location.origin}${location.pathname}#/board?${sessionParams(session).toString()}`;
@@ -104,8 +105,8 @@ export function FreeBoard() {
       <TopBar title={t('freeBoard')} up={upFrom} />
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
-          <Board scene={scene} flip={session.flip} pieceStyle={player?.pieceStyle ?? 'images'} squareNames={!!player && showsSquareNames(player)} knightSquare={knight}
-            onSquare={view.id === 'knight' ? setKnight : engineOn && guessing ? onGuessTap : undefined}
+          <Board scene={scene} flip={session.flip} pieceStyle={player?.pieceStyle ?? 'images'} squareNames={names} knightSquare={knight}
+            onSquare={session.look.moves === 'knight' ? setKnight : engineOn && guessing ? onGuessTap : undefined}
             tapMarks={pick.from ? { right: pick.from } : {}}
             overlay={analysis.kind === 'done' && analysis.fen === scene.fen && (!guessing || revealed) ? <Arrows lines={analysis.analysis.lines} flip={session.flip} /> : undefined} />
           {(!guessing || analysis.kind !== 'thinking') && <EnginePanel state={guessing && !revealed && analysis.kind === 'done' ? { kind: 'off' } : analysis} turn={(scene.fen.split(' ')[1] ?? 'w') as 'w' | 'b'} onRetry={retry} />}
@@ -129,8 +130,9 @@ export function FreeBoard() {
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <ViewPicker views={VIEWS} selected={view.id} allowed={ALL} disabled={false} onChange={(v) => s.setView(v.id)} />
-            <LegendPopup view={view} />
+            <LookPicker options={options} frozen={false}
+              onToggle={(id) => (id === 'names' ? void s.updatePlayer({ squareNames: !names }) : s.toggleOption(id))} />
+            <LegendPopup on={[session.look.pieces, ...optionsOf(session.look)]} />
           </div>
           <p role="status" aria-label={t('gameStatus')} className="text-lg font-black">{(() => {
             const st = session.game.status(session.ply);

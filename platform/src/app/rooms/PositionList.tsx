@@ -6,13 +6,11 @@ import type { LibraryEntry } from '@core/types';
 import { useT, useText } from '../i18n';
 import { Board } from '../board/Board';
 import { Button } from '../ui/Button';
-import { viewOf } from '../views';
+import { PLAIN } from '@core/look';
 
-const viewFor = (e: LibraryEntry) => viewOf(e.scene?.layers ?? ['pieces']).id;
-
-/** The free-board address that opens a library position in its own view (a problem hides its later moves). */
+/** The free-board address that opens a library position in its own look (a problem hides its later moves). */
 export function entryHref(e: LibraryEntry): string | null {
-  const s = openSession(e.source, { view: viewFor(e), solve: e.tags.includes('problem') });
+  const s = openSession(e.source, { look: e.look ?? PLAIN, solve: e.tags.includes('problem') });
   return 'error' in s ? null : `/board?${sessionParams(s).toString()}`;
 }
 
@@ -48,12 +46,12 @@ export function PositionList({ entries }: { entries: LibraryEntry[] }) {
       {!shown.length && <p className="text-ink-soft">{t('nothingFound')}</p>}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((e) => {
-          const s = openSession(e.source, { view: viewFor(e) });
+          const s = openSession(e.source, { look: e.look ?? PLAIN });
           const href = entryHref(e);
           return (
             <article key={e.id} aria-label={e.name} className="flex flex-col gap-2 rounded-card bg-card p-4 shadow-card">
               <h3 className="text-lg font-black">{e.name}</h3>
-              {!('error' in s) && <div aria-hidden="true" inert className="pointer-events-none mx-auto w-40"><Board scene={sessionScene(s, ['pieces'])} edges={false} /></div>}
+              {!('error' in s) && <div aria-hidden="true" inert className="pointer-events-none mx-auto w-40"><Board scene={sessionScene(s, PLAIN)} edges={false} /></div>}
               <p className="text-sm text-ink-soft">{tx(e.note)}</p>
               <div className="mt-auto"><Button isDisabled={!href} onPress={() => href && navigate(href)}>{t('open')}</Button></div>
             </article>

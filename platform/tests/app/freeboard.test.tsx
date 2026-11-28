@@ -16,7 +16,7 @@ describe('free board', () => {
     mount(<AppRoutes />, { store, path: `/board?${q({ fen: SCHOLAR, view: 'roads', flip: '1' })}` });
     await screen.findByRole('grid');
     expect(screen.getAllByRole('gridcell')[0]!.getAttribute('aria-label')).toMatch(/^h1/);
-    expect((await screen.findByRole('button', { name: /Widok/ })).textContent).toMatch(/Drogi/);
+    await waitFor(() => expect(document.querySelector('[data-option="roads"]')?.getAttribute('aria-pressed')).toBe('true'));
     expect(document.querySelector('[data-ring="f7"]')).not.toBeNull();
   });
   test('step controls and arrow keys move the ply; the strip highlights the move', async () => {
@@ -78,11 +78,11 @@ describe('free board', () => {
     expect(screen.queryAllByRole('img', { name: /biał|czarn/ })).toHaveLength(0);
     expect(document.querySelector('[data-square="e1"] span:not([data-square-name])')?.textContent).toBe('K');
   });
-  test('all nine views in the dropdown', async () => {
+  test('all twelve look options in the picker', async () => {
     const store = await withPlayer();
     mount(<AppRoutes />, { store, path: '/board' });
-    fireEvent.click(await screen.findByRole('button', { name: /Widok/ }));
-    expect(await screen.findAllByRole('option')).toHaveLength(9);
+    await screen.findByRole('group', { name: 'Bierki' });
+    expect(document.querySelectorAll('[data-option]')).toHaveLength(12);
   });
   test('copy link writes the address to the clipboard', async () => {
     const write = vi.fn(async () => {});
@@ -105,7 +105,7 @@ describe('library entries by id (old #pos links)', () => {
   test('pos=opera-game opens the PGN at its ply in its view', async () => {
     const store = await withPlayer();
     store.getState().openBoard(new URLSearchParams('pos=opera-game'));
-    expect([store.getState().session?.game.length, store.getState().session?.ply, store.getState().session?.view]).toEqual([33, 23, 'roads']);
+    expect([store.getState().session?.game.length, store.getState().session?.ply, store.getState().session?.look]).toEqual([33, 23, { pieces: 'pieces', moves: 'roads' }]);
   });
   test('pos=nope says so and opens the start position', async () => {
     const store = await withPlayer();

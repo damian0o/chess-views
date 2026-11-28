@@ -4,16 +4,16 @@
  * No chess or lesson rule lives here: actions call the core.
  */
 import { createStore } from 'zustand/vanilla';
-import type { AgeBand, Avatar, Lesson, LessonId, LibraryEntry, Locale, Profile } from '@core/types';
+import type { AgeBand, Avatar, Lesson, LessonId, LibraryEntry, Locale, OptionId, Profile } from '@core/types';
 import { createLocalProfileStore, defaultProfile, type ProfileSummary, type StorageLike } from '@core/storage/index';
 import { startLesson, type LessonEvent, type LessonRun } from '@core/lessons/run';
 import { recordStep, finishLesson, resumeStepId } from '@core/lessons/progress';
 import { buildRound, roundUnlocked, type Round } from '@core/recognition';
 import { t, type MessageKey } from '@core/i18n/index';
-import { openSession, sessionFromParams, stepTo, type Session } from '@core/session';
+import { lookFromParams, openSession, sessionFromParams, stepTo, type Session } from '@core/session';
 import { parseInput } from '@core/analysis';
 import { START_FEN } from '@core/chess/rules';
-import { viewOf } from './views';
+import { PLAIN, toggle } from '@core/look';
 
 /** The player last chosen on this device, so a reload keeps them signed in. */
 const CURRENT_KEY = 'chess-views:current-player';
@@ -35,7 +35,8 @@ export interface AppState {
   loadBoardText(text: string): Promise<MessageKey | null>;
   setPly(ply: number): void;
   stepPly(by: number): void;
-  setView(view: string): void;
+  /** Press a board look option on the free board: the look's rules, or turn the board for flip. */
+  toggleOption(id: OptionId): void;
   toggleFlip(): void;
   loadPlayers(): Promise<void>;
   restore(): Promise<void>;
@@ -104,23 +105,24 @@ export function createAppStore(deps: StoreDeps) {
       openBoard(params) {
         const pos = params.get('pos');
         if (pos !== null && !params.has('fen') && !params.has('pgn')) {
-          // An old #pos link: a library entry by id, in its own view unless the link says otherwise.
+          // An old #pos link: a library entry by id, in its own look unless the link says otherwise.
           const entry = deps.library[get().player?.locale ?? 'pl']?.find((e) => e.id === pos);
-          const view = params.get('view') ?? (entry ? viewOf(entry.scene?.layers ?? ['pieces']).id : 'board');
+          const named = ['view', 'pieces', 'moves', 'strategy', 'diamond', 'engine'].some((k) => params.has(k));
+          const look = named ? lookFromParams(params) : entry?.look ?? PLAIN;
           const solve = !!entry?.tags.includes('problem') || params.get('solve') === '1';
-          const s = entry ? openSession(entry.source, { view, flip: params.get('flip') === '1', solve, ...(params.has('ply') ? { ply: Number(params.get('ply')) } : {}) }) : null;
-          if (!s || 'error' in s) { say('posNotFound'); set({ session: openSession({ kind: 'fen', fen: START_FEN }, { view }) as Session }); return; }
+          const s = entry ? openSession(entry.source, { look, flip: params.get('flip') === '1', solve, ...(params.has('ply') ? { ply: Number(params.get('ply')) } : {}) }) : null;
+          if (!s || 'error' in s) { say('posNotFound'); set({ session: openSession({ kind: 'fen', fen: START_FEN }, { look }) as Session }); return; }
           set({ session: s });
           return;
         }
         const s = sessionFromParams(params);
         if (s && 'error' in s) say(s.error);
         const ok = s && !('error' in s) ? s : null;
-        set({ session: ok ?? (openSession({ kind: 'fen', fen: START_FEN }, { view: params.get('view') ?? 'board' }) as Session) });
+        set({ session: ok ?? (openSession({ kind: 'fen', fen: START_FEN }, { look: lookFromParams(params) }) as Session) });
       },
 
       async loadBoardText(text) {
-        const view = get().session?.view ?? 'board';
+        const look = get().session?.look ?? PLAIN;
         const flip = get().session?.flip ?? false;
         const parsed = parseInput(text);
         if (parsed.kind === 'lichess-game') {
@@ -133,12 +135,12 @@ export function createAppStore(deps: StoreDeps) {
             if (!res.ok) return 'loadLichessFailed';
             pgn = await res.text();
           } catch { return 'loadLichessFailed'; }
-          const s = openSession({ kind: 'pgn', pgn, ply: parsed.ply ?? Number.MAX_SAFE_INTEGER }, { view, flip });
+          const s = openSession({ kind: 'pgn', pgn, ply: parsed.ply ?? Number.MAX_SAFE_INTEGER }, { look, flip });
           if ('error' in s) return 'loadLichessFailed';
           set({ session: stepTo(s, parsed.ply ?? s.game.length) });
           return null;
         }
-        const s = openSession(text, { view, flip });
+        const s = openSession(text, { look, flip });
         if ('error' in s) return s.error;
         set({ session: s });
         return null;
@@ -146,7 +148,11 @@ export function createAppStore(deps: StoreDeps) {
 
       setPly(ply) { const s = get().session; if (s) set({ session: stepTo(s, ply) }); },
       stepPly(by) { const s = get().session; if (s) set({ session: stepTo(s, s.ply + by) }); },
-      setView(view) { const s = get().session; if (s) set({ session: { ...s, view } }); },
+      toggleOption(id) {
+        const s = get().session;
+        if (!s) return;
+        set({ session: id === 'flip' ? { ...s, flip: !s.flip } : { ...s, look: toggle(s.look, id) } });
+      },
       toggleFlip() { const s = get().session; if (s) set({ session: { ...s, flip: !s.flip } }); },
 
       async loadPlayers() { set({ players: await profiles.list() }); },

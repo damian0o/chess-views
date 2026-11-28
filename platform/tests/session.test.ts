@@ -15,7 +15,7 @@ test('openSession on a FEN', () => {
   expect(s.source).toEqual({ kind: 'fen', fen: SCHOLAR });
   expect(s.ply).toBe(0);
   expect(s.flip).toBe(false);
-  expect(s.view).toBe('board');
+  expect(s.look).toEqual({ pieces: 'pieces' });
   expect(s.game.fen(0)).toBe(SCHOLAR);
 });
 
@@ -24,7 +24,7 @@ test('openSession on a PGN with headers opens at the end, or at the ply asked', 
   expect(s.game.length).toBe(33);
   expect(s.ply).toBe(33);
   expect(s.headers.White).toBe('Morphy');
-  expect(ok(openSession(OPERA, { ply: 5, flip: true, view: 'roads' }))).toMatchObject({ ply: 5, flip: true, view: 'roads' });
+  expect(ok(openSession(OPERA, { ply: 5, flip: true, look: { pieces: 'pieces', moves: 'roads' } }))).toMatchObject({ ply: 5, flip: true, look: { pieces: 'pieces', moves: 'roads' } });
 });
 
 test('openSession on a lichess analysis link is a FEN', () => {
@@ -69,15 +69,15 @@ test('sessionScene: the position at the ply, moves visible, analysis for the lay
   expect(sessionScene(stepTo(s, 33), { pieces: 'pieces' }).fen).toBe(s.game.fen(33));
 });
 
-test('sessionParams round-trips FEN + view + flip', () => {
-  const s = ok(openSession(SCHOLAR, { view: 'roads', flip: true }));
+test('sessionParams round-trips FEN + look + flip', () => {
+  const s = ok(openSession(SCHOLAR, { look: { pieces: 'pieces', moves: 'roads' }, flip: true }));
   const p = sessionParams(s);
   expect(p.get('fen')).toBe(SCHOLAR);
   expect(p.get('flip')).toBe('1');
-  expect(p.get('view')).toBe('roads');
+  expect(p.get('moves')).toBe('roads');
   expect(p.has('ply')).toBe(false);
   const back = ok(sessionFromParams(new URLSearchParams(p.toString())) as ReturnType<typeof openSession>);
-  expect(back).toMatchObject({ source: s.source, view: 'roads', flip: true, ply: 0 });
+  expect(back).toMatchObject({ source: s.source, look: { pieces: 'pieces', moves: 'roads' }, flip: true, ply: 0 });
 });
 
 test('sessionParams round-trips PGN + ply', () => {
@@ -89,7 +89,7 @@ test('sessionParams round-trips PGN + ply', () => {
   const back = ok(sessionFromParams(new URLSearchParams(p.toString())) as ReturnType<typeof openSession>);
   expect(back.ply).toBe(12);
   expect(back.headers.White).toBe('Morphy');
-  expect(back.view).toBe('board');
+  expect(back.look).toEqual({ pieces: 'pieces' });
 });
 
 test('sessionFromParams: null without a position, errors for a bad one', () => {
