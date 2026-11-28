@@ -66,8 +66,10 @@ describe('a find-the-move step played on the board', () => {
     expect(await screen.findByText('Twój ruch a6: Ojej, to pozwala na mata w 1')).toBeTruthy();
     expect(screen.getByText('Spróbuj jeszcze raz')).toBeTruthy();
     expect(next().disabled).toBe(true);
-    expect(cell('a6').dataset.tap).toBe('wrong');
-    // A second try works; the wrong mark goes.
+    // The pawn is back on a7, so no square keeps a frame (case s13-territory: an empty framed a6 confused);
+    // the text above already names the move.
+    expect(document.querySelectorAll('[data-tap]')).toHaveLength(0);
+    // A second try works.
     play('g7', 'g6');
     expect(await screen.findByText('Twój ruch g6: Dobrze, tak zagrano w partii!')).toBeTruthy();
     expect(store.getState().run?.ply).toBe(6);

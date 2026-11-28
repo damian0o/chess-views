@@ -87,8 +87,8 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
     });
   };
   const judged = solve.state.kind === 'judged' ? solve.state : null;
-  const solveMarks = judged?.check.kind === 'right' && judged.check.game ? { right: judged.guess.move.to as Square }
-    : judged && judged.check.kind !== 'right' && solving ? { wrong: judged.guess.move.to as Square } : {};
+  // A wrong move leaves no frame: the piece is back home and the status text names the move.
+  const solveMarks = judged?.check.kind === 'right' && judged.check.game ? { right: judged.guess.move.to as Square } : {};
   const boardScene = solving && pick.from ? { ...scene, focus: [...scene.focus, pick.from] } : scene;
   const after = (move: () => Promise<void>) => async () => {
     await move();
