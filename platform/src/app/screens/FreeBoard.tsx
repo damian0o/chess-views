@@ -142,7 +142,6 @@ export function FreeBoard() {
           <MoveStrip moves={session.game.moves()} ply={session.ply} onPly={s.setPly} white={session.headers.White} black={session.headers.Black} hideFromPly={session.solve ? session.ply : undefined} startFen={session.game.fen(0)} />
           <div className="flex flex-wrap items-center gap-2">
             <LoadDialog />
-            <Button tone="quiet" onPress={() => s.toggleFlip()}>⟲ {t('flip')}</Button>
             <Button tone="quiet" onPress={() => void copy()}>{t('copyLink')}</Button>
             <Button tone="quiet" onPress={() => navigate('/print')}>{t('print')}</Button>
             <Toggle isSelected={player?.pieceStyle === 'letters'} onChange={(on) => void s.updatePlayer({ pieceStyle: on ? 'letters' : 'images' })}>{t('letters')}</Toggle>

@@ -11,16 +11,16 @@ test('the Opera game: step to the end, mate, flip, letters, every view draws', a
   await expect(page.getByText(/Morphy/)).toBeVisible();
   await page.getByRole('button', { name: 'Koniec' }).click();
   await expect(page.getByRole('status', { name: 'Stan partii' })).toHaveText('Mat');
-  await page.getByRole('button', { name: /Obróć/ }).click();
+  await page.locator('[data-option="flip"]').click();
   await expect(page.getByRole('gridcell').first()).toHaveAttribute('aria-label', /^h1/);
   await page.getByRole('switch', { name: 'Litery do druku' }).click({ force: true });
   await expect(page.getByRole('img', { name: /biał|czarn/ })).toHaveCount(0);
   await page.getByRole('switch', { name: 'Litery do druku' }).click({ force: true });
-  for (const name of ['Szachownica', 'Terytorium', 'Zasięg', 'Drogi', 'Domki królów', 'Romb', 'Bloki', 'Skoczek']) {
-    await page.getByRole('button', { name: /Widok/ }).click();
-    await page.getByRole('option', { name, exact: true }).click();
+  for (const id of ['territory', 'reach', 'roads', 'kings', 'knight', 'diamond', 'blocks', 'hidden', 'pieces']) {
+    await page.locator(`[data-option="${id}"]`).click();
     await expect(page.getByRole('grid')).toBeVisible();
   }
+  await page.locator('[data-option="diamond"]').click();    // off again
   expect(errors).toEqual([]);
 });
 

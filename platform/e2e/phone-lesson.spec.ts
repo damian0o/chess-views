@@ -26,7 +26,7 @@ test.describe('a lesson on a phone', () => {
       await page.goto('./#/lesson/scholars-mate/s10-houses');
       await openBoard(page);
       await inView(page, page.locator('[data-sheet] [data-board]'));
-      await inView(page, page.locator('[data-sheet-body]').getByRole('group'));
+      await inView(page, page.locator('[data-sheet-body]').getByRole('group').filter({ hasNot: page.locator('[data-option]') }));
       await inView(page, page.locator('[data-dock]').getByRole('button', { name: /^Dalej/ }));
     });
   }

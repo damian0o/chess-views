@@ -37,7 +37,6 @@ export interface AppState {
   stepPly(by: number): void;
   /** Press a board look option on the free board: the look's rules, or turn the board for flip. */
   toggleOption(id: OptionId): void;
-  toggleFlip(): void;
   loadPlayers(): Promise<void>;
   restore(): Promise<void>;
   addPlayer(opts: { name?: string; age?: AgeBand; locale?: Locale; avatar?: Avatar }): Promise<void>;
@@ -153,7 +152,6 @@ export function createAppStore(deps: StoreDeps) {
         if (!s) return;
         set({ session: id === 'flip' ? { ...s, flip: !s.flip } : { ...s, look: toggle(s.look, id) } });
       },
-      toggleFlip() { const s = get().session; if (s) set({ session: { ...s, flip: !s.flip } }); },
 
       async loadPlayers() { set({ players: await profiles.list() }); },
 

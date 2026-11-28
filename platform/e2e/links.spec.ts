@@ -12,7 +12,7 @@ test('an old FEN link opens the free board with its view and flip', async ({ pag
   await addPlayer(page, 'Ola');
   await page.goto('./#fen=r1bqkbnr%2Fpppp1ppp%2F2n5%2F4p2Q%2F2B1P3%2F8%2FPPPP1PPP%2FRNB1K1NR+b+KQkq+-+3+3&view=roads&flip=1');
   await expect(page).toHaveURL(/#\/board\?/);
-  await expect(page.getByRole('button', { name: /Widok/ })).toContainText('Drogi');
+  await expect(page.locator('[data-option="roads"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('gridcell').first()).toHaveAttribute('aria-label', /^h1/);
 });
 test('an old #pos link opens the library entry', async ({ page }) => {

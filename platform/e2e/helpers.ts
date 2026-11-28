@@ -51,7 +51,8 @@ export async function answerStep(page: Page) {
       for (let i = 0; i < 64 && await next.isDisabled(); i++) await cells.nth(i).click();
       continue;
     }
-    const options = page.getByRole('region').or(page.locator('section')).getByRole('group').getByRole('button');
+    // The answers' group, not a row of the look picker (those are groups too).
+    const options = page.getByRole('region').or(page.locator('section')).getByRole('group').filter({ hasNot: page.locator('[data-option]') }).getByRole('button');
     const n = await options.count();
     for (let i = 0; i < n; i++) { const b = options.nth(i); if (await b.isEnabled()) { await b.click(); break; } }
   }
