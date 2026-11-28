@@ -12,7 +12,7 @@ import { makeStore, mount } from './helpers/harness';
 
 afterEach(cleanup);
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' as Fen;
-const scene = sceneFor({ id: 's', scene: { position: { kind: 'fen', fen: START }, base: 'board', layers: ['pieces'] }, explain: { kids: 'x' } } as Step, { answered: false });
+const scene = sceneFor({ id: 's', scene: { position: { kind: 'fen', fen: START }, look: { pieces: 'pieces' } }, explain: { kids: 'x' } } as Step, { answered: false });
 const names = () => [...document.querySelectorAll<HTMLElement>('[data-square-name]')];
 const nameOn = (sq: string) => document.querySelector<HTMLElement>(`[data-square="${sq}"] [data-square-name]`);
 
@@ -38,7 +38,7 @@ describe('square names on the board', () => {
     expect(frame.className).not.toContain('rounded-card');
   });
   test('the diamond view shows no names', () => {
-    const diamond = sceneFor({ id: 's', scene: { position: { kind: 'fen', fen: START }, base: 'board', layers: ['pieces', 'diamond'] }, explain: { kids: 'x' } } as Step, { answered: false });
+    const diamond = sceneFor({ id: 's', scene: { position: { kind: 'fen', fen: START }, look: { pieces: 'pieces', diamond: true } }, explain: { kids: 'x' } } as Step, { answered: false });
     render(<Board scene={diamond} squareNames />);
     expect(document.querySelectorAll('[data-square]').length).toBe(64);
     expect(names()).toHaveLength(0);

@@ -7,7 +7,7 @@ import type { Fen, Step } from '@core/types';
 
 afterEach(cleanup);
 const QB3 = 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/1QP5/PP1P1PPP/RNB1K1NR b KQkq - 2 4' as Fen;
-const roads = (fen: Fen) => sceneFor({ id: 's', scene: { position: { kind: 'fen', fen }, base: 'board', layers: ['pieces', 'roads'] }, explain: { kids: 'x' } } as Step, { answered: false });
+const roads = (fen: Fen) => sceneFor({ id: 's', scene: { position: { kind: 'fen', fen }, look: { pieces: 'pieces', moves: 'roads' } }, explain: { kids: 'x' } } as Step, { answered: false });
 
 test('the roads view draws the queen behind the bishop as a dashed road from c4 to f7', () => {
   render(<Board scene={roads(QB3)} />);

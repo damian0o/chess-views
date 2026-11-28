@@ -12,14 +12,13 @@ const next = () => screen.getByRole('button', { name: /^(Dalej|Zakończ ✓)/ })
 const pieces = () => screen.queryAllByRole('img', { name: /biał|czarn/ });
 
 describe('lesson screen', () => {
-  test("a step opens with its own view selected and the dropdown lists only the lesson's views", async () => {
+  test("a step opens with its own look pressed and the picker lists only the lesson's options", async () => {
     const store = await withPlayer();
     mount(<AppRoutes />, { store, path: '/lesson/eyes-on-f7/s03-roads' });
-    const picker = await screen.findByRole('button', { name: /Widok/ });
-    expect(picker.textContent).toMatch(/Drogi/);
-    fireEvent.click(picker);
-    const names = (await screen.findAllByRole('option')).map((o) => o.textContent?.replace('🔒', '').trim());
-    expect(names).toEqual(['Szachownica', 'Terytorium', 'Drogi', 'Bloki']);
+    await screen.findByRole('group', { name: 'Ruchy' });
+    const opts = [...document.querySelectorAll('[data-option]')];
+    expect(opts.map((o) => o.getAttribute('data-option'))).toEqual(['pieces', 'blocks', 'hidden', 'roads', 'territory', 'flip', 'names']);
+    expect(document.querySelector('[data-option="roads"]')!.getAttribute('aria-pressed')).toBe('true');
   });
   test('a wrong choice shows Spróbuj jeszcze raz and keeps Next disabled; the right one enables Next', async () => {
     const id = stepWith((s) => s.question?.kind === 'choice');
@@ -45,14 +44,15 @@ describe('lesson screen', () => {
     await waitFor(() => expect(next().disabled).toBe(false));
   });
   // Review Focus 1
-  test('recall step: blocks only, no pieces, view dropdown disabled until answered', async () => {
+  test('recall step: blocks only, no pieces, look picker disabled until answered', async () => {
     const id = stepWith((s) => s.question?.kind === 'recall' && s.question.answer === 'yes');
     const store = await withPlayer();
     mount(<AppRoutes />, { store, path: `/lesson/scholars-mate/${id}` });
-    const picker = await screen.findByRole('button', { name: /Widok/ });
+    await screen.findByRole('group', { name: 'Bierki' });
     expect(pieces()).toHaveLength(0);
     expect(document.querySelectorAll('[data-block]').length).toBeGreaterThan(0);
-    expect(picker.hasAttribute('disabled') || picker.getAttribute('aria-disabled') === 'true' || picker.closest('[data-disabled]') !== null).toBe(true);
+    const picker = document.querySelector('[data-option="pieces"]') as HTMLButtonElement;
+    expect(picker.disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Tak' }));
     await waitFor(() => expect(pieces().length).toBeGreaterThan(0));
   });

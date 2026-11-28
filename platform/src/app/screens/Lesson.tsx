@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import type { LessonRun } from '@core/lessons/run';
-import { sceneOfRun, isBlocks } from '@core/scene';
+import { sceneOfRun } from '@core/scene';
 import type { Fen, Square } from '@core/types';
 import { loadGame } from '@core/chess/rules';
 import { tapGuess, type GuessState } from '@core/guess';
@@ -18,9 +18,9 @@ import { LessonDock } from '../lesson/LessonDock';
 import { PhoneRun } from '../lesson/PhoneRun';
 import { useIsPhone } from '../lesson/useIsPhone';
 import { dockHighlight } from '../lesson/sheet';
-import { ViewPicker } from '../lesson/ViewPicker';
+import { LookPicker } from '../lesson/LookPicker';
 import { LegendPopup } from '../lesson/LegendPopup';
-import { lessonViews, viewOf } from '../views';
+import { optionsOf } from '@core/look';
 import { useSolve } from '../lesson/useSolve';
 import { roomOfLesson } from '@core/rooms';
 import { ROOM_NAME } from '../rooms/names';
@@ -28,7 +28,7 @@ import { ROOM_NAME } from '../rooms/names';
 const HINT: Record<string, MessageKey> = { opponent: 'guessOpponent', empty: 'guessEmpty', illegal: 'guessIllegal', stuck: 'guessStuck' };
 
 /**
- * The screen of a running lesson or round: one board, the view dropdown with its legend, and the step card.
+ * The screen of a running lesson or round: one board, the look picker with its legend, and the step card.
  * Back and Next move the address themselves (`onStep`); the address never moves the run back (one owner).
  */
 function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: LessonRun) => void; onDone: () => void }) {
@@ -41,8 +41,10 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   const scene = sceneOfRun(run);
   const q = run.step.question;
   const answering = run.gate?.kind === 'answer';
-  const views = lessonViews(run.lesson);
-  const view = viewOf(run.layersOn);
+  const updatePlayer = useApp((s) => s.updatePlayer);
+  const names = !!player && showsSquareNames(player);
+  // Square names are a profile setting: the run leaves them off, the screen fills them in.
+  const options = run.options.map((o) => (o.id === 'names' ? { ...o, on: names } : o));
   // The right mark goes on the square the child tapped (any of the right squares), else the first one.
   const [lastTap, setLastTap] = useState<Square | undefined>(undefined);
   const tapRight = q?.kind === 'tap' && run.answered ? (lastTap && q.squares.includes(lastTap) ? lastTap : q.squares[0]) : undefined;
@@ -96,20 +98,15 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
 
   const topBar = <TopBar title={run.lesson.title} up={isRound ? undefined : { to: `/room/${roomOfLesson(run.lesson)}`, label: t(ROOM_NAME[roomOfLesson(run.lesson)]) }} extra={<span className="font-bold text-ink-soft">{run.index + 1}/{run.total}</span>} />;
   const board = (
-    <Board scene={boardScene} flip={scene.flip} squareNames={!!player && showsSquareNames(player)}
+    <Board scene={boardScene} flip={run.flip} squareNames={names}
       onSquare={tapOpen ? (sq) => { setLastTap(sq); report({ kind: 'answer', value: sq }); } : solving ? onSolveTap : undefined}
       tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}), ...solveMarks }} />
   );
   const tools = (
-    <div className="flex flex-wrap items-center gap-2">
-      <ViewPicker views={views} selected={view.id} allowed={run.allowedLayers} disabled={answering && isBlocks(run.step)}
-        onChange={(v) => report({ kind: 'layers', on: v.layers })} />
-      <LegendPopup view={view} />
-      {isBlocks(run.step) && !answering && (
-        <Button tone="quiet" onPress={() => report({ kind: 'layers', on: run.layersOn.includes('pieces') ? run.layersOn.filter((l) => l !== 'pieces') : [...run.layersOn, 'pieces'] })}>
-          {t(run.layersOn.includes('pieces') ? 'hidePieces' : 'showPieces')}
-        </Button>
-      )}
+    <div className="flex items-start gap-2">
+      <LookPicker options={options} frozen={run.frozen}
+        onToggle={(id) => (id === 'names' ? void updatePlayer({ squareNames: !names }) : report({ kind: 'toggle', option: id }))} />
+      <LegendPopup on={[run.look.pieces, ...optionsOf(run.look)]} />
     </div>
   );
   // The whole game in order; while a question or task is open the later moves stay hidden.

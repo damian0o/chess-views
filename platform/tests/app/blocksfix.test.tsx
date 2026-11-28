@@ -16,17 +16,18 @@ const cell = (sq: string) => screen.getByRole('gridcell', { name: new RegExp(`^$
 const next = () => screen.getByRole('button', { name: /^Dalej/ }) as HTMLButtonElement;
 
 describe('block boards', () => {
-  test('a blocks step without a question has Pokaż bierki / Ukryj bierki', async () => {
+  test('a blocks step without a question switches between Bierki and Klocki', async () => {
     await open('/lesson/scholars-mate/s04-shapes');
+    const opt = (id: string) => document.querySelector(`[data-option="${id}"]`) as HTMLButtonElement;
     expect(pieces()).toHaveLength(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Pokaż bierki' }));
-    expect(pieces().length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Ukryj bierki' }));
-    expect(pieces()).toHaveLength(0);
+    fireEvent.click(opt('pieces'));
+    await waitFor(() => expect(pieces().length).toBeGreaterThan(0));
+    fireEvent.click(opt('blocks'));
+    await waitFor(() => expect(pieces()).toHaveLength(0));
   });
   test('step 22: the child taps the square the shape strikes; the pieces come back after the right tap', async () => {
     await open('/lesson/scholars-mate/s22-shapes');
-    expect(screen.queryByRole('button', { name: 'Pokaż bierki' })).toBeNull();     // no peeking while the question is open
+    expect((document.querySelector('[data-option="pieces"]') as HTMLButtonElement).disabled).toBe(true);     // no peeking while the question is open
     expect(next().disabled).toBe(true);
     fireEvent.click(cell('f7'));
     expect(await screen.findByText('Spróbuj jeszcze raz')).toBeTruthy();

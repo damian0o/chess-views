@@ -64,30 +64,30 @@ describe('I1: marks on the board are visible in every theme', () => {
   });
 });
 
-describe('I2: the view dropdown only offers what the lesson allows', () => {
-  test('a view not allowed yet is disabled, and an allowed one switches the board', async () => {
+describe('I2: the look picker only offers what the lesson allows', () => {
+  test('an option not unlocked yet is disabled', async () => {
     const store = await withPlayer();
     mount(<AppRoutes />, { store, path: '/lesson/eyes-on-f7/s01-board' });
-    fireEvent.click(await screen.findByRole('button', { name: /Widok/ }));
-    const drogi = (await screen.findAllByRole('option')).find((o) => o.textContent?.includes('Drogi'))!;
-    expect(drogi.getAttribute('aria-disabled')).toBe('true');
+    await screen.findByRole('group', { name: 'Ruchy' });
+    const drogi = document.querySelector('[data-option="roads"]') as HTMLButtonElement;
+    expect(drogi.disabled).toBe(true);
   });
   test('after Roads was shown, picking Drogi on a Territory step shows roads', async () => {
     const store = await withPlayer();
     await store.getState().openLesson('eyes-on-f7', 's03-roads');
     await store.getState().openLesson('eyes-on-f7', 's05-territory');
     const run = store.getState().run!;
-    store.getState().report({ kind: 'layers', on: ['pieces', 'roads'] });
-    expect(store.getState().run!.layersOn).toEqual(['pieces', 'roads']);
+    store.getState().report({ kind: 'toggle', option: 'roads' });
+    expect(store.getState().run!.look).toEqual({ pieces: 'pieces', moves: 'roads', strategy: 'territory' });
     void run;
   });
   test('core: withProfile refreshes what a run allows', () => {
     const L = LESSONS.pl.find((l) => l.id === 'eyes-on-f7')!;
     const p = defaultProfile();
     const run = startLesson(L, p, 's05-territory')!;
-    expect(run.allowedLayers).not.toContain('roads');
-    const fresh = run.withProfile({ ...p, unlockedLayers: ['pieces', 'roads'] });
-    expect(fresh.allowedLayers).toContain('roads');
+    expect(run.options.find((o) => o.id === 'roads')!.locked).toBe(true);
+    const fresh = run.withProfile({ ...p, unlocked: ['roads'] });
+    expect(fresh.options.find((o) => o.id === 'roads')!.locked).toBe(false);
     expect(fresh.step.id).toBe('s05-territory');
   });
 });
@@ -116,7 +116,7 @@ describe('I4: legends describe only what is drawn', () => {
 
 describe('I5: the board by keyboard and in Polish', () => {
   const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' as Fen;
-  const scene = sceneFor({ id: 's', scene: { position: { kind: 'fen', fen: START }, base: 'board', layers: ['pieces'] }, explain: { kids: 'x' } } as Step, { answered: false });
+  const scene = sceneFor({ id: 's', scene: { position: { kind: 'fen', fen: START }, look: { pieces: 'pieces' } }, explain: { kids: 'x' } } as Step, { answered: false });
   test('one tab stop, arrow keys move focus, Enter reports the square', () => {
     const on = vi.fn();
     render(<PlayerProvider player={null}><Board scene={scene} onSquare={on} /></PlayerProvider>);

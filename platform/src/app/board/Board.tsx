@@ -37,22 +37,23 @@ export interface BoardProps {
 export function Board({ scene, onSquare, flip = false, tapMarks, knightSquare, pieceStyle = 'images', squareNames = false, edges = true, overlay }: BoardProps) {
   const t = useT();
   const board = boardFromFen(scene.fen);
-  const showPieces = scene.layers.includes('pieces');
-  const showBlocks = !showPieces && scene.layers.includes('shapes');
+  const look = scene.look;
+  const showPieces = look.pieces === 'pieces';
+  const showBlocks = look.pieces === 'blocks';
   const order = flip ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
   const xy = (sq: Square): [number, number] => {
     const col = sq.charCodeAt(0) - 97, row = 8 - Number(sq[1]);
     return flip ? [7 - col + 0.5, 7 - row + 0.5] : [col + 0.5, row + 0.5];
   };
-  const marks = scene.layers.includes('territory') ? scene.data.territory?.mark : undefined;
-  const houses = scene.layers.includes('kings') ? houseOf(scene.data.kings) : new Map<string, string>();
-  const roads = scene.layers.includes('roads') ? scene.data.roads : undefined;
+  const marks = look.strategy === 'territory' ? scene.data.territory?.mark : undefined;
+  const houses = look.strategy === 'kings' ? houseOf(scene.data.kings) : new Map<string, string>();
+  const roads = look.moves === 'roads' ? scene.data.roads : undefined;
   const focus = new Set<string>(scene.focus);
-  const reach = scene.layers.includes('reach') ? new Map((scene.data.reach?.pieces ?? []).map((p) => [p.square as string, p.count])) : null;
+  const reach = look.moves === 'reach' ? new Map((scene.data.reach?.pieces ?? []).map((p) => [p.square as string, p.count])) : null;
   const turn = (scene.fen.split(' ')[1] ?? 'w') as 'w' | 'b';
-  const kFrom = scene.layers.includes('knight') ? (knightSquare ?? (defaultKnightSquare(board, turn) as Square | null)) : null;
+  const kFrom = look.moves === 'knight' ? (knightSquare ?? (defaultKnightSquare(board, turn) as Square | null)) : null;
   const dist = kFrom ? knightDistances(kFrom) : null;
-  const diamond = scene.layers.includes('diamond');
+  const diamond = !!look.diamond;
   // The diamond's cells are too small for a name, and its empty squares have no background to read it on.
   const names = squareNames && !diamond;
   const showEdges = edges && !squareNames && !diamond;

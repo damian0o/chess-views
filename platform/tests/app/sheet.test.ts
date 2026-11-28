@@ -7,7 +7,7 @@ import type { Lesson, LessonId, Step } from '@core/types';
 const PGN = '1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#';
 const at = (ply: number) => ({ kind: 'pgn' as const, pgn: PGN, ply });
 const step = (id: string, extra: Partial<Step> = {}, ply = 5): Step =>
-  ({ id, scene: { position: at(ply), base: 'board', layers: ['pieces'] }, explain: { kids: id }, ...extra } as Step);
+  ({ id, scene: { position: at(ply), look: { pieces: 'pieces' } }, explain: { kids: id }, ...extra } as Step);
 const lessonOf = (s: Step): Lesson => ({ id: 'fx' as LessonId, group: { kind: 'pattern', id: 'f7' }, title: 'F', about: { kids: 'x' }, experience: 'basic', moments: [], steps: [s, step('after')] } as Lesson);
 const kid = { ...defaultProfile(), age: 'kids' as const };
 
