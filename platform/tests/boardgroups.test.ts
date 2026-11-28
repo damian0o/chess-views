@@ -87,6 +87,13 @@ describe('the lesson run on looks', () => {
     const switched = right.report({ kind: 'toggle', option: 'reach' });
     expect(switched.look).toEqual({ pieces: 'pieces', moves: 'reach' });
   });
+  test('Final I1: a blocks recall step with a find-the-move task is frozen from the start', () => {
+    const solveRecall = { ...FX.steps[1]!, id: 'sr', solve: { task: { kids: 'Find' } }, scene: { ...FX.steps[1]!.scene, position: at(6) } } as Step;
+    const r = startLesson({ ...FX, steps: [solveRecall] }, mixer)!;
+    expect(r.gate?.kind).toBe('reveal');
+    expect(r.frozen).toBe(true);
+    expect(r.report({ kind: 'toggle', option: 'reach' }).look).toEqual(r.look);
+  });
   test('answering fills an empty group from the step', () => {
     expect(open('recall').report({ kind: 'answer', value: 0 }).look).toEqual({ pieces: 'pieces', moves: 'roads' });
   });

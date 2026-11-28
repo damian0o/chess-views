@@ -98,7 +98,7 @@ function make(s: State): LessonRun {
   const own = new Set<OptionId>([...optionsOfStep(step)]);
   const busy = gate?.kind === 'answer' || gate?.kind === 'reveal';
   const usable = (id: OptionId) => !(busy && (id === 'engine' || (step.scene.locked ?? []).includes(id))) && (OPTIONS[id].always || unlocked.has(id) || own.has(id));
-  const frozen = gate?.kind === 'answer' && isBlocks(step);
+  const frozen = isBlocks(step) && !!step.question && !s.answered;
   const options = optionStates(s.look, { flip: s.flip, names: false }, lessonOptions(s.lesson), usable);
   const run: LessonRun = {
     lesson: s.lesson, step, index: s.index, total: s.steps.length, gate, done: last && !gate,

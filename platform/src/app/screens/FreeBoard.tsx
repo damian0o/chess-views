@@ -130,9 +130,8 @@ export function FreeBoard() {
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <LookPicker options={options} frozen={false}
+            <LookPicker options={options} frozen={false} aside={<LegendPopup on={[session.look.pieces, ...optionsOf(session.look)]} />}
               onToggle={(id) => (id === 'names' ? void s.updatePlayer({ squareNames: !names }) : s.toggleOption(id))} />
-            <LegendPopup on={[session.look.pieces, ...optionsOf(session.look)]} />
           </div>
           <p role="status" aria-label={t('gameStatus')} className="text-lg font-black">{(() => {
             const st = session.game.status(session.ply);

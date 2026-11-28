@@ -103,11 +103,8 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
       tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}), ...solveMarks }} />
   );
   const tools = (
-    <div className="flex items-start gap-2">
-      <LookPicker options={options} frozen={run.frozen}
-        onToggle={(id) => (id === 'names' ? void updatePlayer({ squareNames: !names }) : report({ kind: 'toggle', option: id }))} />
-      <LegendPopup on={[run.look.pieces, ...optionsOf(run.look)]} />
-    </div>
+    <LookPicker options={options} frozen={run.frozen} aside={<LegendPopup on={[run.look.pieces, ...optionsOf(run.look)]} />}
+      onToggle={(id) => (id === 'names' ? void updatePlayer({ squareNames: !names }) : report({ kind: 'toggle', option: id }))} />
   );
   // The whole game in order; while a question or task is open the later moves stay hidden.
   const moveList = game && gameLength > 0 && (

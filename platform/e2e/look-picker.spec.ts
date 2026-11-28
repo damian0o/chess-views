@@ -57,3 +57,14 @@ test('390×844: the picker rows are in view in the sheet and the board keeps its
     expect(b.x + b.width).toBeLessThanOrEqual(390.5);
   }
 });
+
+test('Final: 390 wide, no picker row overflows, so no label is cut', async ({ page }, info) => {
+  test.skip(info.project.name !== 'phone', 'phone only');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await addPlayer(page, 'Ola');
+  await page.goto('./#/lesson/scholars-mate/s03-roads');      // Strategia shows Terytorium 🔒 and Domki króla 🔒
+  await openBoard(page);
+  const over = await page.locator('[data-look-picker] [role="group"] > div').evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
+  expect(over.length).toBeGreaterThan(0);
+  expect(Math.max(...over)).toBeLessThanOrEqual(1);   // scrollWidth rounds fractional button widths up by at most 1 px
+});
