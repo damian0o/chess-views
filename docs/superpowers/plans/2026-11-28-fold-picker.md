@@ -65,3 +65,26 @@ component state, initial value `!useIsPhone()`. Lesson and FreeBoard reorder the
 - [ ] Step 2: build + assemble, run e2e → the new test passes, the old phone specs fail where they click options without opening; add `openPicker` there.
 - [ ] Step 3: full e2e green (`npm run build && npx tsx scripts/assemble-site.ts && npx playwright test`).
 - [ ] Step 4: phone screenshot for the user; commit "e2e: folded picker on phones".
+
+### Task 4: drawings are off-limits while a question or task is open (user approved 2026-11-28, case s06-board)
+
+**Files:** Modify `platform/src/core/lessons/run.ts`; Test `platform/tests/boardgroups.test.ts`
+
+**Rule:** while `busy` (gate answer or reveal), a Ruchy/Strategia option (roads, reach, knight, territory, kings)
+is not usable unless it is the step's own drawing (`step.scene.look.moves/strategy`). Bierki, Romb, Obróć,
+Nazwy pól stay usable. After the answer / reveal everything opens as before. Such options show as
+`blocked: true` (disabled, no 🔒); `locked` (🔒) stays only for options not yet unlocked. Step-`locked:` options
+while busy also become `blocked`, not `locked` (folds the deferred 🔒 minor).
+
+- [ ] Step 1: failing tests:
+  - `s06-board: Drogi is unlocked but disabled while the tap question is open, and usable after f7` (real lesson scholars-mate with a profile that has roads unlocked; toggle roads ignored while open; option `{blocked:true, locked:false}`; after answering f7 toggle works).
+  - `a find-the-move task keeps its own drawing (territory) usable but not reach/kings` (s13-territory).
+  - `Bierki, Klocki, Obróć stay usable while a question is open`.
+- [ ] Step 2: run → FAIL. Step 3: implement in `make` (usable + options mapping). Step 4: `npm run check` green. Step 5: commit "Lessons: no extra drawings while a question is open".
+
+### Task 5: no frame on the square after a wrong find-the-move (case s13-territory)
+
+**Files:** Modify `platform/src/app/screens/Lesson.tsx` (`solveMarks`); Test `platform/tests/app/solve.test.tsx:63-75`
+
+- [ ] Step 1: change the existing test: after the wrong a6, no cell has `data-tap="wrong"` (the text still names a6). Tap questions keep their wrong mark (existing tests stay).
+- [ ] Step 2: run → FAIL. Step 3: drop the `wrong` branch of `solveMarks`. Step 4: check green. Step 5: commit "Find the move: no frame left on the square after a wrong move".
