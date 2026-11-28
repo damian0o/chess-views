@@ -21,7 +21,7 @@ describe('the free board look', () => {
     const ids = [...document.querySelectorAll('[data-option]')].map((o) => o.getAttribute('data-option'));
     expect(ids).toEqual(['pieces', 'blocks', 'hidden', 'roads', 'reach', 'knight', 'territory', 'kings', 'diamond', 'flip', 'names', 'engine']);
     expect(document.querySelectorAll('[data-option]:disabled')).toHaveLength(0);
-    expect(screen.queryByRole('button', { name: /Widok/ })).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
   });
   test('Drogi then Terytorium: both drawn, and the address says so', async () => {
     const store = await open({ fen: SCHOLAR });

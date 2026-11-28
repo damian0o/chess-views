@@ -29,7 +29,7 @@ describe('the look picker in a lesson', () => {
     expect(row('Strategia')).toBeTruthy();
     expect(row('Plansza')).toBeTruthy();
     expect(row('Pomocnik')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Widok/ })).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Pokaż bierki' })).toBeNull();
     expect(pressed('roads')).toBe(true);
   });
@@ -101,5 +101,46 @@ describe('the look picker on its own', () => {
     mount(<LegendPopup on={[PLAIN.pieces]} />);
     fireEvent.click(screen.getByRole('button', { name: 'Co widzę?' }));
     expect(within(screen.getByRole('dialog')).getByText(/Bierki tak, jak stoją/)).toBeTruthy();
+  });
+});
+
+describe('the look picker folds', () => {
+  const opts = (on: Partial<Record<'roads' | 'kings', boolean>> = {}) =>
+    optionStates({ pieces: 'pieces', ...(on.roads ? { moves: 'roads' as const } : {}), ...(on.kings ? { strategy: 'kings' as const } : {}) },
+      { flip: false, names: false }, ['pieces', 'blocks', 'hidden', 'roads', 'kings', 'flip'], () => true);
+  const summary = () => document.querySelector('[data-look-summary]') as HTMLButtonElement;
+  const show = (o = opts({ roads: true }), frozen = false) =>
+    mount(<LookPicker options={o} frozen={frozen} startOpen={false} onToggle={() => {}} aside={<span data-aside>i</span>} />);
+  test('folded: one line "Widok: Bierki · Drogi" and no rows; the legend button still shows', () => {
+    show();
+    expect(summary().textContent).toBe('Widok: Bierki · Drogi ▾');
+    expect(summary().getAttribute('aria-expanded')).toBe('false');
+    expect(document.querySelectorAll('[data-option]')).toHaveLength(0);
+    expect(document.querySelector('[data-aside]')).not.toBeNull();
+  });
+  test('tapping the summary opens the rows and tapping again folds them', () => {
+    show();
+    fireEvent.click(summary());
+    expect(summary().getAttribute('aria-expanded')).toBe('true');
+    expect(summary().textContent).toContain('▴');
+    expect(document.querySelectorAll('[data-option]').length).toBe(6);
+    expect(document.getElementById(summary().getAttribute('aria-controls')!)).not.toBeNull();
+    fireEvent.click(summary());
+    expect(document.querySelectorAll('[data-option]')).toHaveLength(0);
+  });
+  test('frozen: the summary still opens; the rows are disabled', () => {
+    show(opts({ roads: true }), true);
+    expect(summary().disabled).toBe(false);
+    fireEvent.click(summary());
+    expect([...document.querySelectorAll<HTMLButtonElement>('[data-option]')].every((b) => b.disabled)).toBe(true);
+  });
+  test('the summary follows what is on', () => {
+    const { rerender } = show();
+    rerender(<LookPicker options={opts({ roads: true, kings: true })} frozen={false} startOpen={false} onToggle={() => {}} />);
+    expect(summary().textContent).toBe('Widok: Bierki · Drogi · Domki króla ▾');
+  });
+  test('without startOpen the picker is open where the screen is not a phone (jsdom)', () => {
+    mount(<LookPicker options={opts()} frozen={false} onToggle={() => {}} />);
+    expect(summary().getAttribute('aria-expanded')).toBe('true');
   });
 });
