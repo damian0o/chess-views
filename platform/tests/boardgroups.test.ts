@@ -107,7 +107,7 @@ describe('the lesson run on looks', () => {
     const r = startLesson({ ...FX, steps: FX.steps.map((s) => (s.id === 'find' ? { ...s, scene: { ...s.scene, look: { pieces: 'pieces' as const, engine: true } } } : s)) }, p, 'find')!;
     expect(r.gate?.kind).toBe('reveal');
     expect(r.look.engine).toBeFalsy();
-    expect(r.options.find((o) => o.id === 'engine')!.locked).toBe(true);
+    expect(r.options.find((o) => o.id === 'engine')).toMatchObject({ locked: false, blocked: true });   // unlocked, just not now: no 🔒
   });
   test('flip starts from the step and the flip option turns it', () => {
     const r = open('roads');
@@ -149,5 +149,44 @@ describe('old profiles', () => {
     const p = migrateProfile(v2)!;
     expect(p.version).toBe(3);
     expect(p.unlocked).toEqual(['kings']);
+  });
+});
+
+// Case scholars-mate/s06-board: "no roads drawn here, answer from memory" must not be beaten by turning Drogi on.
+describe('drawings while a question or task is open', () => {
+  const tapQ = step('tapq', { pieces: 'pieces' }, { question: { kind: 'tap', prompt: { kids: '?' }, squares: ['f7'] } as never });
+  const terrFind = step('tfind', { pieces: 'pieces', strategy: 'territory' }, { solve: { task: { kids: 'Find' } } }, { position: at(6) });
+  const LX: Lesson = { ...FX, steps: [tapQ, terrFind, ...FX.steps] };
+  const kid = { ...mixer, unlocked: [...mixer.unlocked, 'territory' as const] };
+  const st = (r: ReturnType<typeof startLesson>, id: string) => r!.options.find((o) => o.id === id)!;
+  test('a tap question on a plain board: Drogi is unlocked but disabled (no 🔒) until answered', () => {
+    const r = startLesson(LX, kid, 'tapq')!;
+    expect(st(r, 'roads')).toMatchObject({ locked: false, blocked: true });
+    expect(st(r, 'kings')).toMatchObject({ locked: false, blocked: true });
+    expect(r.report({ kind: 'toggle', option: 'roads' }).look).toEqual({ pieces: 'pieces' });
+    const done = r.report({ kind: 'answer', value: 'f7' as never });
+    expect(st(done, 'roads')).toMatchObject({ locked: false, blocked: false });
+    expect(done.report({ kind: 'toggle', option: 'roads' }).look).toEqual({ pieces: 'pieces', moves: 'roads' });
+  });
+  test('Bierki, Klocki and Obróć stay usable while a question is open', () => {
+    const r = startLesson(LX, kid, 'tapq')!;
+    for (const id of ['pieces', 'blocks', 'hidden', 'flip'] as const) expect(st(r, id)).toMatchObject({ locked: false, blocked: false });
+    expect(r.report({ kind: 'toggle', option: 'blocks' }).look.pieces).toBe('blocks');
+    expect(r.report({ kind: 'toggle', option: 'flip' }).flip).toBe(true);
+  });
+  test('a find-the-move task keeps its own drawing (Terytorium) but not Zasięg or Domki króla', () => {
+    const r = startLesson(LX, kid, 'tfind')!;
+    expect(r.gate?.kind).toBe('reveal');
+    expect(st(r, 'territory')).toMatchObject({ on: true, blocked: false });
+    expect(st(r, 'reach')).toMatchObject({ blocked: true });
+    expect(st(r, 'kings')).toMatchObject({ blocked: true });
+    const off = r.report({ kind: 'toggle', option: 'territory' });
+    expect(off.look.strategy).toBeUndefined();
+    expect(off.report({ kind: 'toggle', option: 'territory' }).look.strategy).toBe('territory');
+    expect(r.report({ kind: 'toggle', option: 'kings' }).look.strategy).toBe('territory');
+  });
+  test('an option not unlocked yet still shows 🔒, not just disabled', () => {
+    const r = startLesson(LX, { ...defaultProfile(), age: 'kids' }, 'tapq')!;
+    expect(st(r, 'roads').locked).toBe(true);
   });
 });

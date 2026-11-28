@@ -107,7 +107,9 @@ describe('LessonRun', () => {
     const r = goto('ask').report({ kind: 'toggle', option: 'territory' });
     expect(r.look).toEqual({ pieces: 'pieces', moves: 'roads' });
     const p = { ...kid, unlocked: ['territory' as const] };
-    expect(startLesson(LESSON, p, 'ask')!.report({ kind: 'toggle', option: 'territory' }).look).toEqual({ pieces: 'pieces', moves: 'roads', strategy: 'territory' });
+    expect(startLesson(LESSON, p, 'ask')!.report({ kind: 'answer', value: 1 }).report({ kind: 'toggle', option: 'territory' }).look).toEqual({ pieces: 'pieces', moves: 'roads', strategy: 'territory' });
+    // While the question is open, an extra drawing could give the answer away: held back until answered.
+    expect(startLesson(LESSON, p, 'ask')!.report({ kind: 'toggle', option: 'territory' }).look).toEqual({ pieces: 'pieces', moves: 'roads' });
   });
   test('the last step: Next stays, done is true once ungated', () => {
     const r = goto('tap').report({ kind: 'answer', value: 'f7' as Square });

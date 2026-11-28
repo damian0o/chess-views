@@ -97,9 +97,16 @@ function make(s: State): LessonRun {
   const unlocked = unlockedOptions(s.profile, [s.lesson]);
   const own = new Set<OptionId>([...optionsOfStep(step)]);
   const busy = gate?.kind === 'answer' || gate?.kind === 'reveal';
-  const usable = (id: OptionId) => !(busy && (id === 'engine' || (step.scene.locked ?? []).includes(id))) && (OPTIONS[id].always || unlocked.has(id) || own.has(id));
+  const open = (id: OptionId) => OPTIONS[id].always || unlocked.has(id) || own.has(id);
+  // While a question or task is open: no engine, no step-locked option, and no drawing the step does not show
+  // itself (it could give the answer away). These show disabled, not 🔒: the child has them, just not now.
+  const drawing = (id: OptionId) => OPTIONS[id].group === 'moves' || OPTIONS[id].group === 'strategy';
+  const ownDrawing = (id: OptionId) => step.scene.look.moves === id || step.scene.look.strategy === id;
+  const heldBack = (id: OptionId) => busy && (id === 'engine' || (step.scene.locked ?? []).includes(id) || (drawing(id) && !ownDrawing(id)));
+  const usable = (id: OptionId) => open(id) && !heldBack(id);
   const frozen = isBlocks(step) && !!step.question && !s.answered;
-  const options = optionStates(s.look, { flip: s.flip, names: false }, lessonOptions(s.lesson), usable);
+  const options = optionStates(s.look, { flip: s.flip, names: false }, lessonOptions(s.lesson), open)
+    .map((o) => (heldBack(o.id) && !o.locked ? { ...o, blocked: true } : o));
   const run: LessonRun = {
     lesson: s.lesson, step, index: s.index, total: s.steps.length, gate, done: last && !gate,
     answered: s.answered, lastAnswer: s.lastAnswer, wrong: s.wrong.slice(), ply: s.ply,
