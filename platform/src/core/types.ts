@@ -7,7 +7,6 @@ import { z } from 'zod';
 
 // ---------- lists defined once ----------
 
-export const LAYER_KINDS = ['territory', 'reach', 'roads', 'kings', 'shapes', 'diamond', 'knight', 'engine', 'pieces'] as const;
 export const PIECES_MODES = ['pieces', 'blocks', 'hidden'] as const;
 export const MOVES_DRAWINGS = ['roads', 'reach', 'knight'] as const;
 export const STRATEGY_DRAWINGS = ['territory', 'kings'] as const;
@@ -75,17 +74,13 @@ export const BoardLookSchema = z.object({
 }).refine((l) => !(l.diamond && (l.moves || l.strategy)), 'a drawing cannot be on the diamond');
 export type BoardLook = z.infer<typeof BoardLookSchema>;
 
-export const LayerKindSchema = z.enum(LAYER_KINDS);
-export type LayerKind = z.infer<typeof LayerKindSchema>;
-
 export const SceneSchema = z.object({
   position: PositionSourceSchema,
-  base: z.enum(['board', 'diamond']),
-  layers: z.array(LayerKindSchema),           // draw order; no 'pieces' means blocks only
+  look: BoardLookSchema,
   focus: z.array(SquareSchema).optional(),
   hideMoves: z.boolean().optional(),
   flip: z.boolean().optional(),
-  lockedLayers: z.array(LayerKindSchema).optional(),   // hidden while the step's question is open
+  locked: z.array(OptionIdSchema).optional(),   // forced off while the step's question is open
 });
 export type Scene = z.infer<typeof SceneSchema>;
 
@@ -162,7 +157,7 @@ export const LibraryEntrySchema = z.object({
   tags: z.array(z.string().min(1)).min(1),
   note: AgedTextSchema,
   source: PositionSourceSchema,
-  scene: SceneSchema.partial().optional(),
+  look: BoardLookSchema.optional(),
   room: RoomSchema,
   family: z.array(FamilySchema).optional(),
 });
@@ -187,10 +182,11 @@ const profileFields = {
   /** The lesson opened last, for Kontynuuj on the home screen. */
   lastLesson: z.string().optional(),
   progress: z.record(z.string(), z.object({ reachedStep: z.string(), done: z.boolean() })),
-  unlockedLayers: z.array(LayerKindSchema),
 };
-/** Version 1 (phase 1): no avatar. Read only to migrate. */
-export const ProfileV1Schema = z.object({ version: z.literal(1), ...profileFields });
-/** The current profile. */
-export const ProfileSchema = z.object({ version: z.literal(2), ...profileFields, avatar: AvatarSchema });
+/** Version 1 (phase 1): no avatar, unlocked views as layer names. Read only to migrate. */
+export const ProfileV1Schema = z.object({ version: z.literal(1), ...profileFields, unlockedLayers: z.array(z.string()) });
+/** Version 2: an avatar, unlocked views still as layer names. Read only to migrate. */
+export const ProfileV2Schema = z.object({ version: z.literal(2), ...profileFields, unlockedLayers: z.array(z.string()), avatar: AvatarSchema });
+/** The current profile: unlocked board look options. */
+export const ProfileSchema = z.object({ version: z.literal(3), ...profileFields, unlocked: z.array(OptionIdSchema), avatar: AvatarSchema });
 export type Profile = z.infer<typeof ProfileSchema>;

@@ -76,7 +76,7 @@ export function buildRound(lessons: Lesson[], done: Set<LessonId>, seed: number,
     const choices = shuffle([m.label, ...pickWrong(m, [...same, ...other]).map((o) => o.label)], rand);
     return {
       id: `round-${i + 1}`,
-      scene: { position: m.board, base: 'board', layers: ['shapes'], hideMoves: true },
+      scene: { position: m.board, look: { pieces: 'blocks' }, hideMoves: true },
       explain: { kids: t(locale, 'roundBoard', { n: i + 1, total }) },
       question: { kind: 'choice', prompt: { kids: prompt }, choices, answer: choices.indexOf(m.label) },
     };

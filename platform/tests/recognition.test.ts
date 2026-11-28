@@ -3,7 +3,7 @@ import { usableMoments, roundUnlocked, buildRound, ROUND_SIZE, MIN_USABLE } from
 import type { Lesson, LessonId, Fen } from '@core/types';
 
 const fenN = (n: number) => `8/8/8/8/8/8/${n}P${7 - n}/K6k w - - 0 1`.replace(/0P/, 'P').replace(/P0/, 'P') as Fen;
-const step = { id: 's1', scene: { position: { kind: 'fen' as const, fen: fenN(0) }, base: 'board' as const, layers: ['pieces' as const] }, explain: { kids: 'x' } };
+const step = { id: 's1', scene: { position: { kind: 'fen' as const, fen: fenN(0) }, look: { pieces: 'pieces' as const } }, explain: { kids: 'x' } };
 type Extra = Record<string, { looksLike?: string[] }>;
 const mk = (id: string, game: string, ids: string[], extra: Extra = {}): Lesson => ({
   id: id as LessonId, group: { kind: 'game', id: 'g' }, title: game, about: { kids: 'x' }, game, experience: 'basic',
@@ -68,7 +68,7 @@ describe('recognition', () => {
         expect(q.choices.length).toBeGreaterThanOrEqual(3); expect(q.choices.length).toBeLessThanOrEqual(4);
         expect(new Set(q.choices).size).toBe(q.choices.length);
         expect(q.choices.includes('Game A: the mate') && q.choices.includes('Game B: the mate')).toBe(false);
-        expect(s.scene.layers).not.toContain('pieces');                 // blocks only
+        expect(s.scene.look.pieces).toBe('blocks');                     // blocks only
         expect(s.scene.hideMoves).toBe(true);
         expect(s.id).toBe(`round-${i + 1}`);
         expect(q.prompt.kids).toBe('Which game, which moment?');

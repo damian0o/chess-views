@@ -1,5 +1,5 @@
 /** Position analysis: pure functions over a plain 8x8 board (row 0 = rank 8, col 0 = file a). */
-import type { Fen, LayerKind } from '../types';
+import type { BoardLook, Fen } from '../types';
 import { boardFromFen } from './board';
 import { kingHouses, type KingHouses } from './kings';
 import { knightJumps, type KnightJump } from './knight';
@@ -45,11 +45,11 @@ export type LayerData = {
  * views, `territory` also brings `safety` (the territory view marks hanging pieces) and `roads` also
  * brings `pins` (the roads view marks frozen pieces), and roads carry the rings on attacked pieces and
  * the pawn-guarded road squares. Reach and king houses respect pins.
- * 'engine' and 'pieces' need no analysis and produce nothing.
+ * Blocks bring `shapes`, the diamond its rows. The engine and plain pieces need no analysis.
  */
-export function analyse(fen: Fen, layers: readonly LayerKind[]): LayerData {
+export function analyse(fen: Fen, look: BoardLook): LayerData {
   const board = boardFromFen(fen);
-  const want = new Set(layers);
+  const want = new Set<string>([look.moves, look.strategy, look.pieces === 'blocks' ? 'shapes' : undefined, look.diamond ? 'diamond' : undefined].filter((x): x is string => !!x));
   const out: LayerData = {};
   if (want.has('territory')) {
     out.territory = territory(board);

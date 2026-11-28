@@ -1,5 +1,6 @@
 /** The free board: a position the user pasted or linked, the ply shown, the orientation and the view. */
-import type { LayerKind, PositionSource } from './types';
+import type { BoardLook, PositionSource } from './types';
+import { lookOfView } from './look';
 import { loadGame, type Game } from './chess/rules';
 import { parseInput } from './analysis/input';
 import { analyse } from './analysis/index';
@@ -54,12 +55,12 @@ export function stepTo(s: Session, ply: number): Session {
 
 export const stepBy = (s: Session, n: number): Session => stepTo(s, s.ply + n);
 
-/** The session's scene: the position at its ply, every move visible, the analysis the layers need. */
-export function sessionScene(s: Session, layers: LayerKind[]): ResolvedScene {
+/** The session's scene: the position at its ply, every move visible, the analysis the look needs. */
+export function sessionScene(s: Session, look: BoardLook = lookOfView(s.view)): ResolvedScene {
   const fen = s.game.fen(s.ply);
   return {
     fen, ply: s.ply, moves: s.solve ? s.game.moves().slice(0, s.ply) : s.game.moves(),
-    layers: layers.slice(), data: analyse(fen, layers),
+    look, data: analyse(fen, look),
     focus: [], hideMoves: !!s.solve, flip: s.flip,
   };
 }

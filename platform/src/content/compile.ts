@@ -9,10 +9,10 @@ import { parse as parseYaml } from 'yaml';
 import { loadGame, ChessError } from '@core/chess/rules';
 import {
   ANSWER_MAX, FAMILIES, LOCALES, ROOMS, LessonSchema, LibraryEntrySchema, StepSchema, PositionSourceSchema,
-  type AgedText, type Lesson, type LibraryEntry, type Locale, type Moment, type PositionSource, type Question, type Step,
+  type AgedText, type BoardLook, type Lesson, type LibraryEntry, type Locale, type Moment, type PositionSource, type Question, type Step,
 } from '@core/types';
 import { parseLesson, type RawLesson, type RawQuestion, type RawStep } from './parse';
-import { resolvePosition, sceneOf, asList, type LibraryPositions } from './resolve';
+import { resolvePosition, sceneOf, lookOf, asList, type LibraryPositions } from './resolve';
 import { compareLocales } from './check';
 
 export interface ContentError { file: string; line: number; message: string }
@@ -67,7 +67,7 @@ function stepMessage(issues: { path: PropertyKey[]; message: string }[], candida
   const value = path.reduce<unknown>((v, k) => (v && typeof v === 'object' ? (v as Record<PropertyKey, unknown>)[k] : undefined), candidate);
   const [a, b] = path;
   if (a === 'scene' && b === 'focus') return `"${String(value)}" is not a square (a1 to h8)`;
-  if (a === 'scene' && (b === 'layers' || b === 'lockedLayers')) return `unknown view "${String(value)}"`;
+  if (a === 'scene' && b === 'locked') return `unknown option "${String(value)}"`;
   if (a === 'audience') return `unknown age "${String(value)}" (use kids, teens or adults)`;
   return zodMessage(issues);
 }
@@ -89,7 +89,7 @@ function compileLibrary(root: string, errors: ContentError[]): { positions: Libr
   const read = readYaml(file, errors);
   if (!read) return { positions, entries };
   if (!Array.isArray(read.data)) { errors.push({ file, line: 1, message: 'library.yaml must be a list of entries (- id: …)' }); return { positions, entries }; }
-  const shared: { id: string; tags: string[]; scene?: unknown; room: unknown; family?: unknown }[] = [];
+  const shared: { id: string; tags: string[]; look?: BoardLook; room: unknown; family?: unknown }[] = [];
   for (const raw of read.data as Record<string, unknown>[]) {
     const id = String(raw?.id ?? '');
     const line = lineIn(read.text, new RegExp(`^-\\s+id:\\s*${esc(id)}\\s*$`));
@@ -101,8 +101,10 @@ function compileLibrary(root: string, errors: ContentError[]): { positions: Libr
     if (!(ROOMS as readonly unknown[]).includes(raw.room)) { errors.push({ file, line, message: `${id}: unknown room "${String(raw.room)}" (use ${ROOMS.join(', ')})` }); continue; }
     const badFamily = asList(raw.family).find((f) => !(FAMILIES as readonly string[]).includes(f));
     if (badFamily !== undefined) { errors.push({ file, line, message: `${id}: unknown family "${badFamily}" (known: ${FAMILIES.join(', ')})` }); continue; }
+    const look = raw.scene !== undefined ? lookOf(String(raw.scene)) : undefined;
+    if (typeof look === 'string') { errors.push({ file, line, message: `${id}: ${look}` }); continue; }
     positions.set(id, src.data);
-    shared.push({ id, tags: raw.tags as string[], ...(raw.scene ? { scene: raw.scene } : {}), room: raw.room, ...(raw.family !== undefined ? { family: asList(raw.family) } : {}) });
+    shared.push({ id, tags: raw.tags as string[], ...(look ? { look } : {}), room: raw.room, ...(raw.family !== undefined ? { family: asList(raw.family) } : {}) });
   }
   for (const locale of LOCALES) {
     const wfile = join(root, locale, 'library.yaml');
@@ -115,7 +117,7 @@ function compileLibrary(root: string, errors: ContentError[]): { positions: Libr
     for (const e of shared) {
       const w = words[e.id];
       if (!w) { errors.push({ file: wfile, line: 1, message: `no name and note for library entry "${e.id}"` }); continue; }
-      const parsed = LibraryEntrySchema.safeParse({ id: e.id, tags: e.tags, name: w.name, note: aged(w.note), source: positions.get(e.id), ...(e.scene ? { scene: e.scene } : {}), room: e.room, ...(e.family ? { family: e.family } : {}) });
+      const parsed = LibraryEntrySchema.safeParse({ id: e.id, tags: e.tags, name: w.name, note: aged(w.note), source: positions.get(e.id), ...(e.look ? { look: e.look } : {}), room: e.room, ...(e.family ? { family: e.family } : {}) });
       if (parsed.success) entries[locale].push(parsed.data);
       else errors.push({ file: wfile, line: wread ? lineIn(wread.text, new RegExp(`^${esc(e.id)}:`)) : 1, message: `${e.id}: ${zodMessage(parsed.error.issues)}` });
     }
@@ -204,8 +206,9 @@ function compileLesson(raw: RawLesson, library: LibraryPositions, replay: Return
       ...(question ? { question } : {}),
       ...(ages.length ? { audience: { ages } } : {}),
     };
+    if (typeof candidate.scene === 'string') { err(candidate.scene); continue; }
     if (candidate.moment !== undefined && !momentIds.has(candidate.moment)) { err(`no moment "${candidate.moment}"`); continue; }
-    if (recall !== undefined && candidate.scene.layers.includes('pieces')) { err('a recall step is a blocks board: its scene must not show pieces (use scene: blocks)'); continue; }
+    if (recall !== undefined && candidate.scene.look.pieces === 'pieces') { err('a recall step is a blocks board: its scene must not show pieces (use scene: blocks)'); continue; }
     const parsed = StepSchema.safeParse(candidate);
     if (!parsed.success) {
       const onQuestion = parsed.error.issues[0]?.path[0] === 'question';

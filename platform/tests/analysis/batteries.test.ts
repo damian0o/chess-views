@@ -58,6 +58,6 @@ test('a battery road that runs only into empty squares or its own camp is not dr
 });
 
 test('the roads layer carries the battery roads', () => {
-  const data = analyse(QB3, ['pieces', 'roads']);
+  const data = analyse(QB3, { pieces: 'pieces', moves: 'roads' });
   assert.ok(data.roads?.batteries.some((r) => r.from === 'b3' && r.hit === 'f7'));
 });

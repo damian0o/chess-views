@@ -72,7 +72,7 @@ test('pawn-guarded road squares, by the guarding pawn colour, respecting pins', 
 });
 
 test('analyse roads fills rings and pawn guards', () => {
-  const d = analyse(SCHOLAR, ['roads']);
+  const d = analyse(SCHOLAR, { pieces: 'pieces', moves: 'roads' });
   assert.ok(d.roads);
   assert.equal(d.roads.rings.find((r) => r.square === 'f7')?.style, 'free');
   assert.equal(d.roads.pawnGuards.length, 5);

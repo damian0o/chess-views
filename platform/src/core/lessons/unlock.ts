@@ -1,15 +1,22 @@
-import type { LayerKind, Lesson, Profile, Step } from '../types';
+import { OPTION_IDS, type Lesson, type OptionId, type Profile, type Step } from '../types';
+import { OPTIONS, optionsOf } from '../look';
 
-/** Layers free to use: those the profile has seen, plus every layer of a finished lesson. */
-export function unlockedLayers(profile: Profile, lessons: Lesson[]): Set<LayerKind> {
-  const out = new Set<LayerKind>(profile.unlockedLayers);
-  for (const l of lessons) if (profile.progress[l.id]?.done) for (const s of l.steps) for (const k of s.scene.layers) out.add(k);
+/** Options free to use: those the profile has seen, plus every option of a finished lesson. */
+export function unlockedOptions(profile: Profile, lessons: Lesson[]): Set<OptionId> {
+  const out = new Set<OptionId>(profile.unlocked);
+  for (const l of lessons) if (profile.progress[l.id]?.done) for (const s of l.steps) for (const k of optionsOf(s.scene.look)) out.add(k);
   return out;
 }
 
-/** The profile after seeing a step: its layers join the unlocked ones. */
+/** The profile after seeing a step: its options join the unlocked ones (the always-allowed ones need no record). */
 export function recordSeen(profile: Profile, step: Step): Profile {
-  const set = new Set(profile.unlockedLayers);
-  for (const k of step.scene.layers) set.add(k);
-  return set.size === profile.unlockedLayers.length ? profile : { ...profile, unlockedLayers: [...set] };
+  const set = new Set(profile.unlocked);
+  for (const k of optionsOf(step.scene.look)) if (!OPTIONS[k].always) set.add(k);
+  return set.size === profile.unlocked.length ? profile : { ...profile, unlocked: [...set] };
+}
+
+/** The options a lesson's picker shows: the always-allowed ones and every option its steps use, in picker order. */
+export function lessonOptions(lesson: Lesson): OptionId[] {
+  const used = new Set<OptionId>(lesson.steps.flatMap((s) => optionsOf(s.scene.look)));
+  return OPTION_IDS.filter((id) => OPTIONS[id].always || used.has(id));
 }

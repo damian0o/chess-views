@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
   SquareSchema, PositionSourceSchema, AgedTextSchema, QuestionSchema, StepSchema, ProfileSchema, SceneSchema,
-  LAYER_KINDS, AGE_BANDS, LOCALES,
+  OPTION_IDS, AGE_BANDS, LOCALES,
 } from '@core/types';
 
 const ok = (s: { safeParse: (v: unknown) => { success: boolean } }, v: unknown) => s.safeParse(v).success;
-const scene = { position: { kind: 'fen', fen: '8/8/8/8/8/8/8/K6k w - - 0 1' }, base: 'board', layers: ['pieces'] };
+const scene = { position: { kind: 'fen', fen: '8/8/8/8/8/8/8/K6k w - - 0 1' }, look: { pieces: 'pieces' } };
 
 describe('types', () => {
   test('Square accepts a1..h8 and rejects i9, A1, empty', () => {
@@ -41,16 +41,18 @@ describe('types', () => {
     expect(ok(StepSchema, { id: 'attack-houses', scene, explain: { kids: 'x' } })).toBe(true);
     expect(ok(StepSchema, { id: 'Step 1', scene, explain: { kids: 'x' } })).toBe(false);
   });
-  test('Profile: version 2, locale pl|en, age kids|teens|adults', () => {
-    const p = { version: 2, avatar: 'violet', id: 'p1', age: 'kids', experience: 'basic', locale: 'pl', theme: { family: 'kids', mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'] };
+  test('Profile: version 3, locale pl|en, age kids|teens|adults', () => {
+    const p = { version: 3, avatar: 'violet', id: 'p1', age: 'kids', experience: 'basic', locale: 'pl', theme: { family: 'kids', mode: 'system' }, pieceStyle: 'images', progress: {}, unlocked: ['roads'] };
     expect(ok(ProfileSchema, p)).toBe(true);
     expect(ok(ProfileSchema, { ...p, version: 1 })).toBe(false);
     expect(ok(ProfileSchema, { ...p, locale: 'de' })).toBe(false);
     expect(ok(ProfileSchema, { ...p, age: 'toddler' })).toBe(false);
   });
-  test('Scene.layers only LAYER_KINDS', () => {
+  test('Scene.look: one value per group', () => {
     expect(ok(SceneSchema, scene)).toBe(true);
-    expect(ok(SceneSchema, { ...scene, layers: ['nope'] })).toBe(false);
-    expect(LAYER_KINDS).toContain('roads'); expect(AGE_BANDS).toEqual(['kids', 'teens', 'adults']); expect(LOCALES).toEqual(['pl', 'en']);
+    expect(ok(SceneSchema, { ...scene, look: { pieces: 'nope' } })).toBe(false);
+    expect(ok(SceneSchema, { ...scene, look: { pieces: 'pieces', moves: 'territory' } })).toBe(false);
+    expect(ok(SceneSchema, { ...scene, locked: ['nope'] })).toBe(false);
+    expect(OPTION_IDS).toContain('roads'); expect(AGE_BANDS).toEqual(['kids', 'teens', 'adults']); expect(LOCALES).toEqual(['pl', 'en']);
   });
 });

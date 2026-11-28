@@ -14,7 +14,7 @@ describe('defaultProfile', () => {
     const p = defaultProfile();
     expect(ProfileSchema.safeParse(p).success).toBe(true);
     expect([p.locale, p.age, p.experience, p.theme.family, p.theme.mode, p.pieceStyle]).toEqual(['pl', 'kids', 'basic', 'crayons', 'system', 'images']);
-    expect(p.unlockedLayers).toEqual(['pieces']);
+    expect(p.unlocked).toEqual([]);
   });
 });
 

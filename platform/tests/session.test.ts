@@ -57,16 +57,16 @@ test('stepTo clamps and stepBy moves', () => {
 
 test('sessionScene: the position at the ply, moves visible, analysis for the layers', () => {
   const s = stepTo(ok(openSession(OPERA, { flip: true })), 0);
-  const sc = sessionScene(s, ['pieces', 'roads']);
+  const sc = sessionScene(s, { pieces: 'pieces', moves: 'roads' });
   expect(sc.fen).toBe(START_FEN);
   expect(sc.ply).toBe(0);
   expect(sc.moves).toHaveLength(33);
   expect(sc.hideMoves).toBe(false);
   expect(sc.flip).toBe(true);
   expect(sc.focus).toEqual([]);
-  expect(sc.layers).toEqual(['pieces', 'roads']);
+  expect(sc.look).toEqual({ pieces: 'pieces', moves: 'roads' });
   expect(sc.data.roads?.rings).toBeDefined();
-  expect(sessionScene(stepTo(s, 33), []).fen).toBe(s.game.fen(33));
+  expect(sessionScene(stepTo(s, 33), { pieces: 'pieces' }).fen).toBe(s.game.fen(33));
 });
 
 test('sessionParams round-trips FEN + view + flip', () => {

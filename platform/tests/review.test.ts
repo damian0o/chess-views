@@ -14,31 +14,33 @@ import type { Fen, Lesson, LessonId, Step } from '@core/types';
 
 const PGN = '1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#';
 const at = (ply: number) => ({ kind: 'pgn' as const, pgn: PGN, ply });
-const blocksNoQ: Step = { id: 'b', scene: { position: at(5), base: 'board', layers: ['shapes'], hideMoves: true }, explain: { kids: 'x' } };
-const recall: Step = { id: 'r', scene: { position: at(7), base: 'board', layers: ['shapes'], hideMoves: true }, explain: { kids: 'x' }, moment: 'mate' as never, question: { kind: 'recall', moment: 'mate' as never, answer: 'yes' } };
+const blocksNoQ: Step = { id: 'b', scene: { position: at(5), look: { pieces: 'blocks' }, hideMoves: true }, explain: { kids: 'x' } };
+const recall: Step = { id: 'r', scene: { position: at(7), look: { pieces: 'blocks' }, hideMoves: true }, explain: { kids: 'x' }, moment: 'mate' as never, question: { kind: 'recall', moment: 'mate' as never, answer: 'yes' } };
 const LESSON = { id: 'fx' as LessonId, group: { kind: 'pattern', id: 'p' }, title: 'F', about: { kids: 'x' }, game: 'F', experience: 'basic', moments: [{ id: 'mate', name: 'm', board: at(7) }], steps: [blocksNoQ, recall] } as Lesson;
 
 describe('I1: a blocks step without a question stays blocks', () => {
   test('no pieces, no moves until the child turns pieces on', () => {
     const s = sceneFor(blocksNoQ, { answered: false });
-    expect(s.layers).not.toContain('pieces'); expect(s.moves).toEqual([]); expect(s.hideMoves).toBe(true);
-    const shown = sceneFor(blocksNoQ, { answered: false, layersOn: ['shapes', 'pieces'] });
-    expect(shown.layers).toContain('pieces');
+    expect(s.look.pieces).toBe('blocks'); expect(s.moves).toEqual([]); expect(s.hideMoves).toBe(true);
+    const shown = sceneFor(blocksNoQ, { answered: false, look: { pieces: 'pieces' } });
+    expect(shown.look.pieces).toBe('pieces'); expect(shown.moves.length).toBeGreaterThan(0);
+    const run = startLesson({ ...LESSON, steps: [blocksNoQ] }, defaultProfile())!.report({ kind: 'toggle', option: 'pieces' });
+    expect(run.look.pieces).toBe('pieces');
   });
 });
 
-describe('I2: layers during an open blocks question', () => {
+describe('I2: the look during an open blocks question', () => {
   test('pieces cannot be turned on while the question is open, and the run and the scene agree', () => {
-    const run = startLesson(LESSON, defaultProfile(), 'r')!.report({ kind: 'layers', on: ['shapes', 'pieces'] });
-    expect(run.layersOn).toEqual(['shapes']);
-    expect(sceneOfRun(run).layers).toEqual(['shapes']);
+    const run = startLesson(LESSON, defaultProfile(), 'r')!.report({ kind: 'toggle', option: 'pieces' });
+    expect(run.look).toEqual({ pieces: 'blocks' });
+    expect(sceneOfRun(run).look).toEqual({ pieces: 'blocks' });
     const answered = run.report({ kind: 'answer', value: 0 });
-    expect(sceneOfRun(answered).layers).toContain('pieces');
+    expect(sceneOfRun(answered).look.pieces).toBe('pieces');
   });
-  test('locked layers are not on at the start of an open question', () => {
-    const s: Step = { id: 'q', scene: { position: at(5), base: 'board', layers: ['pieces', 'roads'], lockedLayers: ['roads'] }, explain: { kids: 'x' }, question: { kind: 'tap', prompt: { kids: 't' }, squares: ['f7' as never] } };
+  test('locked options are not on at the start of an open question', () => {
+    const s: Step = { id: 'q', scene: { position: at(5), look: { pieces: 'pieces', moves: 'roads' }, locked: ['roads'] }, explain: { kids: 'x' }, question: { kind: 'tap', prompt: { kids: 't' }, squares: ['f7' as never] } };
     const run = startLesson({ ...LESSON, steps: [s] }, defaultProfile())!;
-    expect(run.layersOn).toEqual(['pieces']);
+    expect(run.look).toEqual({ pieces: 'pieces' });
   });
 });
 
@@ -50,8 +52,8 @@ describe('I3: a recall step that shows pieces is a content error', () => {
     expect(errs.some((e) => /recall/.test(e.message) && /pieces/.test(e.message))).toBe(true);
   });
   test('sceneFor strips pieces from an open recall step whatever its scene says', () => {
-    const bad = { ...recall, scene: { ...recall.scene, layers: ['pieces' as const] } };
-    expect(sceneFor(bad, { answered: false }).layers).not.toContain('pieces');
+    const bad = { ...recall, scene: { ...recall.scene, look: { pieces: 'pieces' as const } } };
+    expect(sceneFor(bad, { answered: false }).look.pieces).not.toBe('pieces');
   });
 });
 

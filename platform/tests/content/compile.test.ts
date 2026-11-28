@@ -25,9 +25,9 @@ describe('compileContent: a valid lesson', () => {
   });
   test('scenes, explanations, questions', () => {
     const by = Object.fromEntries(L.steps.map((s) => [s.id, s]));
-    expect(by.look!.scene).toMatchObject({ base: 'board', layers: ['pieces'] });
-    expect(by.roads!.scene).toMatchObject({ layers: ['pieces', 'roads'], focus: ['f7'] });
-    expect(by['is-attack']!.scene).toMatchObject({ layers: ['shapes'], hideMoves: true });
+    expect(by.look!.scene).toMatchObject({ look: { pieces: 'pieces' } });
+    expect(by.roads!.scene).toMatchObject({ look: { pieces: 'pieces', moves: 'roads' }, focus: ['f7'] });
+    expect(by['is-attack']!.scene).toMatchObject({ look: { pieces: 'blocks' }, hideMoves: true });
     expect(by.look!.explain).toEqual({ kids: 'Trzy ruchy białych.', adults: 'Short.' });
     expect(by.roads!.question).toEqual({ kind: 'choice', prompt: { kids: 'Which square?' }, choices: ['e5', 'f7', 'f2'], answer: 1, right: { kids: 'Yes, f7.' } });
     expect(by['tap-it']!.question).toEqual({ kind: 'tap', prompt: { kids: 'Tap the square.' }, squares: ['f7'] });
@@ -70,7 +70,7 @@ describe('compileContent: errors with file and line', () => {
     ['an unknown question attribute', { '{tap: f7}': '{tap: f7, hint: x}' }, '? Tap the square.', /unknown attribute "hint"/],
     ['a recall "yes" step with its own position', { '## is-attack {moment: attack}': '## is-attack {moment: attack, ply: 3}' }, '## is-attack', /shows its moment's board/],
     ['a focus that is not a square', { 'same: true, focus: f7}': 'same: true, focus: f9}' }, '## roads', /"f9" is not a square/],
-    ['a scene with an unknown view', { '## roads {scene: board+roads,': '## roads {scene: board+rodas,' }, '## roads', /unknown view "rodas"/],
+    ['a scene with an unknown option', { '## roads {scene: board+roads,': '## roads {scene: board+rodas,' }, '## roads', /unknown option "rodas"/],
   ])('%s: one error, on its line, said plainly', (_name, swap, needle, message) => {
     const errs = broken(swap, swap);
     const pl = errs.filter((e) => /\/pl\//.test(e.file));

@@ -2,6 +2,7 @@
 import type { Lesson, Profile } from '../types';
 import type { LessonRun } from './run';
 import { recordSeen } from './unlock';
+import { OPTIONS, optionsOf } from '../look';
 
 export function recordStep(profile: Profile, run: LessonRun): Profile {
   const id = run.lesson.id as string;
@@ -15,10 +16,10 @@ export function recordStep(profile: Profile, run: LessonRun): Profile {
 }
 
 export function finishLesson(profile: Profile, lesson: Lesson): Profile {
-  const layers = new Set(profile.unlockedLayers);
-  for (const s of lesson.steps) for (const l of s.scene.layers) layers.add(l);
+  const unlocked = new Set(profile.unlocked);
+  for (const s of lesson.steps) for (const k of optionsOf(s.scene.look)) if (!OPTIONS[k].always) unlocked.add(k);
   const last = lesson.steps[lesson.steps.length - 1]!.id;
-  return { ...profile, unlockedLayers: [...layers], progress: { ...profile.progress, [lesson.id]: { reachedStep: last, done: true } } };
+  return { ...profile, unlocked: [...unlocked], progress: { ...profile.progress, [lesson.id]: { reachedStep: last, done: true } } };
 }
 
 /** The step to continue from, or undefined when the lesson is finished, not started, or the saved step no longer exists. */

@@ -21,8 +21,8 @@ const newId = (): string => {
 export function defaultProfile(opts: { name?: string; age?: AgeBand; locale?: Locale; avatar?: Avatar } = {}): Profile {
   const age = opts.age ?? 'kids';
   return {
-    version: 2, id: newId(), ...(opts.name ? { name: opts.name } : {}), age, experience: 'basic', locale: opts.locale ?? 'pl',
-    theme: { family: lookForAge(age), mode: 'system' }, pieceStyle: 'images', progress: {}, unlockedLayers: ['pieces'], avatar: opts.avatar ?? 'violet',
+    version: 3, id: newId(), ...(opts.name ? { name: opts.name } : {}), age, experience: 'basic', locale: opts.locale ?? 'pl',
+    theme: { family: lookForAge(age), mode: 'system' }, pieceStyle: 'images', progress: {}, unlocked: [], avatar: opts.avatar ?? 'violet',
   };
 }
 
