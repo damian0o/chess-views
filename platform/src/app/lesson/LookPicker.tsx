@@ -12,12 +12,16 @@ import { useIsPhone } from './useIsPhone';
  * rows are disabled while a blocks question is open (`frozen`) — the summary still unfolds. `aside` (the legend
  * button) ends the summary line, so it stays reachable while folded.
  */
-export function LookPicker({ options, frozen, onToggle, aside, startOpen }: {
+export function LookPicker({ options, frozen, onToggle, aside, startOpen, open: openProp, onOpenChange }: {
   options: OptionState[]; frozen: boolean; onToggle: (id: OptionId) => void; aside?: ReactNode; startOpen?: boolean;
+  /** Controlled fold, for a screen that remounts the picker (the phone board sheet does, per step). */
+  open?: boolean; onOpenChange?: (open: boolean) => void;
 }) {
   const t = useT();
   const phone = useIsPhone();
-  const [open, setOpen] = useState(startOpen ?? !phone);
+  const [own, setOwn] = useState(startOpen ?? !phone);
+  const open = openProp ?? own;
+  const setOpen = (f: (v: boolean) => boolean) => { const v = f(open); setOwn(v); onOpenChange?.(v); };
   const rowsId = useId();
   const on = options.filter((o) => o.on).map((o) => t(OPTIONS[o.id].label));
   return (

@@ -203,3 +203,18 @@ describe('the sheet on old phones', () => {
     expect(rule).toMatch(/translateY\(calc\(100vh[^;]*;[\s\S]*translateY\(calc\(100dvh/);
   });
 });
+
+// Review (fold-picker): the board sheet remounts its contents per step; the fold must survive Next.
+describe('the folded look picker on a phone', () => {
+  const summary = () => document.querySelector<HTMLElement>('[data-look-summary]')!;
+  test('starts folded; once opened it stays open on the next step', async () => {
+    const store = await open('/lesson/scholars-mate/s02-houses');
+    expect(summary().getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(summary());
+    expect(summary().getAttribute('aria-expanded')).toBe('true');
+    await act(async () => { await store.getState().next(); });
+    await waitFor(() => expect(store.getState().run?.step.id).toBe('s03-roads'));
+    await waitFor(() => expect(document.querySelector('[data-option="roads"]')).not.toBeNull());
+    expect(summary().getAttribute('aria-expanded')).toBe('true');
+  });
+});

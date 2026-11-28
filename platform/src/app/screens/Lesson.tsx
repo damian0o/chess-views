@@ -38,6 +38,8 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
   const player = useApp((s) => s.player);
   const isRound = useApp((s) => s.round !== null);
   const phone = useIsPhone();
+  // The fold lives here, not in the picker: the phone board sheet remounts its contents on every step.
+  const [pickerOpen, setPickerOpen] = useState(!phone);
   const scene = sceneOfRun(run);
   const q = run.step.question;
   const answering = run.gate?.kind === 'answer';
@@ -103,7 +105,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
       tapMarks={{ ...(tapRight ? { right: tapRight } : {}), ...(tapWrong ? { wrong: tapWrong } : {}), ...solveMarks }} />
   );
   const tools = (
-    <LookPicker options={options} frozen={run.frozen} aside={<LegendPopup on={[run.look.pieces, ...optionsOf(run.look)]} />}
+    <LookPicker options={options} frozen={run.frozen} open={pickerOpen} onOpenChange={setPickerOpen} aside={<LegendPopup on={[run.look.pieces, ...optionsOf(run.look)]} />}
       onToggle={(id) => (id === 'names' ? void updatePlayer({ squareNames: !names }) : report({ kind: 'toggle', option: id }))} />
   );
   // The whole game in order; while a question or task is open the later moves stay hidden.
