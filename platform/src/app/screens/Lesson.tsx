@@ -123,7 +123,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
       <>
         <PhoneRun run={run} topBar={topBar} board={board} onBack={onBack}
           actions={<div className="relative flex flex-col gap-3 px-1"><StepActions run={run} solve={solveView} onAnswer={onAnswer} onReveal={onReveal} /></div>}
-          tools={<>{tools}{moveList}</>}
+          tools={<>{moveList}{tools}</>}
           dock={<LessonDock run={run} gameLength={gameLength} movesLocked={movesLocked} onPly={(ply) => report({ kind: 'ply', ply })} onNext={onNext} highlight={dockHighlight(run)} />} />
         {live}
       </>
@@ -136,7 +136,6 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
       <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
         <div className="flex flex-col gap-3">
           {board}
-          {tools}
           {gameLength > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <Button tone="quiet" aria-label={t('prevMove')} isDisabled={movesLocked || run.ply <= 0} onPress={() => report({ kind: 'ply', ply: run.ply - 1 })}>◀</Button>
@@ -145,6 +144,7 @@ function RunScreen({ run, onStep, onDone }: { run: LessonRun; onStep: (r: Lesson
             </div>
           )}
           {moveList}
+          {tools}
         </div>
         <StepCard run={run} solve={solveView} onAnswer={onAnswer} onReveal={onReveal} onBack={onBack} onNext={onNext} />
       </main>

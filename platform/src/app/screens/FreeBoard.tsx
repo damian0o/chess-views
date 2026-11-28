@@ -129,16 +129,16 @@ export function FreeBoard() {
           )}
         </div>
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <LookPicker options={options} frozen={false} aside={<LegendPopup on={[session.look.pieces, ...optionsOf(session.look)]} />}
-              onToggle={(id) => (id === 'names' ? void s.updatePlayer({ squareNames: !names }) : s.toggleOption(id))} />
-          </div>
           <p role="status" aria-label={t('gameStatus')} className="text-lg font-black">{(() => {
             const st = session.game.status(session.ply);
             const side = t(scene.fen.split(' ')[1] === 'b' ? 'toMoveBlack' : 'toMoveWhite');
             return st === 'mate' ? t('statusMate') : st === 'stalemate' ? t('statusStalemate') : st === 'check' ? `${t('statusCheck')} · ${side}` : side;
           })()}</p>
           <MoveStrip moves={session.game.moves()} ply={session.ply} onPly={s.setPly} white={session.headers.White} black={session.headers.Black} hideFromPly={session.solve ? session.ply : undefined} startFen={session.game.fen(0)} />
+          <div className="flex flex-wrap items-center gap-2">
+            <LookPicker options={options} frozen={false} aside={<LegendPopup on={[session.look.pieces, ...optionsOf(session.look)]} />}
+              onToggle={(id) => (id === 'names' ? void s.updatePlayer({ squareNames: !names }) : s.toggleOption(id))} />
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <LoadDialog />
             <Button tone="quiet" onPress={() => void copy()}>{t('copyLink')}</Button>
