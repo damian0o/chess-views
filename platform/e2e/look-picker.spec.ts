@@ -64,7 +64,14 @@ test('Final: 390 wide, no picker row overflows, so no label is cut', async ({ pa
   await addPlayer(page, 'Ola');
   await page.goto('./#/lesson/scholars-mate/s03-roads');      // Strategia shows Terytorium 🔒 and Domki króla 🔒
   await openBoard(page);
-  const over = await page.locator('[data-look-picker] [role="group"] > div').evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
+  // Measure real edges, not scrollWidth/clientWidth: those round fractional widths in opposite directions and
+  // read 1–2 px "over" even when the row has room to spare.
+  const over = await page.locator('[data-look-picker] [role="group"]').evaluateAll((rows) => rows.map((row) => {
+    const buttons = [...row.querySelectorAll('[data-option]')];
+    const right = Math.max(...buttons.map((b) => b.getBoundingClientRect().right));
+    const scroller = buttons[0]!.parentElement!.getBoundingClientRect();
+    return right - Math.min(scroller.right, row.getBoundingClientRect().right);
+  }));
   expect(over.length).toBeGreaterThan(0);
-  expect(Math.max(...over)).toBeLessThanOrEqual(1);   // scrollWidth rounds fractional button widths up by at most 1 px
+  expect(Math.max(...over)).toBeLessThanOrEqual(0.5);
 });
