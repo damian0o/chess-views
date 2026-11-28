@@ -8,6 +8,11 @@ import { z } from 'zod';
 // ---------- lists defined once ----------
 
 export const LAYER_KINDS = ['territory', 'reach', 'roads', 'kings', 'shapes', 'diamond', 'knight', 'engine', 'pieces'] as const;
+export const PIECES_MODES = ['pieces', 'blocks', 'hidden'] as const;
+export const MOVES_DRAWINGS = ['roads', 'reach', 'knight'] as const;
+export const STRATEGY_DRAWINGS = ['territory', 'kings'] as const;
+/** Every button of the board look picker, in the picker's order. */
+export const OPTION_IDS = [...PIECES_MODES, ...MOVES_DRAWINGS, ...STRATEGY_DRAWINGS, 'diamond', 'flip', 'names', 'engine'] as const;
 export const AGE_BANDS = ['kids', 'teens', 'adults'] as const;   // 8–12, 12–16, adult
 export const EXPERIENCES = ['basic'] as const;                   // more levels later
 export const LOCALES = ['pl', 'en'] as const;                    // pl is the default
@@ -57,6 +62,18 @@ export const AgedTextSchema = z.object({
 export type AgedText = z.infer<typeof AgedTextSchema>;
 
 // ---------- scenes ----------
+
+export const OptionIdSchema = z.enum(OPTION_IDS);
+export type OptionId = z.infer<typeof OptionIdSchema>;
+/** What a board shows, one field per group: how the pieces look, one moves drawing, one strategy drawing, the diamond, the engine. */
+export const BoardLookSchema = z.object({
+  pieces: z.enum(PIECES_MODES),
+  moves: z.enum(MOVES_DRAWINGS).optional(),
+  strategy: z.enum(STRATEGY_DRAWINGS).optional(),
+  diamond: z.boolean().optional(),
+  engine: z.boolean().optional(),
+}).refine((l) => !(l.diamond && (l.moves || l.strategy)), 'a drawing cannot be on the diamond');
+export type BoardLook = z.infer<typeof BoardLookSchema>;
 
 export const LayerKindSchema = z.enum(LAYER_KINDS);
 export type LayerKind = z.infer<typeof LayerKindSchema>;
