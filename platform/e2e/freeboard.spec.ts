@@ -57,3 +57,19 @@ test('Enter and Space on a board square choose it once', async ({ page }) => {
   await page.keyboard.press(' ');
   await expect(page.getByRole('gridcell', { name: /^g6\b/ }).locator('[data-dist]')).toHaveText('1');
 });
+
+// iPhone: the keyboard covers the bottom ~400 px without shrinking the page, so the paste box and its
+// button must sit in the top part of the screen, or a child cannot see what they paste nor press Wczytaj.
+test('phone: the Wczytaj box and button stay above where the keyboard opens', async ({ page }, info) => {
+  test.skip(info.project.name !== 'phone', 'phone only');
+  await addPlayer(page, 'Ola');
+  await page.goto('./#/board');
+  await page.getByRole('button', { name: 'Wczytaj' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox').click();
+  for (const el of [dialog.getByRole('textbox'), dialog.getByRole('button', { name: 'Wczytaj' })]) {
+    const b = (await el.boundingBox())!;
+    expect(b.y).toBeGreaterThanOrEqual(0);
+    expect(b.y + b.height).toBeLessThanOrEqual(844 - 400);
+  }
+});

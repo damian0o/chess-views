@@ -5,7 +5,11 @@ import { useT } from '../i18n';
 import { Button } from '../ui/Button';
 import type { MessageKey } from '@core/i18n/index';
 
-/** "Wczytaj": paste a FEN, a PGN or a lichess link; the error stays in the dialog, the position stays as it was. */
+/**
+ * "Wczytaj": paste a FEN, a PGN or a lichess link; the error stays in the dialog, the position stays as it was.
+ * The overlay is as tall as the visible viewport and keeps the dialog at the top on phones: iOS opens the
+ * keyboard over the page without shrinking it, so a bottom-pinned dialog would hide behind the keyboard.
+ */
 export function LoadDialog() {
   const t = useT();
   const load = useApp((s) => s.loadBoardText);
@@ -15,8 +19,8 @@ export function LoadDialog() {
   return (
     <DialogTrigger onOpenChange={(open) => { if (open) { setError(null); } }}>
       <Button tone="secondary">{t('load')}</Button>
-      <ModalOverlay isDismissable className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 p-4 sm:items-center">
-        <Modal className="w-full max-w-lg rounded-card bg-card p-5 shadow-card">
+      <ModalOverlay isDismissable className="fixed top-0 left-0 z-50 flex h-(--visual-viewport-height) w-full items-start justify-center bg-ink/30 p-4 sm:items-center">
+        <Modal className="max-h-full w-full max-w-lg overflow-y-auto rounded-card bg-card p-5 shadow-card">
           <Dialog className="flex flex-col gap-3 outline-none">
             {({ close }) => (
               <>
